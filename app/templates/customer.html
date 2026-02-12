@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="grid2">
+  <div class="card">
+    <h1>
+      {{ customer.name }}
+      <span class="badge"
+        style="background: var(--{{ 'success' if rule_level=='LEVE' else ('warning' if rule_level=='MODERADA' else 'danger') }}); color: #fff; font-size: 0.5em; vertical-align: middle;">
+        {{ rule_level }}
+      </span>
+    </h1>
+    <div class="muted">Loja: <b>{{ customer.store or "-" }}</b> · WhatsApp: <b>{{ customer.whatsapp or "não informado"
+        }}</b></div>
+
+    <div class="kpis-row">
+      <div class="kpi-box">
+        <div class="kpi-label">Total em Aberto</div>
+        <div class="kpi">{{ total_open }}</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">Maior Atraso</div>
+        <div class="kpi">{{ max_overdue }} dias</div>
+      </div>
+    </div>
+
+    <div class="card inner">
+      <h2>WhatsApp (mensagem sugerida)</h2>
+      <textarea class="textarea" rows="4" readonly style="width:100%">{{ wa_message }}</textarea>
+      {% if wa_link %}
+      <a class="btn primary" target="_blank" rel="noopener" href="{{ wa_link }}" style="margin-top:10px">Abrir no
+        WhatsApp</a>
+      {% else %}
+      <div class="alert alert-warning">Sem número cadastrado. Quando importar telefones, este botão ativa.</div>
+      {% endif %}
+    </div>
+
+    <div class="card inner">
+      <h2>Registrar Contato</h2>
+      <form method="post" action="/actions" class="form">
+        <input type="hidden" name="customer_id" value="{{ customer.id }}">
+
+        <label>Tipo</label>
+        <select name="action_type">
+          <option value="WHATSAPP">WhatsApp</option>
+          <option value="LIGACAO">Ligação</option>
+          <option value="VISITA">Visita</option>
+          <option value="ACORDO">Acordo</option>
+        </select>
+
+        <label>Resultado</label>
+        <input name="outcome" placeholder="Ex: Não atendeu / Vai pagar hoje" required>
+
+        <label>Observação</label>
+        <input name="notes" placeholder="Detalhes (opcional)">
+
+        <div class="grid2">
+          <div>
+            <label>Promessa — Data</label>
+            <input name="promised_date" placeholder="DD/MM/AAAA (opcional)">
+          </div>
+          <div>
+            <label>Promessa — Valor</label>
+            <input name="promised_amount" placeholder="Ex: 150,00 (opcional)">
+          </div>
+        </div>
+
+        <button class="btn primary" type="submit">Salvar Registro</button>
+      </form>
+    </div>
+
+    <div class="card inner">
+      <h2>Histórico (últimos 80)</h2>
+      {% if actions|length == 0 %}
+      <p class="muted">Nenhum contato registrado ainda.</p>
+      {% else %}
+      <ul class="list">
+        {% for a in actions %}
+        <li>
+          <div><b>{{ a.action_type }}</b> — {{ a.outcome }} · <span class="muted small">{{ a.user.name }} · {{
+              a.created_at }}</span></div>
+          {% if a.promised_date %}
+          <div class="muted small">Promessa: {{ a.promised_date }}{% if a.promised_amount %} · R$ {{ a.promised_amount
+            }}{% endif %}</div>
+          {% endif %}
+          {% if a.notes %}
+          <div class="muted small">{{ a.notes }}</div>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Parcelas</h2>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Contrato</th>
+            <th>Parc.</th>
+            <th>Venc.</th>
+            <th>Atraso</th>
+            <th>Status</th>
+            <th>Valor</th>
+            <th>Em Aberto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for x in installments %}
+          <tr>
+            <td class="muted">{{ x.i.contract_id }}</td>
+            <td>{{ x.i.installment_number }}</td>
+            <td>{{ x.i.due_date }}</td>
+            <td>
+              {% if x.overdue > 0 %}
+              <span class="pill p5">{{ x.overdue }} d</span>
+              {% elif x.overdue < 0 %} <span class="pill p2">{{ x.overdue }} d</span>
+                {% else %}
+                <span class="pill p1">0</span>
+                {% endif %}
+            </td>
+            <td><span class="pill">{{ x.i.status }}</span></td>
+            <td>R$ {{ "{:,.2f}".format(x.i.amount).replace(",", "X").replace(".", ",").replace("X", ".") }}</td>
+            <td>R$ {{ "{:,.2f}".format(x.i.open_amount).replace(",", "X").replace(".", ",").replace("X", ".") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

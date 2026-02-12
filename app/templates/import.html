@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h1>Importar Dados</h1>
+      <p class="muted small">Importe clientes e parcelas via CSV</p>
+    </div>
+  </div>
+
+  {% if request.query_params.get("msg") %}
+  <div class="alert alert-success">{{ request.query_params.get("msg") }}</div>
+  {% endif %}
+
+  <div class="card inner">
+    <h2>Upload da Planilha (.xlsx)</h2>
+    <p class="muted">
+      A planilha deve conter as colunas: <br>
+      <code>Nome Cliente</code>, <code>CPF/CNPJ</code>, <code>Telefone</code>, <code>Email</code>,
+      <code>Valor Parcela</code>, <code>Data Vencimento</code>, <code>Loja</code> (opcional).
+    </p>
+
+    <div
+      style="margin: 20px 0; padding: 30px; border: 2px dashed var(--border); border-radius: 12px; text-align: center; background: var(--bg-surface)">
+      <form method="post" action="/import/upload" enctype="multipart/form-data" class="form">
+        <label for="file_upload" style="cursor: pointer; display: block; margin-bottom: 10px;">
+          <i data-lucide="upload-cloud" style="width: 48px; height: 48px; color: var(--primary)"></i>
+          <div style="font-weight: 600; font-size: 16px; margin-top: 10px">Clique para selecionar</div>
+          <div class="muted small">ou arraste o arquivo aqui</div>
+        </label>
+        <input id="file_upload" type="file" name="file" accept=".xlsx" required
+          style="margin: 0 auto; max-width: 300px;">
+        <br><br>
+        <button class="btn primary large" type="submit" style="width: 100%; max-width: 300px">
+          <i data-lucide="file-spreadsheet"></i> Processar Importação
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <hr class="sep">
+  <div class="muted small">
+    <b>Dica:</b> depois de criar usuários cobradores, você pode distribuir clientes na tela "Clientes" (Assign).
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+MODO MAIS SIMPLES (WINDOWS)
+
+1) Descompacte a pasta
+2) Clique duas vezes em: _CLICK_TO_RUN_WINDOWS.bat
+3) Ele vai:
+   - criar .venv
+   - instalar dependencias
+   - escolher uma porta LIVRE automaticamente (8000, 8001, 8002...)
+   - abrir o navegador sozinho
+
+LOGIN:
+- Email: admin@portalmoveis.local
+- Senha: admin123
+
+TESTE COM DADOS:
+- Menu Importar
+- Envie samples/clientes.csv e samples/parcelas.csv

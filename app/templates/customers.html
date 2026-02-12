@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h1>Clientes</h1>
+      <p class="muted small">Busca por nome e visão rápida do total em aberto</p>
+    </div>
+  </div>
+
+  <form method="get" action="/customers" class="filters">
+    <input name="q" placeholder="Buscar cliente..." value="{{ q }}">
+    <select name="store">
+      <option value="">Todas as lojas</option>
+      {% for s in stores %}
+      <option value="{{ s }}" {% if store==s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn" type="submit">Buscar</button>
+  </form>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Prior.</th>
+          <th>Cliente</th>
+          <th>Loja</th>
+          <th>Total em Aberto</th>
+          <th>Maior Atraso</th>
+          <th>Responsável</th>
+          {% if user.role == "ADMIN" %}<th>Atribuir</th>{% endif %}
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td><span class="pill p{{ r.prio }}">{{ r.prio }}</span></td>
+          <td><b>{{ r.c.name }}</b></td>
+          <td class="muted">{{ r.c.store or "-" }}</td>
+          <td>R$ {{ "{:,.2f}".format(r.total_open).replace(",", "X").replace(".", ",").replace("X", ".") }}</td>
+          <td>{{ r.max_over }} dia(s)</td>
+          <td class="muted">{{ r.c.assigned_to.name if r.c.assigned_to else "-" }}</td>
+
+          {% if user.role == "ADMIN" %}
+          <td>
+            <form method="post" action="/customers/{{ r.c.id }}/assign" class="inline">
+              <select name="assigned_to_user_id">
+                <option value="0">—</option>
+                {% for u in users %}
+                <option value="{{ u.id }}" {% if r.c.assigned_to and r.c.assigned_to.id==u.id %}selected{% endif %}>{{
+                  u.name }}{% if u.store %} ({{ u.store }}){% endif %}</option>
+                {% endfor %}
+              </select>
+              <button class="btn small" type="submit">Salvar</button>
+            </form>
+          </td>
+          {% endif %}
+
+          <td><a class="btn small" href="/customers/{{ r.c.id }}">Abrir</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="muted small" style="margin-top:12px">Mostrando até 300 clientes por busca.</div>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h1>Régua de Cobrança</h1>
+      <p class="muted small">Configure as regras, níveis e mensagens automáticas.</p>
+    </div>
+  </div>
+
+  {% if msg %}
+  <div class="alert alert-success">{{ msg }}</div>
+  {% endif %}
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Ativo</th>
+          <th>Nível</th>
+          <th>Faixa</th>
+          <th>Prioridade</th>
+          <th>Canal</th>
+          <th>Msg</th>
+          <th>Freq.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rules %}
+        <tr>
+          <td>{% if r.active %}✅{% else %}❌{% endif %}</td>
+          <td><span class="pill">{{ r.level }}</span></td>
+          <td>{{ r.start_days }} a {{ r.end_days }} d</td>
+          <td><span class="pill p{{ r.priority }}">{{ r.priority }}</span></td>
+          <td>{{ r.default_action }}</td>
+          <td class="muted small">{{ r.template_message[:60] }}...</td>
+          <td>{{ r.frequency }}d</td>
+          <td>
+            <form method="post" action="/rules/{{ r.id }}/toggle">
+              <button class="btn small" type="submit">{% if r.active %}Desativar{% else %}Ativar{% endif %}</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="sep">
+
+  <div class="card inner">
+    <h2>Criar Nova Regra</h2>
+    <form method="post" action="/rules" class="form">
+      <div class="grid2">
+        <div>
+          <label>Nível da Régua</label>
+          <select name="level">
+            <option value="LEVE">Leve (Preventiva)</option>
+            <option value="MODERADA">Moderada (Cobrança)</option>
+            <option value="INTENSA">Intensa (Crítica)</option>
+          </select>
+        </div>
+        <div>
+          <label>Frequência (dias)</label>
+          <input type="number" name="frequency" value="3" required>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Início (dias atraso)</label>
+          <input type="number" name="start_days" value="1" required>
+        </div>
+        <div>
+          <label>Fim (dias atraso)</label>
+          <input type="number" name="end_days" value="15" required>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Prioridade (1-10)</label>
+          <input type="number" name="priority" value="1" required>
+        </div>
+        <div>
+          <label>Canal Padrão</label>
+          <select name="default_action">
+            <option value="WHATSAPP">WhatsApp</option>
+            <option value="SMS">SMS</option>
+            <option value="EMAIL">Email</option>
+            <option value="LIGACAO">Ligação</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Template de Mensagem (Variáveis: {nome}, {valor}, {dias_atraso}, {vencimento})</label>
+      <textarea class="textarea" name="template_message" rows="4"
+        required>Olá {nome}, sua parcela de R$ {valor} venceu há {dias_atraso} dias.</textarea>
+
+      <button class="btn primary" type="submit">Adicionar Regra</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

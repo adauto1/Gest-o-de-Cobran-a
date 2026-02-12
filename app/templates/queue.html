@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-h">
+    <div class="card-title">
+      <i data-lucide="list-video" style="color: var(--primary-text)"></i>
+      Fila do Dia
+    </div>
+    <span class="muted small">Ordenado por prioridade</span>
+  </div>
+  <div class="card-h" style="border-bottom: 1px solid var(--border); margin-bottom: 0; padding-bottom: 15px;">
+    <div style="display: flex; gap: 20px;">
+      <a href="/queue" class="nav-link {% if not tab %}active{% endif %}"
+        style="padding: 5px 10px; border-radius: 5px;">Todos</a>
+      <a href="/queue?tab=due_today" class="nav-link {% if tab=='due_today' %}active{% endif %}"
+        style="padding: 5px 10px; border-radius: 5px;">Vence Hoje</a>
+      <a href="/queue?tab=overdue" class="nav-link {% if tab=='overdue' %}active{% endif %}"
+        style="padding: 5px 10px; border-radius: 5px;">Vencidos</a>
+    </div>
+  </div>
+
+  <form method="get" action="/queue"
+    style="display:flex; gap:12px; margin:24px 0; background:var(--bg); padding:16px; border-radius:var(--radius-md)">
+    <input type="hidden" name="tab" value="{{ tab or '' }}">
+    <select name="store" style="max-width:200px">
+      <option value="">Todas as lojas</option>
+      {% for s in stores %}
+      <option value="{{ s }}" {% if selected_store==s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="range" style="max-width:200px">
+      <option value="">Todas as faixas</option>
+      <option value="60+" {% if selected_range=="60+" %}selected{% endif %}>60+ dias</option>
+      <option value="30-59" {% if selected_range=="30-59" %}selected{% endif %}>30–59 dias</option>
+      <option value="15-29" {% if selected_range=="15-29" %}selected{% endif %}>15–29 dias</option>
+      <option value="5-14" {% if selected_range=="5-14" %}selected{% endif %}>5–14 dias</option>
+      <option value="0-4" {% if selected_range=="0-4" %}selected{% endif %}>0–4 dias</option>
+      <option value="a-vencer" {% if selected_range=="a-vencer" %}selected{% endif %}>A vencer</option>
+    </select>
+
+    <button class="btn btn-primary" type="submit">
+      <i data-lucide="filter"></i> Filtrar
+    </button>
+  </form>
+
+  <div class="table-wrap">
+    <table class="clean-table">
+      <thead>
+        <tr>
+          <th>Prioridade</th>
+          <th>Cliente</th>
+          <th>Loja</th>
+          <th>Atraso</th>
+          <th>Valor Aberto</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if items %}
+        {% for it in items %}
+        <tr>
+          <td>
+            {% if it.priority >= 4 %}
+            <span class="badge red">Alta</span>
+            {% elif it.priority >= 2 %}
+            <span class="badge yellow">Média</span>
+            {% else %}
+            <span class="badge green">Normal</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="client-cell">
+              <span class="client-name">{{ it.customer.name }}</span>
+              <span class="client-sub">{{ it.count_open }} parcelas</span>
+            </div>
+          </td>
+          <td>{{ it.customer.store or "-" }}</td>
+          <td>
+            {% if it.max_overdue > 0 %}
+            {{ it.max_overdue }} dias
+            {% elif it.max_overdue == 0 %}
+            <span class="badge yellow">Vence Hoje</span>
+            {% else %}
+            Em dia
+            {% endif %}
+          </td>
+          <td style="font-weight:700">{{ it.total_open | brl }}</td>
+          <td>
+            <a class="btn-action-icon" href="/customers/{{ it.customer.id }}" title="Abrir Cliente">
+              <i data-lucide="arrow-right-circle"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-3);">
+            Nenhum cliente encontrado para este filtro.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

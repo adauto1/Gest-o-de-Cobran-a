@@ -1,0 +1,203 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="dash-grid">
+
+  <!-- 1. Top KPI Section -->
+  <div class="kpi-row">
+    {% if user.role == "COBRANCA" %}
+    <!-- Collector Commission Card -->
+    <a class="kpi-card" href="/commissions"
+      style="background: linear-gradient(135deg, #fff 0%, #f9fdf2 100%); border-left: 4px solid var(--primary);">
+      <div class="kpi-top">
+        <div class="kpi-icon"><i data-lucide="hand-coins"></i></div>
+        <div class="kpi-pill success">Meta ativada</div>
+      </div>
+      <div>
+        <div class="kpi-title">Minha comissão (até agora)</div>
+        <div class="kpi-value">{{ current_commission or "R$ 0,00" }}</div>
+      </div>
+    </a>
+    {% endif %}
+
+    <!-- Total Portfolio -->
+    <a class="kpi-card" href="/queue?tab=all">
+      <div class="kpi-top">
+        <div class="kpi-icon"><i data-lucide="wallet"></i></div>
+        <div class="kpi-pill success">+2.4%</div>
+      </div>
+      <div>
+        <div class="kpi-title">Carteira Total</div>
+        <div class="kpi-value">{{ total_open }}</div>
+      </div>
+    </a>
+
+    <!-- Overdue Amount -->
+    <a class="kpi-card" href="/queue?tab=overdue">
+      <div class="kpi-top">
+        <div class="kpi-icon"><i data-lucide="alert-circle"></i></div>
+        <div class="kpi-pill critical">Crítico</div>
+      </div>
+      <div>
+        <div class="kpi-title">Total Vencido</div>
+        <div class="kpi-value" style="color: var(--danger)">{{ total_overdue }}</div>
+      </div>
+    </a>
+
+    <!-- Due Today -->
+    <a class="kpi-card" href="/queue?tab=due_today" aria-label="Ver títulos que vencem hoje">
+      <div class="kpi-top">
+        <div class="kpi-icon"><i data-lucide="calendar-check"></i></div>
+        <span class="kpi-pill warn">Ação Necessária</span>
+      </div>
+      <div>
+        <div class="kpi-title">Vence Hoje</div>
+        <div class="kpi-value">{{ due_today_total | brl }}</div>
+      </div>
+    </a>
+
+    <!-- Recovery Progress -->
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icon"><i data-lucide="trending-up"></i></div>
+      </div>
+      <div>
+        <div class="kpi-title">Taxa de Recuperação</div>
+        <div class="kpi-value">{{ "{:,.1f}".format(recovery_rate) }}%</div>
+        <div class="bar-track" style="margin-top:8px; height:6px;">
+          <div class="bar-fill" style="width: {{ recovery_rate }}%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Main Center Block (Queue + Agenda) -->
+  <div class="split-view">
+
+    <!-- Priority Queue Table -->
+    <div class="split-card">
+      <div class="card-h">
+        <div class="card-title">
+          <i data-lucide="list-video" style="color: var(--primary-text)"></i>
+          Fila de Prioridade
+        </div>
+        <a href="/queue" class="btn btn-secondary">Ver Toda a Fila</a>
+      </div>
+
+      <table class="clean-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Em Aberto</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="queue-body">
+          <tr>
+            <td colspan="4" style="text-align:center; padding: 40px;">Carregando fila...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      async function loadPriorityQueue() {
+        const body = document.getElementById('queue-body');
+        try {
+          const resp = await fetch('/api/fila/prioridade?limit=15');
+          const data = await resp.json();
+
+          if (data.length === 0) {
+            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-3);">Sem clientes em atraso na fila de prioridade.</td></tr>';
+            return;
+          }
+
+          body.innerHTML = '';
+          data.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                    <td>
+                      <div class="client-cell">
+                        <span class="client-name">${item.nome_cliente}</span>
+                        <span class="client-sub">Último contato: ${item.ultimo_contato_str}</span>
+                      </div>
+                    </td>
+                    <td>R$ ${item.valor_em_aberto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td><span class="badge ${item.max_atraso > 30 ? 'red' : 'yellow'}">${item.status_label}</span></td>
+                    <td>
+                      <div class="actions-cell">
+                        <a href="/customer/${item.cliente_id}" class="btn-primary btn" style="padding: 6px 14px; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                          <i data-lucide="message-circle" style="width:16px; height:16px;"></i> Detalhes
+                        </a>
+                        <button class="btn-action-icon" title="Ligar"><i data-lucide="phone"></i></button>
+                        <button class="btn-action-icon" title="Registrar"><i data-lucide="clipboard-check"></i></button>
+                      </div>
+                    </td>
+                `;
+            body.appendChild(tr);
+          });
+
+          // Re-render Lucide icons
+          if (window.lucide) {
+            lucide.createIcons();
+          }
+
+        } catch (err) {
+          console.error('Erro ao carregar fila:', err);
+          body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--danger);">Erro ao carregar dados.</td></tr>';
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', loadPriorityQueue);
+    </script>
+
+    <!-- Right Side Panel: Daily Agenda -->
+    <div class="split-card" style="background: #FAFAFA; border: 1px solid var(--border)">
+      <div class="card-h">
+        <div class="card-title">
+          <i data-lucide="clock" style="color: var(--text-2)"></i>
+          Agenda do Dia
+        </div>
+        <span class="card-counter">3</span>
+      </div>
+
+      <ul class="agenda-list">
+        <li class="agenda-item">
+          <div class="agenda-icon"><i data-lucide="phone-call"></i></div>
+          <div class="agenda-info">
+            <span class="agenda-title">Acompanhamento: Marcos Silva</span>
+            <span class="agenda-time">10:00 · Checar Promessa</span>
+          </div>
+        </li>
+        <li class="agenda-item">
+          <div class="agenda-icon" style="background:#DCFCE7; color:#166534"><i data-lucide="file-check"></i></div>
+          <div class="agenda-info">
+            <span class="agenda-title">Assinar Acordo</span>
+            <span class="agenda-time">14:30 · Escritório</span>
+          </div>
+        </li>
+        <li class="agenda-item">
+          <div class="agenda-icon" style="background:#FEF3C7; color:#B45309"><i data-lucide="alert-triangle"></i></div>
+          <div class="agenda-info">
+            <span class="agenda-title">Crítico: Loja Matriz</span>
+            <span class="agenda-time">16:00 · Revisão Gerência</span>
+          </div>
+        </li>
+      </ul>
+
+      <div class="card-h" style="margin-top: 30px; margin-bottom: 10px">
+        <div class="card-title" style="font-size: 14px">Meta de Recuperação</div>
+      </div>
+      <div class="bar-track" style="height:10px">
+        <div class="bar-fill" style="width: 85%"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-3)">
+        <span>R$ 85k Recuperado</span>
+        <span>Meta: R$ 100k</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

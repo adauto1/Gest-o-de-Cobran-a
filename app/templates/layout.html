@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "Gestor de Cobrança — Portal Móveis" }}</title>
+  <link rel="stylesheet" href="/static/css/app.css?v=0212">
+</head>
+
+<body>
+  {% if not user %}
+  {# ── LOGIN PAGE (no shell) ── #}
+  {% block login_content %}{% endblock %}
+  {% else %}
+  {# ── APP SHELL ── #}
+  <div class="app-shell">
+
+    {# ── Sidebar ── #}
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <img src="/static/logo.png" alt="Portal Móveis" style="width: 180px; height: auto; margin-bottom: 10px;">
+      </div>
+      <nav class="sidebar-nav">
+        <!-- GERAL -->
+        <div class="sidebar-group-label">Geral</div>
+        <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/dashboard">
+          <i data-lucide="layout-dashboard"></i> Painel
+        </a>
+        <a class="nav-link {% if active_page == 'queue' %}active{% endif %}" href="/queue">
+          <i data-lucide="list-todo"></i> Fila de Cobrança
+        </a>
+
+        <!-- COBRANÇA -->
+        <div class="sidebar-group-label">Cobrança</div>
+        <a class="nav-link {% if active_page == 'customers' %}active{% endif %}" href="/customers">
+          <i data-lucide="users"></i> Clientes
+        </a>
+        <a class="nav-link {% if active_page == 'agreements' %}active{% endif %}" href="/agreements">
+          <i data-lucide="handshake"></i> Acordos
+        </a>
+        <a class="nav-link {% if active_page == 'rules' %}active{% endif %}" href="/rules">
+          <i data-lucide="gavel"></i> Régua
+        </a>
+        <a class="nav-link {% if active_page == 'commissions' %}active{% endif %}" href="/commissions">
+          <i data-lucide="badge-dollar-sign"></i> Comissão
+        </a>
+
+        <!-- GESTÃO -->
+        {% if user.role == "ADMIN" %}
+        <div class="sidebar-group-label">Gestão</div>
+        <a class="nav-link {% if active_page == 'reports' %}active{% endif %}" href="/reports">
+          <i data-lucide="bar-chart-3"></i> Relatórios
+        </a>
+        <a class="nav-link {% if active_page == 'users' %}active{% endif %}" href="/users">
+          <i data-lucide="settings"></i> Configurações
+        </a>
+        <a class="nav-link {% if active_page == 'import' %}active{% endif %}" href="/import">
+          <i data-lucide="file-up"></i> Importar Dados
+        </a>
+        {% endif %}
+      </nav>
+
+      <div style="margin-top:auto; padding:20px; border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div
+            style="width:32px;height:32px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700">
+            {{ user.name[0] }}
+          </div>
+          <div style="font-size:12px;font-weight:600">{{ user.name }}</div>
+        </div>
+      </div>
+    </aside>
+
+    {# ── Mobile sidebar overlay ── #}
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    {# ── Topbar ── #}
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+        <div class="topbar-title">{{ page_title or "Painel" }}</div>
+        {% if page_subtitle %}
+        <div class="topbar-breadcrumb"><span>·</span> {{ page_subtitle }}</div>
+        {% endif %}
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-quick-links">
+          <a href="/dashboard" {% if active_page=='dashboard' %}class="active" {% endif %}>Painel</a>
+          <a href="/queue" {% if active_page=='queue' %}class="active" {% endif %}>Fila</a>
+          <a href="/customers" {% if active_page=='customers' %}class="active" {% endif %}>Clientes</a>
+        </div>
+      </div>
+    </header>
+
+    {# ── Main ── #}
+    <main class="main-content">
+      <div class="container">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+  </div>
+
+  <footer class="footer">
+    <span>Portal Móveis · v{{ APP_VERSION or '4.0' }}</span>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+  </script>
+  {% endif %}
+</body>
+
+</html>

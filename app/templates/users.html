@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h1>Usuários</h1>
+      <p class="muted small">Crie usuários cobradores e defina a loja de cada um</p>
+    </div>
+  </div>
+
+  {% if msg %}
+  <div class="alert alert-success">{{ msg }}</div>
+  {% endif %}
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Ativo</th>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Perfil</th>
+          <th>Loja</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{% if u.active %}✅{% else %}❌{% endif %}</td>
+          <td><b>{{ u.name }}</b></td>
+          <td class="muted">{{ u.email }}</td>
+          <td><span class="pill">{{ u.role }}</span></td>
+          <td class="muted">{{ u.store or "-" }}</td>
+          <td>
+            <form method="post" action="/users/{{ u.id }}/toggle">
+              <button class="btn small" type="submit">{% if u.active %}Desativar{% else %}Ativar{% endif %}</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="sep">
+
+  <div class="card inner">
+    <h2>Criar Usuário</h2>
+    <form method="post" action="/users" class="form">
+      <div class="grid2">
+        <div>
+          <label>Nome</label>
+          <input name="name" placeholder="Ex: João Cobrança" required>
+        </div>
+        <div>
+          <label>Email</label>
+          <input name="email" placeholder="joao@portalmoveis.com" required>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Senha</label>
+          <input name="password" placeholder="Crie uma senha" required>
+        </div>
+        <div>
+          <label>Perfil</label>
+          <select name="role">
+            <option value="COBRANCA">Cobrança</option>
+            <option value="ADMIN">Administrador</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Loja (opcional)</label>
+      <input name="store" placeholder="Ex: TACURU / IGUATEMI">
+
+      <button class="btn primary" type="submit">Criar Usuário</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,585 @@
+/* ═══════════════════════════════════════════════════════
+   GESTOR DE COBRANÇA — Portal Móveis
+   Design System v7 · Fintech Lime · SaaS UI
+   ═══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* 
+     COLOR SYSTEM — SOFT LIME GRADIENT UI
+     Backgrounds: Clean white and soft gray.
+     Accent: Soft lime green with translucent gradients.
+  */
+
+  /* Base Backgrounds */
+  --bg: #F5F6F7;
+  /* Main App Background */
+  --sidebar-bg: #F0F2F3;
+  /* Sidebar Background */
+  --surface: #FFFFFF;
+  /* Cards/Panels */
+
+  /* Primary Accent (Lime) */
+  --primary: #D8F279;
+  --primary-hover: #CBEF6A;
+  --primary-text: #3F4D22;
+  /* Darker text for contrast on lime */
+
+  /* Gradients */
+  --grad-primary: linear-gradient(90deg, #D8F279 0%, #E7F6A0 50%, rgba(255, 255, 255, 0.4) 100%);
+  --grad-hover: linear-gradient(90deg, #CBEF6A 0%, #D8F279 100%);
+
+  /* Status Indicators (Softened Tones) */
+  --success: #7CCF7A;
+  /* Green = On Time */
+  --success-bg: #E8F9E8;
+  --warning: #F2C94C;
+  /* Yellow = Medium Delay */
+  --warning-bg: #FFF8E1;
+  --danger: #E76F51;
+  /* Soft Red = Critical Delay */
+  --danger-bg: #FDECE8;
+
+  /* Typography */
+  --text: #111827;
+  /* Main Text */
+  --text-2: #4B5563;
+  /* Secondary */
+  --text-3: #9CA3AF;
+  /* Tertiary/Placeholder */
+  --font-main: 'Inter', system-ui, sans-serif;
+
+  /* Borders & Shadows */
+  --border: rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.03);
+  --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.05);
+
+  /* Dimensions */
+  --sidebar-w: 260px;
+  --topbar-h: 70px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  /* Large rounded cards */
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ── Reset & Base ───────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: all .2s
+}
+
+img {
+  max-width: 100%;
+  display: block
+}
+
+/* ── Custom Scrollbar ───────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  /* var(--text-3) with opacity */
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+/* ── App Shell ──────────────────────────────────────── */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-areas: "sidebar main";
+  min-height: 100vh;
+}
+
+/* ── Sidebar ────────────────────────────────────────── */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--sidebar-bg);
+  border-right: 1px solid rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  padding: 24px 16px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.sidebar-brand {
+  padding: 0 12px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-brand img {
+  width: 130px;
+}
+
+.sidebar-brand-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sidebar-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 24px 12px 8px;
+}
+
+.sidebar-group-label:first-of-type {
+  margin-top: 0
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  color: var(--text-2);
+  font-weight: 500;
+  transition: all .2s var(--ease);
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+.nav-link.active {
+  background: var(--grad-primary);
+  color: var(--text);
+  /* Dark text on light lime */
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(216, 242, 121, 0.2);
+}
+
+.nav-link svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7
+}
+
+.nav-link.active svg {
+  opacity: 1;
+  color: var(--text)
+}
+
+/* ── Main Area ──────────────────────────────────────── */
+.main-content {
+  grid-area: main;
+  padding: 32px 40px 60px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Dashboard Grid ─────────────────────────────────── */
+.dash-grid {
+  display: grid;
+  gap: 32px;
+}
+
+/* KPI Section */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 4px;
+  height: 140px;
+  cursor: pointer;
+  transition: transform .2s var(--ease), box-shadow .2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-float);
+}
+
+.kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px
+}
+
+.kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-card:hover .kpi-icon {
+  background: var(--primary);
+  color: var(--primary-text)
+}
+
+.kpi-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2)
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px
+}
+
+.kpi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.kpi-pill {
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-pill.warn {
+  background: var(--warning-bg);
+  color: #B45309;
+}
+
+.kpi-pill.critical {
+  background: var(--danger-bg);
+  color: #B91C1C;
+}
+
+.kpi-pill.success {
+  background: var(--success-bg);
+  color: #15803D;
+}
+
+.kpi-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 2px;
+}
+
+/* Split View: Queue + Agenda */
+.split-view {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.split-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  height: 100%;
+}
+
+.card-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px
+}
+
+.card-counter {
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+/* ── Table Styles ───────────────────────────────────── */
+.clean-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0
+}
+
+.clean-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+
+.clean-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-2);
+  vertical-align: middle;
+}
+
+.clean-table tr:hover td {
+  background: #FAFAFA
+}
+
+/* Client Name Cell */
+.client-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px
+}
+
+.client-name {
+  font-weight: 600;
+  color: var(--text)
+}
+
+.client-sub {
+  font-size: 12px;
+  color: var(--text-3)
+}
+
+/* Status Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge.green {
+  background: var(--success-bg);
+  color: var(--success)
+}
+
+.badge.yellow {
+  background: var(--warning-bg);
+  color: #F2994A
+}
+
+.badge.red {
+  background: var(--danger-bg);
+  color: var(--danger)
+}
+
+/* Action Buttons Grid */
+.actions-cell {
+  display: flex;
+  gap: 8px
+}
+
+.btn-action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  transition: all .2s;
+  cursor: pointer;
+}
+
+.btn-action-icon:hover {
+  background: var(--primary);
+  color: var(--primary-text);
+  border-color: transparent;
+}
+
+/* ── Buttons ────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: transform .1s;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px
+}
+
+.btn-primary {
+  background: var(--grad-primary);
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(216, 242, 121, 0.4);
+}
+
+.btn-primary:hover {
+  background: var(--grad-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  color: #5A6B2F;
+}
+
+.btn-secondary:hover {
+  background: rgba(216, 242, 121, 0.1)
+}
+
+/* ── Agenda List ────────────────────────────────────── */
+.agenda-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px
+}
+
+.agenda-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all .2s;
+}
+
+.agenda-item:hover {
+  border-color: var(--primary);
+  background: white
+}
+
+.agenda-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #E0E7FF;
+  color: #4F46E5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.agenda-info {
+  display: flex;
+  flex-direction: column
+}
+
+.agenda-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text)
+}
+
+.agenda-time {
+  font-size: 11px;
+  color: var(--text-3)
+}
+
+/* ── Utilities ──────────────────────────────────────── */
+.w-full {
+  width: 100%
+}
+
+.text-right {
+  text-align: right
+}
+
+.gap-2 {
+  gap: 8px
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .split-view {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
