@@ -1,65 +1,20 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 .venv/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Databases
-data/*.db
-data/*.sqlite
-*.db
-*.sqlite
-
-# Environment variables
+data/# *.db # Comentado para permitir deploy do banco populado
+# *.sqlite3
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Docker
-.docker/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Temporary/Debug files
 analyze_csv.py
 debug_bytes.py
 debug_dashboard.py
-final_debug.txt
 final_load.py
-load_erp_data.py
-load_erp_data_v2.py
-load_erp_data_v3.py
-load_erp_data_v4.py
+load_erp_data*.py
 load_erp_debug.py
-summary_output.txt
 test_commission.db
 verify_commission.py
 verify_system.py
 diagnose_today.py
 check_feb.py
-requirements.txt.bak
+relatorio.htm
+relatorio.html

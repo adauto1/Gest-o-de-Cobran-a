@@ -5,8 +5,6 @@ sqlalchemy
 jinja2
 pandas
 openpyxl
-beautifulsoup4
-lxml
 python-multipart
 passlib[bcrypt]
 python-dotenv
