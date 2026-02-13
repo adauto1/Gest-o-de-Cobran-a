@@ -17,8 +17,11 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
-          cd /home/deploy/Gest-o-de-Cobran-a
-          git pull origin main
-          pip install -r requirements.txt --break-system-packages
-          /usr/bin/sudo /usr/bin/systemctl restart gestor-cobranca.service
-          /usr/bin/sudo /usr/bin/systemctl status gestor-cobranca.service --no-pager
+          echo "=== DEBUG: Testando sudo ==="
+          whoami
+          which sudo
+          which systemctl
+          /usr/bin/sudo --version
+          /usr/bin/sudo -n /usr/bin/systemctl restart gestor-cobranca.service
+          /usr/bin/sudo -n /usr/bin/systemctl status gestor-cobranca.service --no-pager
+          echo "=== Deploy concluído ==="
