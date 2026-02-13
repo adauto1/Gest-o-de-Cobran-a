@@ -17,8 +17,10 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
+          set -e
           cd /home/deploy/Gest-o-de-Cobran-a
           git pull origin main
           pip install -r requirements.txt --break-system-packages
           /usr/bin/sudo -n /usr/bin/systemctl restart gestor-cobranca.service
           /usr/bin/sudo -n /usr/bin/systemctl status gestor-cobranca.service --no-pager
+          echo "Deploy concluído com sucesso!"
