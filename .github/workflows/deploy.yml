@@ -20,5 +20,5 @@ jobs:
           cd /home/deploy/Gest-o-de-Cobran-a
           git pull origin main
           pip install -r requirements.txt --break-system-packages
-          sudo systemctl restart gestor-cobranca.service
-          sudo systemctl status gestor-cobranca.service --no-pager
+          /usr/bin/sudo /usr/bin/systemctl restart gestor-cobranca.service
+          /usr/bin/sudo /usr/bin/systemctl status gestor-cobranca.service --no-pager
