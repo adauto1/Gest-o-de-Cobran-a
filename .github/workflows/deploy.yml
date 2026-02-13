@@ -7,7 +7,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
     - name: Deploy via SSH
       uses: appleboy/ssh-action@master
@@ -16,10 +15,4 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
-        request_pty: false
-        script: |
-          cd /home/deploy/Gest-o-de-Cobran-a
-          git pull origin main
-          pip install -r requirements.txt --break-system-packages
-          sudo -n systemctl restart gestor-cobranca.service
-          sudo -n systemctl status gestor-cobranca.service --no-pager
+        script: /home/deploy/deploy.sh
