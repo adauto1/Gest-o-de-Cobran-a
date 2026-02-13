@@ -1,22 +1,25 @@
-name: Deploy Automático
+name: Deploy to VPS
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Executar deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            cd /home/deploy/Gest-o-de-Cobran-a
-            bash deploy.sh
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          cd /home/deploy/Gest-o-de-Cobran-a
+          git pull origin main
+          source venv/bin/activate
+          pip install -r requirements.txt --break-system-packages
+          sudo systemctl restart gestor-cobranca.service
+          sudo systemctl status gestor-cobranca.service
