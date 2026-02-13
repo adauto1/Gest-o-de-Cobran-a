@@ -19,7 +19,6 @@ jobs:
         script: |
           cd /home/deploy/Gest-o-de-Cobran-a
           git pull origin main
-          source venv/bin/activate
           pip install -r requirements.txt --break-system-packages
           sudo systemctl restart gestor-cobranca.service
-          sudo systemctl status gestor-cobranca.service
+          sudo systemctl status gestor-cobranca.service --no-pager
