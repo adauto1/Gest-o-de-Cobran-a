@@ -593,6 +593,11 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 
     overdue = [i for i in insts if days_overdue(i.due_date) > 0 and Decimal(i.open_amount) > 0]
     total_overdue = sum([Decimal(i.open_amount) for i in overdue], Decimal("0"))
+
+    # Calculate fiado meta (percentage of portfolio overdue)
+    fiado_percentage = Decimal(0)
+    if total_open > 0:
+        fiado_percentage = (total_overdue / total_open) * 100
     
     # "Vence Hoje" calculation (strictly today)
     due_today_insts = [i for i in insts if days_overdue(i.due_date) == 0 and Decimal(i.open_amount) > 0]
@@ -654,6 +659,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                   aging=aging, urgent_count=urgent_count,
                   promises=promises, today=today().isoformat(),
                   recovery_rate=recovery_rate,
+                  fiado_percentage=fiado_percentage,
                   current_commission=current_commission,
                   admin_stats=admin_stats)
 
