@@ -43,7 +43,7 @@ def process_html_import(file_content: bytes, db: Session, user_id: int):
     best_score = 0
     
     # Header keywords to look for
-    keywords = ["cliente", "vencimento", "valor", "contrato", "cpf"]
+    keywords = ["cliente", "sacado", "vencimento", "vencto", "valor", "vlr", "total", "contrato", "documento", "cpf"]
     
     for d in dfs:
         score = 0
@@ -63,7 +63,6 @@ def process_html_import(file_content: bytes, db: Session, user_id: int):
     df.columns = [str(c).strip().lower().replace(" ", "_").replace("/", "_").replace(".", "") for c in df.columns]
 
     # Map known columns to standard
-    # InfoCommerce: "Nome Cliente", "Vencto", "Valor", "Nro. Contrato"
     col_map = {
         "cliente": "nome_cliente",
         "nome": "nome_cliente",
@@ -71,10 +70,15 @@ def process_html_import(file_content: bytes, db: Session, user_id: int):
         "vencto": "data_vencimento",
         "vencimento": "data_vencimento",
         "dt_venc": "data_vencimento",
+        "emissao": "data_issue", # Optional
         "valor": "valor_parcela",
-        "vlr_titulo": "valor_parcela",
+        "vlr": "valor_parcela",
+        "total": "valor_parcela", # Assuming Total is the amount
+        "saldo": "valor_parcela", # Fallback
         "contrato": "contrato",
         "nr_contrato": "contrato",
+        "documento": "contrato",
+        "doc": "contrato",
         "cpf": "cpf_cnpj",
         "cgc_cpf": "cpf_cnpj",
         "fone": "telefone",
