@@ -79,20 +79,21 @@
   }
 
   .kpi-v2 {
-    background: var(--bg);
+    background: var(--grad-primary);
     border-radius: var(--radius-md);
     padding: 20px;
-    box-shadow: none;
-    border: 1px solid var(--border);
+    box-shadow: 0 4px 15px rgba(216, 242, 121, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     transition: transform .15s, box-shadow .15s;
     text-decoration: none;
     display: block;
-    color: inherit;
+    color: var(--text);
   }
 
   .kpi-v2:hover {
+    background: var(--grad-hover);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-float);
+    box-shadow: 0 8px 25px rgba(216, 242, 121, 0.6);
   }
 
   .kpi-v2-top {
