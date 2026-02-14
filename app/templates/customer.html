@@ -34,7 +34,7 @@
       {% endif %}
     </div>
 
-    <div class="card inner">
+    <div class="card inner" id="registrar">
       <h2>Registrar Contato</h2>
       <form method="post" action="/actions" class="form">
         <input type="hidden" name="customer_id" value="{{ customer.id }}">
@@ -92,43 +92,96 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>Parcelas</h2>
-    <div class="table-wrap">
-      <table class="table">
+  <!-- ══════════════ TABELA DETALHADA DE PARCELAS ══════════════ -->
+  <div class="card" style="grid-column: 1 / -1;">
+    <div class="card-h">
+      <div class="card-title">
+        <i data-lucide="file-text" style="color: var(--primary-text)"></i>
+        Parcelas / Títulos
+      </div>
+      <span class="muted small">{{ installments|length }} registros · Ordenado por vencimento</span>
+    </div>
+
+    <div class="detail-table-wrap">
+      <table class="detail-table">
         <thead>
           <tr>
-            <th>Contrato</th>
-            <th>Parc.</th>
-            <th>Venc.</th>
-            <th>Atraso</th>
-            <th>Status</th>
-            <th>Valor</th>
-            <th>Em Aberto</th>
+            <th>Código</th>
+            <th>Data Quitação</th>
+            <th>Cod. Pedido</th>
+            <th>Parcela</th>
+            <th>Descrição</th>
+            <th>Valor Quitado</th>
+            <th>Vencimento</th>
+            <th>Valor Título</th>
+            <th>Moeda</th>
+            <th>Data Emissão</th>
+            <th>Pedido</th>
+            <th>Nosso Nº</th>
+            <th>Dias Atraso</th>
+            <th>R/P</th>
+            <th>Portador</th>
           </tr>
         </thead>
         <tbody>
           {% for x in installments %}
-          <tr>
-            <td class="muted">{{ x.i.contract_id }}</td>
-            <td>{{ x.i.installment_number }}</td>
-            <td>{{ x.i.due_date }}</td>
-            <td>
-              {% if x.overdue > 0 %}
-              <span class="pill p5">{{ x.overdue }} d</span>
-              {% elif x.overdue < 0 %} <span class="pill p2">{{ x.overdue }} d</span>
-                {% else %}
-                <span class="pill p1">0</span>
-                {% endif %}
+          {% set paid_amount = x.i.amount - x.i.open_amount %}
+          <tr class="{% if x.overdue > 30 %}row-critical{% elif x.overdue > 0 %}row-warn{% endif %}">
+            <td class="mono">{{ x.i.id }}</td>
+            <td>{{ x.i.paid_at.strftime('%d/%m/%Y') if x.i.paid_at else '—' }}</td>
+            <td class="mono">{{ x.i.contract_id }}</td>
+            <td style="text-align:center">{{ x.i.installment_number }}</td>
+            <td class="td-name">{{ customer.name }}</td>
+            <td class="text-right {% if paid_amount > 0 %}text-success{% endif %}">
+              R$ {{ "{:,.2f}".format(paid_amount).replace(",", "X").replace(".", ",").replace("X", ".") }}
             </td>
-            <td><span class="pill">{{ x.i.status }}</span></td>
-            <td>R$ {{ "{:,.2f}".format(x.i.amount).replace(",", "X").replace(".", ",").replace("X", ".") }}</td>
-            <td>R$ {{ "{:,.2f}".format(x.i.open_amount).replace(",", "X").replace(".", ",").replace("X", ".") }}</td>
+            <td>{{ x.i.due_date.strftime('%d/%m/%Y') if x.i.due_date else '—' }}</td>
+            <td class="text-right" style="font-weight:600">
+              R$ {{ "{:,.2f}".format(x.i.amount).replace(",", "X").replace(".", ",").replace("X", ".") }}
+            </td>
+            <td style="text-align:center">R$</td>
+            <td>{{ x.i.issue_date.strftime('%d/%m/%Y') if x.i.issue_date else '—' }}</td>
+            <td class="mono">{{ x.i.contract_id }}</td>
+            <td class="mono">{{ x.i.contract_id }}-{{ x.i.installment_number }}</td>
+            <td style="text-align:center">
+              {% if x.overdue > 0 %}
+              <span class="pill p5">{{ x.overdue }}d</span>
+              {% elif x.overdue == 0 %}
+              <span class="pill p3">Hoje</span>
+              {% else %}
+              <span class="pill p1">—</span>
+              {% endif %}
+            </td>
+            <td style="text-align:center">
+              {% if x.i.status == 'ABERTA' %}
+              <span class="badge yellow" style="font-size:10px">R</span>
+              {% else %}
+              <span class="badge green" style="font-size:10px">P</span>
+              {% endif %}
+            </td>
+            <td>{{ customer.store or '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>
+        <tfoot>
+          <tr class="totals-row">
+            <td colspan="5" style="text-align:right; font-weight:700;">Totais:</td>
+            <td class="text-right" style="font-weight:700; color: var(--success);">{{ total_quitado }}</td>
+            <td></td>
+            <td class="text-right" style="font-weight:700;">{{ total_titulo }}</td>
+            <td colspan="4"></td>
+            <td colspan="3" style="text-align:right;">
+              <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+                <span><b style="color: var(--danger);">Vencido:</b> {{ total_vencido }}</span>
+                <span><b>Em Aberto:</b> {{ total_open }}</span>
+                <span style="font-size:15px;"><b>Total Títulos:</b> {{ total_titulo }}</span>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
+
 </div>
 {% endblock %}

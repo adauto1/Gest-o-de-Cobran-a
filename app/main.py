@@ -135,12 +135,17 @@ class SentMessage(Base):
     id = Column(Integer, primary_key=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    rule_id = Column(Integer, ForeignKey("collection_rules.id"), nullable=True)
     channel = Column(String(20), nullable=False)  # WHATSAPP, CALL, EMAIL
     template_used = Column(Text, nullable=True)
+    message_body = Column(Text, nullable=True)
+    phone = Column(String(40), nullable=True)
+    status = Column(String(20), nullable=False, default="SIMULADO")  # SIMULADO, PENDENTE, ENVIADO, FALHA
     created_at = Column(DateTime, default=datetime.utcnow)
 
     customer = relationship("Customer")
     user = relationship("User")
+    rule = relationship("CollectionRule")
 
 
 class ComissaoCobranca(Base):
@@ -192,6 +197,7 @@ PAGE_MAP = {
     "rules.html": ("rules", "Régua de Cobrança"),
     "users.html": ("users", "Usuários"),
     "commissions.html": ("commissions", "Comissão"),
+    "messages.html": ("messages", "Mensagens"),
 }
 
 def render(template: str, **ctx):
@@ -336,6 +342,28 @@ def calculate_collector_commission(db: Session, collector_id: int, portfolio_ran
 app = FastAPI(title="Gestor de Cobrança — Portal Móveis v4")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# --- APScheduler Setup ---
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from app.scheduler import run_collection_check
+
+_scheduler = BackgroundScheduler()
+_scheduler.add_job(
+    run_collection_check,
+    trigger=CronTrigger(hour=8, minute=0),
+    args=[SessionLocal],
+    id="daily_collection_check",
+    replace_existing=True,
+)
+
+@app.on_event("startup")
+def start_scheduler():
+    _scheduler.start()
+
+@app.on_event("shutdown")
+def stop_scheduler():
+    _scheduler.shutdown(wait=False)
 
 @app.get("/healthz")
 def healthz():
@@ -848,10 +876,27 @@ def customer_page(request: Request, customer_id: int, db: Session = Depends(get_
         od = days_overdue(i.due_date) if i.status == "ABERTA" and Decimal(i.open_amount) > 0 else 0
         inst_view.append({"i": i, "overdue": od})
 
+    # Compute totals for the detailed parcels table footer
+    _today = today()
+    total_vencido = sum(
+        [Decimal(i.open_amount) for i in c.installments
+         if i.status == "ABERTA" and Decimal(i.open_amount) > 0 and i.due_date < _today],
+        Decimal("0"),
+    )
+    total_titulo = sum([Decimal(i.amount) for i in c.installments], Decimal("0"))
+    total_quitado = sum(
+        [Decimal(i.amount) - Decimal(i.open_amount) for i in c.installments
+         if Decimal(i.open_amount) < Decimal(i.amount)],
+        Decimal("0"),
+    )
+
     return render("customer.html", request=request, user=user, title="Cliente", customer=c,
                   installments=inst_view, actions=actions,
                   total_open=format_money(total_open), max_overdue=max_over,
-                  wa_link=link, wa_message=msg, rule_level=level)
+                  wa_link=link, wa_message=msg, rule_level=level,
+                  total_vencido=format_money(total_vencido),
+                  total_titulo=format_money(total_titulo),
+                  total_quitado=format_money(total_quitado))
 
 @app.post("/actions")
 def create_action(
@@ -944,6 +989,71 @@ def rules_create(
     ))
     db.commit()
     return RedirectResponse("/rules?msg=Regra criada com sucesso!", status_code=HTTP_302_FOUND)
+
+# -----------------------------------------------------------------------------
+# Messages (report + manual trigger)
+# -----------------------------------------------------------------------------
+@app.get("/messages", response_class=HTMLResponse)
+def messages_page(
+    request: Request,
+    status: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    q: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    user = require_login(request, db)
+
+    query = db.query(SentMessage).join(Customer)
+
+    if status:
+        query = query.filter(SentMessage.status == status.upper())
+    if date_from:
+        try:
+            df = parse_date(date_from)
+            query = query.filter(SentMessage.created_at >= datetime(df.year, df.month, df.day))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt = parse_date(date_to)
+            query = query.filter(SentMessage.created_at < datetime(dt.year, dt.month, dt.day) + timedelta(days=1))
+        except ValueError:
+            pass
+    if q:
+        query = query.filter(Customer.name.ilike(f"%{q}%"))
+
+    messages = query.order_by(SentMessage.created_at.desc()).limit(200).all()
+
+    # Stats
+    _today = today()
+    _start = datetime(_today.year, _today.month, _today.day)
+    _end = _start + timedelta(days=1)
+    total_today = db.query(SentMessage).filter(SentMessage.created_at >= _start, SentMessage.created_at < _end).count()
+    total_simulated = db.query(SentMessage).filter(SentMessage.status == "SIMULADO").count()
+    total_pending = db.query(SentMessage).filter(SentMessage.status == "PENDENTE").count()
+    total_sent = db.query(SentMessage).filter(SentMessage.status == "ENVIADO").count()
+
+    return render("messages.html", request=request, user=user, title="Mensagens",
+                  messages=messages,
+                  total_today=total_today,
+                  total_simulated=total_simulated,
+                  total_pending=total_pending,
+                  total_sent=total_sent,
+                  selected_status=status or "",
+                  selected_date_from=date_from or "",
+                  selected_date_to=date_to or "",
+                  selected_q=q or "")
+
+
+@app.post("/messages/run-now")
+def messages_run_now(request: Request, db: Session = Depends(get_db)):
+    user = require_login(request, db)
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    stats = run_collection_check(SessionLocal)
+    msg = f"Execução concluída! Verificados: {stats['checked']}, Criadas: {stats['created']}, Puladas (freq): {stats['skipped_freq']}, Sem telefone: {stats['skipped_no_phone']}"
+    return RedirectResponse(f"/messages?msg={msg}", status_code=HTTP_302_FOUND)
 
 # -----------------------------------------------------------------------------
 # Commissions

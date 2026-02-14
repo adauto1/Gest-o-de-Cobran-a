@@ -12,3 +12,4 @@ passlib[bcrypt]
 python-dotenv
 cryptography
 itsdangerous
+apscheduler

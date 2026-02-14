@@ -573,6 +573,83 @@ img {
   gap: 8px
 }
 
+/* ── Detail Table (Customer Parcels) ────────────────── */
+.detail-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.detail-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: var(--bg);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.detail-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  vertical-align: middle;
+}
+
+.detail-table tbody tr:hover td {
+  background: rgba(216, 242, 121, 0.08);
+}
+
+.detail-table .mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.detail-table .td-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.detail-table .text-right {
+  text-align: right;
+}
+
+.detail-table .text-success {
+  color: var(--success);
+}
+
+.detail-table .row-critical td {
+  background: rgba(231, 111, 81, 0.06);
+}
+
+.detail-table .row-warn td {
+  background: rgba(242, 201, 76, 0.06);
+}
+
+.detail-table .totals-row td {
+  background: var(--bg);
+  border-top: 2px solid rgba(0, 0, 0, 0.08);
+  padding: 14px 12px;
+  font-size: 13px;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .split-view {

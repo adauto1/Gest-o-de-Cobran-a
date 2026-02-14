@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+    <div class="card-h">
+        <div class="card-title">
+            <i data-lucide="mail" style="color: var(--primary-text)"></i>
+            Relatório de Mensagens
+        </div>
+        {% if user.role == "ADMIN" %}
+        <form method="post" action="/messages/run-now" style="margin:0">
+            <button class="btn btn-primary" type="submit">
+                <i data-lucide="play"></i> Executar Agora
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if request.query_params.get('msg') %}
+    <div class="alert alert-success"
+        style="margin-bottom:20px; padding:14px 20px; background:var(--success-bg); color:#15803D; border-radius:var(--radius-md); font-weight:500;">
+        ✅ {{ request.query_params.get('msg') }}
+    </div>
+    {% endif %}
+
+    <!-- KPI Cards -->
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:24px;">
+        <div style="background:var(--bg); border-radius:var(--radius-md); padding:16px; text-align:center;">
+            <div style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase;">Hoje</div>
+            <div style="font-size:28px; font-weight:700; color:var(--text);">{{ total_today }}</div>
+        </div>
+        <div style="background:var(--warning-bg); border-radius:var(--radius-md); padding:16px; text-align:center;">
+            <div style="font-size:11px; font-weight:700; color:#B45309; text-transform:uppercase;">Simuladas</div>
+            <div style="font-size:28px; font-weight:700; color:#B45309;">{{ total_simulated }}</div>
+        </div>
+        <div style="background:#E0E7FF; border-radius:var(--radius-md); padding:16px; text-align:center;">
+            <div style="font-size:11px; font-weight:700; color:#4F46E5; text-transform:uppercase;">Pendentes</div>
+            <div style="font-size:28px; font-weight:700; color:#4F46E5;">{{ total_pending }}</div>
+        </div>
+        <div style="background:var(--success-bg); border-radius:var(--radius-md); padding:16px; text-align:center;">
+            <div style="font-size:11px; font-weight:700; color:#15803D; text-transform:uppercase;">Enviadas</div>
+            <div style="font-size:28px; font-weight:700; color:#15803D;">{{ total_sent }}</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" action="/messages"
+        style="display:flex; gap:12px; margin-bottom:24px; background:var(--bg); padding:16px; border-radius:var(--radius-md); align-items:flex-end; flex-wrap:wrap;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3);">Status</label>
+            <select name="status" style="max-width:160px">
+                <option value="">Todos</option>
+                <option value="SIMULADO" {% if selected_status=="SIMULADO" %}selected{% endif %}>Simulado</option>
+                <option value="PENDENTE" {% if selected_status=="PENDENTE" %}selected{% endif %}>Pendente</option>
+                <option value="ENVIADO" {% if selected_status=="ENVIADO" %}selected{% endif %}>Enviado</option>
+                <option value="FALHA" {% if selected_status=="FALHA" %}selected{% endif %}>Falha</option>
+            </select>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3);">De</label>
+            <input type="date" name="date_from" value="{{ selected_date_from }}" style="max-width:160px">
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3);">Até</label>
+            <input type="date" name="date_to" value="{{ selected_date_to }}" style="max-width:160px">
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3);">Cliente</label>
+            <input type="text" name="q" value="{{ selected_q }}" placeholder="Buscar por nome..."
+                style="max-width:200px">
+        </div>
+        <button class="btn btn-primary" type="submit">
+            <i data-lucide="filter"></i> Filtrar
+        </button>
+    </form>
+
+    <!-- Messages Table -->
+    <div class="detail-table-wrap">
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Canal</th>
+                    <th>Mensagem</th>
+                    <th>Régua</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if messages|length == 0 %}
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:40px; color:var(--text-3);">
+                        Nenhuma mensagem encontrada. Clique em "Executar Agora" para simular o envio.
+                    </td>
+                </tr>
+                {% else %}
+                {% for m in messages %}
+                <tr>
+                    <td style="white-space:nowrap; font-size:12px;">
+                        {{ m.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    </td>
+                    <td>
+                        <a href="/customers/{{ m.customer_id }}" style="font-weight:600; color:var(--text);">
+                            {{ m.customer.name[:30] }}
+                        </a>
+                    </td>
+                    <td class="mono" style="font-size:11px;">{{ m.phone or '—' }}</td>
+                    <td>
+                        {% if m.channel == 'WHATSAPP' %}
+                        <span class="badge green" style="font-size:10px;">WhatsApp</span>
+                        {% elif m.channel == 'LIGACAO' %}
+                        <span class="badge yellow" style="font-size:10px;">Ligação</span>
+                        {% elif m.channel == 'SMS' %}
+                        <span class="badge" style="font-size:10px; background:#E0E7FF; color:#4F46E5;">SMS</span>
+                        {% elif m.channel == 'EMAIL' %}
+                        <span class="badge" style="font-size:10px; background:#F3E8FF; color:#7C3AED;">Email</span>
+                        {% else %}
+                        <span class="badge" style="font-size:10px;">{{ m.channel }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:var(--text-2);"
+                        title="{{ m.message_body or m.template_used or '' }}">
+                        {{ (m.message_body or m.template_used or '—')[:80] }}
+                    </td>
+                    <td style="font-size:11px; color:var(--text-3);">
+                        {% if m.rule %}
+                        {{ m.rule.level }} ({{ m.rule.start_days }}-{{ m.rule.end_days }}d)
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if m.status == 'SIMULADO' %}
+                        <span class="badge yellow" style="font-size:10px;">Simulado</span>
+                        {% elif m.status == 'PENDENTE' %}
+                        <span class="badge" style="font-size:10px; background:#E0E7FF; color:#4F46E5;">Pendente</span>
+                        {% elif m.status == 'ENVIADO' %}
+                        <span class="badge green" style="font-size:10px;">Enviado</span>
+                        {% elif m.status == 'FALHA' %}
+                        <span class="badge red" style="font-size:10px;">Falha</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
