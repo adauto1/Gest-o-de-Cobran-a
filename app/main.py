@@ -218,9 +218,11 @@ def get_db():
         db.close()
 
 def hash_password(p: str) -> str:
+    p = p[:72] if p else p
     return pwd_context.hash(p)
 
 def verify_password(p: str, h: str) -> bool:
+    p = p[:72] if p else p
     return pwd_context.verify(p, h)
 
 def require_login(request: Request, db: Session) -> User:
