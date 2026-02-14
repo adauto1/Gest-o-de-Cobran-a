@@ -634,25 +634,10 @@
     </a>
 
     <div class="kpi-v2">
-      <div class="kpi-v2-label" style="text-align: left; margin-bottom: 12px; font-weight: 800;">Metas do Fiado</div>
-      <div style="display: flex; flex-direction: column; gap: 6px;">
-        <div
-          style="display: flex; font-size: 10px; color: var(--text-2); border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 4px; padding-right: 8px;">
-          <div style="width: 30px;">DIAS</div>
-          <div style="flex: 1; text-align: right;">PAGO</div>
-          <div style="flex: 1; text-align: right;">FALTA</div>
-        </div>
-        {% for g in recovery_goals %}
-        <div
-          style="display: flex; align-items: center; font-size: 11px; padding: 2px 0; border-bottom: 1px solid rgba(0,0,0,0.05); padding-right: 8px;">
-          <div style="width: 30px; font-weight: 700;">{{ g.label.replace(' DIAS', '') }}</div>
-          <div style="flex: 1; text-align: right; font-weight: 600;">{{ g.actual_fmt }}</div>
-          <div
-            style="flex: 1; text-align: right; font-weight: 600; color: {{ '#16a34a' if g.is_reached else '#ca8a04' }}">
-            {{ g.missing_fmt }}</div>
-        </div>
-        {% endfor %}
+      <div class="kpi-v2-top">
       </div>
+      <div class="kpi-v2-label">Meta do Fiado</div>
+      <div class="kpi-v2-value">{{ "{:,.1f}".format(fiado_percentage) }}%</div>
     </div>
   </div>
 
@@ -803,19 +788,32 @@
       </div>
 
       <!-- Meta de Recuperação -->
+      <!-- Meta de Recuperação (Detailed) -->
       <div class="sidebar-section">
         <div class="section-hdr">
           <div class="section-ttl">
             <div class="section-ttl-icon">🎯</div>
-            <span>Meta de Recuperação</span>
+            <span>Metas do Fiado 30/60/90</span>
           </div>
         </div>
-        <div class="meta-bar-bg">
-          <div class="meta-bar-fill" style="width: {{ recovery_rate }}%;"></div>
-        </div>
-        <div class="meta-vals">
-          <span class="meta-curr">{{ "{:,.1f}".format(recovery_rate) }}% Recuperado</span>
-          <span class="meta-tgt">Meta: 100%</span>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+          <div
+            style="display: flex; font-size: 11px; color: var(--text-2); border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px;">
+            <div style="width: 30px;">DIAS</div>
+            <div style="flex: 1; text-align: right;">PAGO</div>
+            <div style="flex: 1; text-align: right;">FALTA</div>
+          </div>
+          {% for g in recovery_goals %}
+          <div
+            style="display: flex; align-items: center; font-size: 12px; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.03);">
+            <div style="width: 30px; font-weight: 700;">{{ g.label.replace(' DIAS', '') }}</div>
+            <div style="flex: 1; text-align: right; font-weight: 600;">{{ g.actual_fmt }}</div>
+            <div
+              style="flex: 1; text-align: right; font-weight: 600; color: {{ '#16a34a' if g.is_reached else '#ca8a04' }}">
+              {{ g.missing_fmt }}</div>
+          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
