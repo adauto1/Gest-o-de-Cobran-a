@@ -38,6 +38,30 @@
   </div>
 
   <hr class="sep">
+
+  <!-- Zona de Perigo: Apenas ADMIN -->
+  {% if user.role == "ADMIN" %}
+  <div class="card inner" style="border: 2px solid #dc2626; background: rgba(220, 38, 38, 0.05);">
+    <h2 style="color: #dc2626; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="alert-triangle" style="width: 24px; height: 24px;"></i>
+      Zona de Perigo
+    </h2>
+    <p class="muted">
+      <b>ATENÇÃO:</b> Esta ação é <b>irreversível</b> e apagará todos os dados do sistema (clientes, parcelas, ações de
+      cobrança, etc).
+    </p>
+
+    <form method="post" action="/import/reset"
+      onsubmit="return confirm('⚠️ ATENÇÃO: Você tem certeza que deseja ZERAR TODOS OS DADOS do app?\n\nEsta ação é IRREVERSÍVEL!\n\nTodos os clientes, parcelas e histórico serão PERMANENTEMENTE apagados.\n\nDigite OK para confirmar:') && prompt('Digite ZERAR em maiúsculas para confirmar:') === 'ZERAR';"
+      style="margin-top: 15px;">
+      <button class="btn" type="submit" style="background: #dc2626; color: white; border: none; font-weight: 600;">
+        <i data-lucide="trash-2"></i> Zerar Todos os Dados do App
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <hr class="sep">
   <div class="muted small">
     <b>Dica:</b> depois de criar usuários cobradores, você pode distribuir clientes na tela "Clientes" (Assign).
   </div>

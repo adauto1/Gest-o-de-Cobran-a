@@ -23,6 +23,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
 
 from passlib.context import CryptContext
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from bs4 import BeautifulSoup
 
 # -----------------------------------------------------------------------------
 # Config
@@ -880,6 +881,210 @@ def import_installments(request: Request, file: UploadFile = File(...), db: Sess
 
     db.commit()
     return RedirectResponse(f"/import?msg=Parcelas importadas: {upserts}. Erros: {errors}.", status_code=HTTP_302_FOUND)
+
+def parse_infocommerce_html(content: bytes) -> List[Dict]:
+    """Parse HTML do InfoCommerce extraindo títulos por posicionamento CSS."""
+    try:
+        text = content.decode('latin-1', errors='ignore')
+    except:
+        text = content.decode('utf-8', errors='ignore')
+    
+    soup = BeautifulSoup(text, 'lxml')
+    tags = soup.find_all(['div', 'p', 'span'])
+    
+    # Agrupa elementos por linha (coordenada top)
+    rows_data = {}
+    for tag in tags:
+        style = tag.get('style', '')
+        top_match = re.search(r'top:(\d+)px', style)
+        left_match = re.search(r'left:(\d+)px', style)
+        txt = tag.get_text().strip()
+        
+        if top_match and left_match and txt:
+            top = int(top_match.group(1))
+            left = int(left_match.group(1))
+            if top not in rows_data:
+                rows_data[top] = {}
+            rows_data[top][left] = txt
+    
+    # Extrai dados das linhas
+    parsed = []
+    for top in sorted(rows_data.keys()):
+        row = rows_data[top]
+        emissao = row.get(54)
+        cliente = row.get(264)
+        vencimento = row.get(588)
+        valor_raw = row.get(648)
+        
+        # Valida se é uma linha de título (tem datas válidas)
+        if emissao and vencimento:
+            if re.match(r'\d{2}/\d{2}/\d{4}', emissao) and re.match(r'\d{2}/\d{2}/\d{4}', vencimento):
+                if valor_raw:
+                    try:
+                        # Converte valor (formato brasileiro: 1.234,56 -> 1234.56)
+                        v_str = valor_raw.replace('.', '').replace(',', '.')
+                        valor = float(v_str)
+                        parsed.append({
+                            'vencimento': vencimento,
+                            'cliente': (cliente or "DESCONHECIDO").strip().upper(),
+                            'valor': valor
+                        })
+                    except:
+                        continue
+    
+    return parsed
+
+@app.post("/import/upload")
+def import_erp_upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Importa dados do ERP a partir de arquivo HTML (InfoCommerce) ou Excel."""
+    user = require_login(request, db)
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    
+    content = file.file.read()
+    filename = file.filename.lower()
+    
+    # Detecta tipo de arquivo
+    if filename.endswith(('.html', '.htm')):
+        # Parse HTML do InfoCommerce
+        parsed_data = parse_infocommerce_html(content)
+        
+        if not parsed_data:
+            return RedirectResponse("/import?msg=Erro: Nenhum dado encontrado no arquivo HTML.", status_code=HTTP_302_FOUND)
+        
+        # PASSO 1: Snapshot das parcelas ABERTAS antes da importação
+        open_installments = db.query(Installment).filter(
+            Installment.status == "ABERTA"
+        ).all()
+        
+        existing_keys = {
+            (inst.customer_id, inst.due_date, inst.amount)
+            for inst in open_installments
+        }
+        
+        # PASSO 2: Importa dados (modo incremental - upsert)
+        customers_cache = {}
+        count_customers = 0
+        count_installments = 0
+        errors = 0
+        new_keys = set()
+        
+        for item in parsed_data:
+            try:
+                # Cliente (usa nome como external_key)
+                cliente_name = item['cliente']
+                if cliente_name not in customers_cache:
+                    cust = db.query(Customer).filter(Customer.external_key == cliente_name).first()
+                    if not cust:
+                        cust = Customer(
+                            external_key=cliente_name,
+                            name=cliente_name,
+                            whatsapp="",
+                            store="LOJA 1"
+                        )
+                        db.add(cust)
+                        db.flush()
+                        count_customers += 1
+                    customers_cache[cliente_name] = cust.id
+                
+                # Parcela
+                due_date = datetime.strptime(item['vencimento'], '%d/%m/%Y').date()
+                valor = Decimal(str(item['valor']))
+                
+                # Adiciona ao conjunto de chaves do novo relatório
+                new_keys.add((customers_cache[cliente_name], due_date, valor))
+                
+                # Verifica se já existe (por cliente + data de vencimento + valor)
+                inst = db.query(Installment).filter(
+                    Installment.customer_id == customers_cache[cliente_name],
+                    Installment.due_date == due_date,
+                    Installment.amount == valor
+                ).first()
+                
+                if not inst:
+                    # Cria nova parcela
+                    inst = Installment(
+                        customer_id=customers_cache[cliente_name],
+                        contract_id=f"ERP-{cliente_name[:10]}-{due_date.strftime('%Y%m%d')}",
+                        installment_number=1,
+                        due_date=due_date,
+                        amount=valor,
+                        open_amount=valor,
+                        status="ABERTA"
+                    )
+                    db.add(inst)
+                    count_installments += 1
+                else:
+                    # Atualiza parcela existente
+                    inst.open_amount = valor
+                    inst.status = "ABERTA"
+                    count_installments += 1
+                
+            except Exception as e:
+                errors += 1
+                continue
+        
+        # PASSO 3: Detecta parcelas que sumiram (foram quitadas)
+        paid_keys = existing_keys - new_keys
+        count_paid = 0
+        
+        for customer_id, due_date, amount in paid_keys:
+            inst = db.query(Installment).filter(
+                Installment.customer_id == customer_id,
+                Installment.due_date == due_date,
+                Installment.amount == amount,
+                Installment.status == "ABERTA"
+            ).first()
+            
+            if inst:
+                inst.status = "PAGA"
+                inst.paid_at = datetime.now()
+                inst.open_amount = Decimal("0")
+                count_paid += 1
+        
+        db.commit()
+        
+        msg = f"Importação concluída! Clientes: {count_customers} novos. Parcelas: {count_installments}. Baixadas: {count_paid}. Erros: {errors}."
+        return RedirectResponse(f"/import?msg={msg}", status_code=HTTP_302_FOUND)
+    
+    elif filename.endswith(('.xlsx', '.xls')):
+        # TODO: Implementar parse de Excel
+        return RedirectResponse("/import?msg=Erro: Importação de Excel ainda não implementada. Use HTML do InfoCommerce.", status_code=HTTP_302_FOUND)
+    
+    else:
+        return RedirectResponse("/import?msg=Erro: Formato de arquivo não suportado. Use .html ou .xlsx", status_code=HTTP_302_FOUND)
+
+@app.post("/import/reset")
+def reset_database(request: Request, db: Session = Depends(get_db)):
+    """Zera todos os dados do app (apenas ADMIN). CUIDADO: Ação irreversível!"""
+    user = require_login(request, db)
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    
+    try:
+        # Deleta todas as ações de cobrança
+        db.query(CollectionAction).delete()
+        
+        # Deleta todas as mensagens enviadas
+        db.query(SentMessage).delete()
+        
+        # Deleta todas as comissões
+        db.query(ComissaoCobranca).delete()
+        
+        # Deleta todas as parcelas
+        deleted_installments = db.query(Installment).delete()
+        
+        # Deleta todos os clientes
+        deleted_customers = db.query(Customer).delete()
+        
+        db.commit()
+        
+        msg = f"App zerado com sucesso! Removidos: {deleted_customers} clientes e {deleted_installments} parcelas."
+        return RedirectResponse(f"/import?msg={msg}", status_code=HTTP_302_FOUND)
+    
+    except Exception as e:
+        db.rollback()
+        return RedirectResponse(f"/import?msg=Erro ao zerar app: {str(e)}", status_code=HTTP_302_FOUND)
 
 # -----------------------------------------------------------------------------
 # Queue (respects store and assigned_to when cobranca)
