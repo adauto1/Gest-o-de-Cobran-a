@@ -1,15 +1,16 @@
 {% extends "layout.html" %}
 {% block content %}
 <style>
-  /* ── Dashboard Fintech Overrides ── */
+  /* ── Dashboard — uses app.css CSS variables for consistent theme ── */
   .dash-wrap {
-    font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+    font-family: var(--font-main);
   }
 
+  /* Alert Banner */
   .alert-banner {
-    background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%);
+    background: linear-gradient(135deg, var(--danger-bg) 0%, var(--warning-bg) 100%);
     border: 1px solid #fecaca;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 14px 18px;
     margin-bottom: 24px;
     display: flex;
@@ -20,8 +21,8 @@
   .alert-banner-icon {
     width: 38px;
     height: 38px;
-    background: #fee2e2;
-    border-radius: 8px;
+    background: var(--danger-bg);
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -36,21 +37,21 @@
   .alert-banner-title {
     font-weight: 700;
     font-size: 13px;
-    color: #ef4444;
+    color: var(--danger);
     margin-bottom: 2px;
   }
 
   .alert-banner-desc {
     font-size: 12px;
-    color: #64748b;
+    color: var(--text-2);
   }
 
   .alert-banner-btn {
     padding: 8px 14px;
-    background: #ef4444;
+    background: var(--danger);
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-weight: 600;
     font-size: 12px;
     cursor: pointer;
@@ -60,10 +61,11 @@
   }
 
   .alert-banner-btn:hover {
-    background: #dc2626;
+    background: #c0392b;
     transform: scale(1.02);
   }
 
+  /* KPI Grid */
   .kpi-grid-v2 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -72,11 +74,11 @@
   }
 
   .kpi-v2 {
-    background: var(--bg-card, #fff);
-    border-radius: 12px;
+    background: var(--surface);
+    border-radius: var(--radius-md);
     padding: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .05);
-    border: 1px solid var(--border, #e2e8f0);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
     transition: transform .15s, box-shadow .15s;
     text-decoration: none;
     display: block;
@@ -85,7 +87,7 @@
 
   .kpi-v2:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .05);
+    box-shadow: var(--shadow-float);
   }
 
   .kpi-v2-top {
@@ -110,15 +112,15 @@
   }
 
   .kpi-v2-icon.red {
-    background: #fee2e2;
+    background: var(--danger-bg);
   }
 
   .kpi-v2-icon.orange {
-    background: #fef3c7;
+    background: var(--warning-bg);
   }
 
   .kpi-v2-icon.green {
-    background: #d1fae5;
+    background: var(--success-bg);
   }
 
   .kpi-v2-badge {
@@ -131,48 +133,49 @@
   }
 
   .kpi-v2-badge.positive {
-    background: #d1fae5;
-    color: #10b981;
+    background: var(--success-bg);
+    color: var(--success);
   }
 
   .kpi-v2-badge.critical {
-    background: #fee2e2;
-    color: #ef4444;
+    background: var(--danger-bg);
+    color: var(--danger);
   }
 
   .kpi-v2-badge.warning {
-    background: #fef3c7;
-    color: #f59e0b;
+    background: var(--warning-bg);
+    color: var(--warning);
   }
 
   .kpi-v2-label {
     font-size: 12px;
     font-weight: 500;
-    color: #64748b;
+    color: var(--text-2);
     margin-bottom: 6px;
   }
 
   .kpi-v2-value {
     font-size: 24px;
     font-weight: 700;
-    color: #1a1f2e;
+    color: var(--text);
     letter-spacing: -.5px;
   }
 
   .kpi-v2-value.critical {
-    color: #ef4444;
+    color: var(--danger);
   }
 
   .kpi-v2-value.positive {
-    color: #10b981;
+    color: var(--success);
   }
 
+  /* Aging Section */
   .aging-section {
-    background: var(--bg-card, #fff);
-    border-radius: 12px;
+    background: var(--surface);
+    border-radius: var(--radius-md);
     padding: 20px 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .05);
-    border: 1px solid var(--border, #e2e8f0);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
     margin-bottom: 24px;
   }
 
@@ -186,7 +189,7 @@
   .aging-title {
     font-size: 15px;
     font-weight: 600;
-    color: #1a1f2e;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -195,8 +198,8 @@
   .aging-title-icon {
     width: 32px;
     height: 32px;
-    background: #f1f5f9;
-    border-radius: 8px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -222,7 +225,7 @@
 
   .aging-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .05);
+    box-shadow: var(--shadow-card);
   }
 
   .aging-card.lv1 {
@@ -236,12 +239,12 @@
   }
 
   .aging-card.lv3 {
-    background: #fef2f2;
+    background: var(--danger-bg);
     border-color: #fca5a5;
   }
 
   .aging-card.lv4 {
-    background: #fef2f2;
+    background: var(--danger-bg);
     border-color: #f87171;
   }
 
@@ -282,16 +285,17 @@
 
   .aging-label {
     font-size: 11px;
-    color: #64748b;
+    color: var(--text-2);
     margin-bottom: 6px;
   }
 
   .aging-card-value {
     font-size: 12px;
     font-weight: 600;
-    color: #1a1f2e;
+    color: var(--text);
   }
 
+  /* Content Grid */
   .content-grid {
     display: grid;
     grid-template-columns: 1fr 340px;
@@ -300,11 +304,11 @@
 
   .queue-section,
   .sidebar-section {
-    background: var(--bg-card, #fff);
-    border-radius: 12px;
+    background: var(--surface);
+    border-radius: var(--radius-md);
     padding: 20px 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .05);
-    border: 1px solid var(--border, #e2e8f0);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
   }
 
   .section-hdr {
@@ -317,7 +321,7 @@
   .section-ttl {
     font-size: 15px;
     font-weight: 600;
-    color: #1a1f2e;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -326,8 +330,8 @@
   .section-ttl-icon {
     width: 32px;
     height: 32px;
-    background: #f1f5f9;
-    border-radius: 8px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -336,23 +340,23 @@
 
   .btn-outline {
     padding: 8px 14px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-size: 12px;
     font-weight: 600;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    color: #64748b;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-2);
     cursor: pointer;
     transition: all .15s;
     text-decoration: none;
   }
 
   .btn-outline:hover {
-    background: #f6f7f9;
-    color: #1a1f2e;
-    border-color: #94a3b8;
+    background: var(--bg);
+    color: var(--text);
   }
 
+  /* Queue Table */
   .q-table {
     width: 100%;
     border-collapse: collapse;
@@ -364,19 +368,19 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .5px;
-    color: #94a3b8;
+    color: var(--text-3);
     padding: 12px 8px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border);
   }
 
   .q-table td {
     padding: 14px 8px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border);
     vertical-align: middle;
   }
 
   .q-table tbody tr:hover {
-    background: #f8fafc;
+    background: var(--bg);
   }
 
   .q-table tbody tr:last-child td {
@@ -386,19 +390,19 @@
   .q-client-name {
     font-weight: 600;
     font-size: 13px;
-    color: #1a1f2e;
+    color: var(--text);
     margin-bottom: 2px;
   }
 
   .q-client-meta {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--text-3);
   }
 
   .q-amount {
     font-weight: 600;
     font-size: 13px;
-    color: #1a1f2e;
+    color: var(--text);
   }
 
   .q-badge {
@@ -412,12 +416,12 @@
   }
 
   .q-badge.critical {
-    background: #fee2e2;
-    color: #ef4444;
+    background: var(--danger-bg);
+    color: var(--danger);
   }
 
   .q-badge.warning {
-    background: #fef3c7;
+    background: var(--warning-bg);
     color: #b45309;
   }
 
@@ -434,10 +438,10 @@
   .q-action-btn {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    color: #64748b;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-2);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -458,6 +462,7 @@
     border-color: #25d366;
   }
 
+  /* Right Column */
   .right-col {
     display: flex;
     flex-direction: column;
@@ -467,8 +472,8 @@
   .agenda-count-badge {
     font-size: 12px;
     font-weight: 600;
-    color: #94a3b8;
-    background: #f1f5f9;
+    color: var(--text-3);
+    background: var(--bg);
     padding: 2px 8px;
     border-radius: 10px;
   }
@@ -481,7 +486,7 @@
     display: flex;
     gap: 12px;
     padding: 12px 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border);
     align-items: center;
   }
 
@@ -493,7 +498,7 @@
   .agenda-row-icon {
     width: 36px;
     height: 36px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -506,11 +511,11 @@
   }
 
   .agenda-row-icon.meet {
-    background: #d1fae5;
+    background: var(--success-bg);
   }
 
   .agenda-row-icon.warn {
-    background: #fef3c7;
+    background: var(--warning-bg);
   }
 
   .agenda-row-body {
@@ -521,7 +526,7 @@
   .agenda-row-title {
     font-weight: 600;
     font-size: 13px;
-    color: #1a1f2e;
+    color: var(--text);
     margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
@@ -530,7 +535,7 @@
 
   .agenda-row-desc {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--text-3);
   }
 
   .agenda-row-time {
@@ -540,9 +545,10 @@
     flex-shrink: 0;
   }
 
+  /* Meta bar */
   .meta-bar-bg {
     height: 8px;
-    background: #f1f5f9;
+    background: var(--bg);
     border-radius: 4px;
     overflow: hidden;
     margin-top: 16px;
@@ -550,7 +556,7 @@
 
   .meta-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #10b981, #34d399);
+    background: linear-gradient(90deg, var(--success), #34d399);
     border-radius: 4px;
     transition: width .5s;
   }
@@ -563,14 +569,15 @@
   }
 
   .meta-curr {
-    color: #10b981;
+    color: var(--success);
     font-weight: 600;
   }
 
   .meta-tgt {
-    color: #94a3b8;
+    color: var(--text-3);
   }
 
+  /* Responsive */
   @media (max-width: 1100px) {
     .kpi-grid-v2 {
       grid-template-columns: repeat(2, 1fr);
@@ -720,7 +727,7 @@
         </thead>
         <tbody id="queue-body">
           <tr>
-            <td colspan="4" style="text-align:center; padding:40px; color:#94a3b8;">Carregando fila...</td>
+            <td colspan="4" style="text-align:center; padding:40px; color:var(--text-3);">Carregando fila...</td>
           </tr>
         </tbody>
       </table>
@@ -734,7 +741,7 @@
           const data = await resp.json();
 
           if (data.length === 0) {
-            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:#94a3b8;">Sem clientes em atraso.</td></tr>';
+            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-3);">Sem clientes em atraso.</td></tr>';
             return;
           }
 
@@ -765,7 +772,7 @@
           if (window.lucide) lucide.createIcons();
         } catch (err) {
           console.error('Erro:', err);
-          body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:#ef4444;">Erro ao carregar dados.</td></tr>';
+          body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--danger);">Erro ao carregar dados.</td></tr>';
         }
       }
       document.addEventListener('DOMContentLoaded', loadPriorityQueue);
@@ -784,7 +791,7 @@
         </div>
         <div class="agenda-items">
           {% if promises | length == 0 %}
-          <div style="text-align:center; padding:20px; color:#94a3b8; font-size:13px;">
+          <div style="text-align:center; padding:20px; color:var(--text-3); font-size:13px;">
             Nenhum compromisso para hoje.
           </div>
           {% else %}
