@@ -1326,6 +1326,7 @@ def users_toggle(request: Request, user_id: int, db: Session = Depends(get_db)):
 # Import Routes
 # -----------------------------------------------------------------------------
 from app.services.import_xlsx import process_excel_import
+from app.services.import_html import process_html_import
 
 @app.post("/import/upload")
 async def import_upload_file(
@@ -1335,11 +1336,14 @@ async def import_upload_file(
 ):
     user = require_login(request, db)
     
-    if not file.filename.endswith(".xlsx"):
-        return RedirectResponse("/import?msg=Erro: Apenas arquivos Excel (.xlsx) são permitidos&type=error", status_code=303)
-
-    content = await file.read()
-    result = process_excel_import(content, db, user.id)
+    if file.filename.lower().endswith((".html", ".htm")):
+         content = await file.read()
+         result = process_html_import(content, db, user.id)
+    elif file.filename.lower().endswith((".xlsx", ".xls")):
+         content = await file.read()
+         result = process_excel_import(content, db, user.id)
+    else:
+        return RedirectResponse("/import?msg=Erro: Apenas arquivos Excel (.xlsx) ou HTML (.html) são permitidos&type=error", status_code=303)
 
     if result.get("error"):
         return RedirectResponse(f"/import?msg={result['error']}&type=error", status_code=303)
