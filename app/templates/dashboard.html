@@ -92,38 +92,15 @@
 
   .kpi-v2-top {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 14px;
+    min-height: 26px;
   }
 
-  .kpi-v2-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-  }
 
-  .kpi-v2-icon.blue {
-    background: #dbeafe;
-  }
-
-  .kpi-v2-icon.red {
-    background: var(--danger-bg);
-  }
-
-  .kpi-v2-icon.orange {
-    background: var(--warning-bg);
-  }
-
-  .kpi-v2-icon.green {
-    background: var(--success-bg);
-  }
 
   .kpi-v2-badge {
+    margin-left: auto;
     font-size: 10px;
     font-weight: 600;
     padding: 4px 8px;
@@ -622,7 +599,6 @@
     {% if user.role == "COBRANCA" %}
     <a class="kpi-v2" href="/commissions">
       <div class="kpi-v2-top">
-        <div class="kpi-v2-icon green">💰</div>
         <span class="kpi-v2-badge positive">Meta ativada</span>
       </div>
       <div class="kpi-v2-label">Minha Comissão</div>
@@ -632,7 +608,6 @@
 
     <a class="kpi-v2" href="/queue?tab=all">
       <div class="kpi-v2-top">
-        <div class="kpi-v2-icon blue">📊</div>
         <span class="kpi-v2-badge positive">+2.4%</span>
       </div>
       <div class="kpi-v2-label">Carteira Total</div>
@@ -641,7 +616,6 @@
 
     <a class="kpi-v2" href="/queue?tab=overdue">
       <div class="kpi-v2-top">
-        <div class="kpi-v2-icon red">⚠️</div>
         <span class="kpi-v2-badge critical">Crítico</span>
       </div>
       <div class="kpi-v2-label">Total Vencido</div>
@@ -650,7 +624,6 @@
 
     <a class="kpi-v2" href="/queue?tab=due_today">
       <div class="kpi-v2-top">
-        <div class="kpi-v2-icon orange">📅</div>
         <span class="kpi-v2-badge warning">Ação</span>
       </div>
       <div class="kpi-v2-label">Vence Hoje</div>
@@ -659,7 +632,6 @@
 
     <div class="kpi-v2">
       <div class="kpi-v2-top">
-        <div class="kpi-v2-icon green">📈</div>
       </div>
       <div class="kpi-v2-label">Taxa de Recuperação</div>
       <div class="kpi-v2-value positive">{{ "{:,.1f}".format(recovery_rate) }}%</div>
