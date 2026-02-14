@@ -1,179 +1,216 @@
 
 import pandas as pd
 from sqlalchemy.orm import Session
-from datetime import datetime, date
-import logging
+from datetime import datetime
 import re
+from bs4 import BeautifulSoup
 from ..main import Customer, Installment
 
-def parse_date_html(val):
-    if pd.isna(val): return None
-    if isinstance(val, (datetime, date)): return val
-    s = str(val).strip()
-    # Try common formats
-    for fmt in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
-        try:
-            return datetime.strptime(s, fmt).date()
-        except:
-            pass
-    return None
-
-def parse_money_html(val):
-    if pd.isna(val): return 0.0
-    if isinstance(val, (int, float)): return float(val)
-    s = str(val).strip()
-    s = s.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
+def parse_date_str(s):
     try:
-        return float(s)
+        return datetime.strptime(s.strip(), "%d/%m/%Y").date()
     except:
-        return 0.0
+        return None
+
+def parse_money_str(s):
+    try:
+        clean = s.replace(".", "").replace(",", ".").strip()
+        return float(clean)
+    except:
+        return None
 
 def process_html_import(file_content: bytes, db: Session, user_id: int):
     """
-    Parses HTML report (InfoCommerce style)
+    Parses HTML report (InfoCommerce div-based) by reconstructing rows from coordinates.
     """
     try:
-        # read_html returns list of DataFrames
-        # we need to find the one with actual data
+        # Check if it's a standard table first (fallback)
         dfs = pd.read_html(file_content, header=0, decimal=",", thousands=".")
+        if len(dfs) > 0 and len(dfs[0].columns) > 3:
+             # Logic for table-based HTML (if any found)
+             pass 
+    except:
+        pass
+
+    # Div-based parsing
+    try:
+        soup = BeautifulSoup(file_content, "html.parser")
     except Exception as e:
-        return {"error": f"Erro ao ler HTML: {str(e)}"}
+        return {"error": f"Erro HTML Soup: {e}"}
 
-    df = None
-    best_score = 0
-    
-    # Header keywords to look for
-    keywords = ["cliente", "sacado", "vencimento", "vencto", "valor", "vlr", "total", "contrato", "documento", "cpf"]
-    
-    for d in dfs:
-        score = 0
-        cols = [str(c).lower() for c in d.columns]
-        for k in keywords:
-            if any(k in c for c in cols):
-                score += 1
+    elements = []
+    # Regex to extract top/left
+    # style="... top:123;left:456; ..."
+    re_top = re.compile(r'top:(\d+)')
+    re_left = re.compile(r'left:(\d+)')
+
+    for div in soup.find_all("div"):
+        style = div.get("style", "")
+        if not style: continue
         
-        if score > best_score and score >= 2: # At least 2 matches
-            best_score = score
-            df = d
-            
-    if df is None:
-        return {"error": "Estrutura do HTML não reconhecida. Certifique-se que é o relatório correto."}
+        tm = re_top.search(style)
+        lm = re_left.search(style)
+        if tm and lm:
+            text = div.get_text(" ", strip=True)
+            if not text: continue
+            elements.append({
+                'top': int(tm.group(1)),
+                'left': int(lm.group(1)),
+                'text': text
+            })
 
-    # Normalize columns
-    df.columns = [str(c).strip().lower().replace(" ", "_").replace("/", "_").replace(".", "") for c in df.columns]
+    if not elements:
+         return {"error": "Não foi possível ler os dados do HTML (nenhum elemento posicionado encontrado)."}
 
-    # Map known columns to standard
-    col_map = {
-        "cliente": "nome_cliente",
-        "nome": "nome_cliente",
-        "sacado": "nome_cliente",
-        "vencto": "data_vencimento",
-        "vencimento": "data_vencimento",
-        "dt_venc": "data_vencimento",
-        "emissao": "data_issue", # Optional
-        "valor": "valor_parcela",
-        "vlr": "valor_parcela",
-        "total": "valor_parcela", # Assuming Total is the amount
-        "saldo": "valor_parcela", # Fallback
-        "contrato": "contrato",
-        "nr_contrato": "contrato",
-        "documento": "contrato",
-        "doc": "contrato",
-        "cpf": "cpf_cnpj",
-        "cgc_cpf": "cpf_cnpj",
-        "fone": "telefone",
-        "telefone": "telefone"
-    }
-    
-    # Rename columns based on map (partial match)
-    new_cols = {}
-    for c in df.columns:
-        for k, v in col_map.items():
-            if k in c and v not in new_cols.values():
-                 new_cols[c] = v
-                 break
-    
-    df = df.rename(columns=new_cols)
-    
-    # Verify required
-    required = ["nome_cliente", "valor_parcela", "data_vencimento"]
-    missing = [c for c in required if c not in df.columns]
-    
-    if missing:
-        # Try to find again without mapping if simple names match?
-        # Or just fail
-        return {"error": f"Colunas não identificadas: {', '.join(missing)}. Colunas encontradas: {list(df.columns)}"}
+    # Sort by Y then X
+    elements.sort(key=lambda x: (x['top'], x['left']))
+
+    # Group into rows
+    rows = []
+    current_row = [elements[0]]
+    current_y = elements[0]['top']
+
+    for el in elements[1:]:
+        if abs(el['top'] - current_y) <= 4: # Tolerance 4px
+            current_row.append(el)
+        else:
+            rows.append(current_row)
+            current_row = [el]
+            current_y = el['top']
+    rows.append(current_row)
 
     processed_customers = 0
     processed_installments = 0
     errors = []
+    
+    # Regex patterns
+    re_date = re.compile(r'\d{2}/\d{2}/\d{4}')
+    re_money = re.compile(r'\d{1,3}(?:\.\d{3})*,\d{2}')
 
-    for index, row in df.iterrows():
-        try:
-            # 1. Customer
-            name = str(row.get("nome_cliente", "Sem Nome")).strip()
-            if pd.isna(name) or name == "nan": continue
+    for i, row in enumerate(rows):
+        # Sort row by X
+        row.sort(key=lambda x: x['left'])
+        
+        # Identify columns by content pattern
+        date_el = None
+        amount_el = None
+        name_el = None
+        contract_el = None
+        
+        # Heuristic:
+        # Date is usually dd/mm/yyyy
+        # Amount matches money regex
+        # Name is usually the FIRST element (leftmost) if not date/amount
+        
+        # We need to find the "Due Date" specifically (Vencimento)
+        # Sometimes there are multiple dates (Reference date etc).
+        # Based on debug: Due Date x=588, Amount x=648.
+        
+        candidates_date = []
+        candidates_amount = []
+        
+        for el in row:
+            txt = el['text']
+            if re_date.match(txt):
+                candidates_date.append(el)
+            elif re_money.match(txt):
+                candidates_amount.append(el)
+                
+        # Filter by X position (approximate) based on our debug
+        # Date ~ 588
+        valid_date = None
+        for cand in candidates_date:
+            if 550 <= cand['left'] <= 630:
+                valid_date = cand
+                break
+        
+        # Amount ~ 648
+        valid_amount = None
+        for cand in candidates_amount:
+            if 630 <= cand['left'] <= 700:
+                valid_amount = cand
+                break
+                
+        if valid_date and valid_amount:
+            # Likely a data row
+            due_date = parse_date_str(valid_date['text'])
+            amount = parse_money_str(valid_amount['text'])
             
-            cpf = str(row.get("cpf_cnpj", "")).strip()
-            if pd.isna(cpf) or cpf == "nan": cpf = None
+            # Name: Leftmost element < 400
+            # Contract: Element between Name and Date? Or specific X (~522)
             
-            customer = None
-            if cpf:
-                customer = db.query(Customer).filter(Customer.cpf_cnpj == cpf).first()
-            if not customer:
+            name_parts = []
+            contract_txt = ""
+            
+            for el in row:
+                if el == valid_date or el == valid_amount: continue
+                
+                # Name range
+                if el['left'] < 500:
+                    # Check if it looks like contract (digits only or short?)
+                    if el['left'] > 450 and len(el['text']) < 15:
+                         contract_txt = el['text']
+                    else:
+                         name_parts.append(el['text'])
+                
+            name = " ".join(name_parts).strip()
+            
+            # Validation
+            if not name or len(name) < 3: continue 
+            # sometimes header row has "Vencimento" which matches nothing, good.
+            # But if header has "01/01/2023" as example? Unlikely.
+            
+            if not contract_txt:
+                 contract_txt = f"CTR-{i}"
+
+            try:
+                # DB Operations
+                customer = None
+                # Try find by Name
                 customer = db.query(Customer).filter(Customer.name == name).first()
                 
-            if not customer:
-                customer = Customer(
-                    name=name,
-                    cpf_cnpj=cpf,
-                    phone=str(row.get("telefone", "")) if "telefone" in row and not pd.isna(row["telefone"]) else None,
-                    external_key=f"IMP-HTML-{datetime.now().timestamp()}-{index}"
-                )
-                db.add(customer)
-                db.flush()
-                processed_customers += 1
-            
-            # 2. Installment
-            due_date = parse_date_html(row.get("data_vencimento"))
-            if not due_date: continue
-            
-            amount = parse_money_html(row.get("valor_parcela"))
-            
-            contract_id = str(row.get("contrato", f"CTR-{customer.id}-{index}")).strip()
-            if pd.isna(contract_id) or contract_id == "nan": contract_id = f"CTR-{customer.id}-{index}"
-            
-            inst = db.query(Installment).filter(
-                Installment.customer_id == customer.id,
-                Installment.contract_id == contract_id,
-                Installment.due_date == due_date
-            ).first()
-            
-            if not inst:
-                inst = Installment(
-                    customer_id=customer.id,
-                    contract_id=contract_id,
-                    installment_number=1,
-                    amount=amount,
-                    open_amount=amount, # Assume full open
-                    due_date=due_date,
-                    status="ABERTA"
-                )
-                db.add(inst)
-                processed_installments += 1
+                if not customer:
+                    customer = Customer(
+                        name=name,
+                        cpf_cnpj=None,
+                        external_key=f"IMP-DIV-{datetime.now().timestamp()}-{i}"
+                    )
+                    db.add(customer)
+                    db.flush()
+                    processed_customers += 1
                 
-        except Exception as e:
-            errors.append(f"Linha {index}: {str(e)}")
+                # Check Installment
+                inst = db.query(Installment).filter(
+                    Installment.customer_id == customer.id,
+                    Installment.contract_id == contract_txt,
+                    Installment.due_date == due_date
+                ).first()
+                
+                if not inst:
+                    inst = Installment(
+                        customer_id=customer.id,
+                        contract_id=contract_txt,
+                        installment_number=1,
+                        amount=amount,
+                        open_amount=amount,
+                        due_date=due_date,
+                        status="ABERTA"
+                    )
+                    db.add(inst)
+                    processed_installments += 1
+                    
+            except Exception as e:
+                errors.append(f"Row {i}: {e}")
 
     try:
         db.commit()
-    except Exception as e:
+    except:
         db.rollback()
-        return {"error": f"Erro ao salvar no banco: {str(e)}"}
+        return {"error": "Erro ao salvar dados."}
 
     return {
-        "success": True,
-        "customers": processed_customers,
+        "success": True, 
+        "customers": processed_customers, 
         "installments": processed_installments,
-        "errors": errors[:10]
+        "errors": errors[:5]
     }
