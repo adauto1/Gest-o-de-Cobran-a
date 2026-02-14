@@ -44,7 +44,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # -----------------------------------------------------------------------------
 # Models
@@ -218,11 +218,9 @@ def get_db():
         db.close()
 
 def hash_password(p: str) -> str:
-    p = p[:72] if p else p
     return pwd_context.hash(p)
 
 def verify_password(p: str, h: str) -> bool:
-    p = p[:72] if p else p
     return pwd_context.verify(p, h)
 
 def require_login(request: Request, db: Session) -> User:
@@ -422,6 +420,12 @@ def startup():
                 role="ADMIN",
                 active=True
             ))
+            db.commit()
+
+        # Rehash admin password with current algorithm (argon2)
+        admin = db.query(User).filter(User.email == DEFAULT_ADMIN_EMAIL).first()
+        if admin and not admin.password_hash.startswith("$argon2"):
+            admin.password_hash = hash_password(DEFAULT_ADMIN_PASSWORD)
             db.commit()
 
         if db.query(CollectionRule).count() == 0:
