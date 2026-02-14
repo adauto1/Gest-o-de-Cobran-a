@@ -1,89 +1,715 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="dash-grid">
+<style>
+  /* ── Dashboard Fintech Overrides ── */
+  .dash-wrap {
+    font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  }
 
-  <!-- 1. Top KPI Section -->
-  <div class="kpi-row">
+  .alert-banner {
+    background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%);
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .alert-banner-icon {
+    width: 38px;
+    height: 38px;
+    background: #fee2e2;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+
+  .alert-banner-content {
+    flex: 1;
+  }
+
+  .alert-banner-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: #ef4444;
+    margin-bottom: 2px;
+  }
+
+  .alert-banner-desc {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .alert-banner-btn {
+    padding: 8px 14px;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .alert-banner-btn:hover {
+    background: #dc2626;
+    transform: scale(1.02);
+  }
+
+  .kpi-grid-v2 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .kpi-v2 {
+    background: var(--bg-card, #fff);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .05);
+    border: 1px solid var(--border, #e2e8f0);
+    transition: transform .15s, box-shadow .15s;
+    text-decoration: none;
+    display: block;
+    color: inherit;
+  }
+
+  .kpi-v2:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .05);
+  }
+
+  .kpi-v2-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .kpi-v2-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .kpi-v2-icon.blue {
+    background: #dbeafe;
+  }
+
+  .kpi-v2-icon.red {
+    background: #fee2e2;
+  }
+
+  .kpi-v2-icon.orange {
+    background: #fef3c7;
+  }
+
+  .kpi-v2-icon.green {
+    background: #d1fae5;
+  }
+
+  .kpi-v2-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+
+  .kpi-v2-badge.positive {
+    background: #d1fae5;
+    color: #10b981;
+  }
+
+  .kpi-v2-badge.critical {
+    background: #fee2e2;
+    color: #ef4444;
+  }
+
+  .kpi-v2-badge.warning {
+    background: #fef3c7;
+    color: #f59e0b;
+  }
+
+  .kpi-v2-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+
+  .kpi-v2-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1f2e;
+    letter-spacing: -.5px;
+  }
+
+  .kpi-v2-value.critical {
+    color: #ef4444;
+  }
+
+  .kpi-v2-value.positive {
+    color: #10b981;
+  }
+
+  .aging-section {
+    background: var(--bg-card, #fff);
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .05);
+    border: 1px solid var(--border, #e2e8f0);
+    margin-bottom: 24px;
+  }
+
+  .aging-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .aging-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1f2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .aging-title-icon {
+    width: 32px;
+    height: 32px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
+
+  .aging-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .aging-card {
+    border-radius: 10px;
+    padding: 18px 16px;
+    text-align: center;
+    border: 1px solid;
+    transition: all .15s;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+  }
+
+  .aging-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .05);
+  }
+
+  .aging-card.lv1 {
+    background: #fffbeb;
+    border-color: #fcd34d;
+  }
+
+  .aging-card.lv2 {
+    background: #fff7ed;
+    border-color: #fdba74;
+  }
+
+  .aging-card.lv3 {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+
+  .aging-card.lv4 {
+    background: #fef2f2;
+    border-color: #f87171;
+  }
+
+  .aging-days {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 8px;
+  }
+
+  .aging-card.lv1 .aging-days,
+  .aging-card.lv1 .aging-count {
+    color: #b45309;
+  }
+
+  .aging-card.lv2 .aging-days,
+  .aging-card.lv2 .aging-count {
+    color: #c2410c;
+  }
+
+  .aging-card.lv3 .aging-days,
+  .aging-card.lv3 .aging-count {
+    color: #dc2626;
+  }
+
+  .aging-card.lv4 .aging-days,
+  .aging-card.lv4 .aging-count {
+    color: #b91c1c;
+  }
+
+  .aging-count {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 2px;
+  }
+
+  .aging-label {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+
+  .aging-card-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1f2e;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+  }
+
+  .queue-section,
+  .sidebar-section {
+    background: var(--bg-card, #fff);
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .05);
+    border: 1px solid var(--border, #e2e8f0);
+  }
+
+  .section-hdr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .section-ttl {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1f2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-ttl-icon {
+    width: 32px;
+    height: 32px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
+
+  .btn-outline {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+    transition: all .15s;
+    text-decoration: none;
+  }
+
+  .btn-outline:hover {
+    background: #f6f7f9;
+    color: #1a1f2e;
+    border-color: #94a3b8;
+  }
+
+  .q-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .q-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #94a3b8;
+    padding: 12px 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .q-table td {
+    padding: 14px 8px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+  }
+
+  .q-table tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  .q-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .q-client-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1a1f2e;
+    margin-bottom: 2px;
+  }
+
+  .q-client-meta {
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  .q-amount {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1a1f2e;
+  }
+
+  .q-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+
+  .q-badge.critical {
+    background: #fee2e2;
+    color: #ef4444;
+  }
+
+  .q-badge.warning {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  .q-badge.moderate {
+    background: #fff7ed;
+    color: #c2410c;
+  }
+
+  .q-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .q-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s;
+    font-size: 13px;
+    text-decoration: none;
+  }
+
+  .q-action-btn:hover {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: #fff;
+  }
+
+  .q-action-btn.whatsapp:hover {
+    background: #25d366;
+    border-color: #25d366;
+  }
+
+  .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .agenda-count-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .agenda-items {
+    margin-top: 16px;
+  }
+
+  .agenda-row {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #e2e8f0;
+    align-items: center;
+  }
+
+  .agenda-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .agenda-row-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .agenda-row-icon.call {
+    background: #dbeafe;
+  }
+
+  .agenda-row-icon.meet {
+    background: #d1fae5;
+  }
+
+  .agenda-row-icon.warn {
+    background: #fef3c7;
+  }
+
+  .agenda-row-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .agenda-row-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1a1f2e;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .agenda-row-desc {
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  .agenda-row-time {
+    font-size: 12px;
+    font-weight: 600;
+    color: #3b82f6;
+    flex-shrink: 0;
+  }
+
+  .meta-bar-bg {
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 16px;
+  }
+
+  .meta-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 4px;
+    transition: width .5s;
+  }
+
+  .meta-vals {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+
+  .meta-curr {
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .meta-tgt {
+    color: #94a3b8;
+  }
+
+  @media (max-width: 1100px) {
+    .kpi-grid-v2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .aging-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .kpi-grid-v2 {
+      grid-template-columns: 1fr;
+    }
+
+    .aging-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
+
+<div class="dash-wrap">
+
+  <!-- Alert Banner -->
+  {% if urgent_count > 0 %}
+  <div class="alert-banner">
+    <div class="alert-banner-icon">⚠️</div>
+    <div class="alert-banner-content">
+      <div class="alert-banner-title">{{ urgent_count }} parcelas precisam de atenção urgente!</div>
+      <div class="alert-banner-desc">Clientes com mais de 60 dias de atraso sem contato recente</div>
+    </div>
+    <a href="/queue?tab=overdue" class="alert-banner-btn">Ver Lista</a>
+  </div>
+  {% endif %}
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid-v2">
     {% if user.role == "COBRANCA" %}
-    <!-- Collector Commission Card -->
-    <a class="kpi-card" href="/commissions"
-      style="background: linear-gradient(135deg, #fff 0%, #f9fdf2 100%); border-left: 4px solid var(--primary);">
-      <div class="kpi-top">
-        <div class="kpi-icon"><i data-lucide="hand-coins"></i></div>
-        <div class="kpi-pill success">Meta ativada</div>
+    <a class="kpi-v2" href="/commissions">
+      <div class="kpi-v2-top">
+        <div class="kpi-v2-icon green">💰</div>
+        <span class="kpi-v2-badge positive">Meta ativada</span>
       </div>
-      <div>
-        <div class="kpi-title">Minha comissão (até agora)</div>
-        <div class="kpi-value">{{ current_commission or "R$ 0,00" }}</div>
-      </div>
+      <div class="kpi-v2-label">Minha Comissão</div>
+      <div class="kpi-v2-value positive">{{ current_commission }}</div>
     </a>
     {% endif %}
 
-    <!-- Total Portfolio -->
-    <a class="kpi-card" href="/queue?tab=all">
-      <div class="kpi-top">
-        <div class="kpi-icon"><i data-lucide="wallet"></i></div>
-        <div class="kpi-pill success">+2.4%</div>
+    <a class="kpi-v2" href="/queue?tab=all">
+      <div class="kpi-v2-top">
+        <div class="kpi-v2-icon blue">📊</div>
+        <span class="kpi-v2-badge positive">+2.4%</span>
       </div>
-      <div>
-        <div class="kpi-title">Carteira Total</div>
-        <div class="kpi-value">{{ total_open }}</div>
-      </div>
+      <div class="kpi-v2-label">Carteira Total</div>
+      <div class="kpi-v2-value">{{ total_open }}</div>
     </a>
 
-    <!-- Overdue Amount -->
-    <a class="kpi-card" href="/queue?tab=overdue">
-      <div class="kpi-top">
-        <div class="kpi-icon"><i data-lucide="alert-circle"></i></div>
-        <div class="kpi-pill critical">Crítico</div>
+    <a class="kpi-v2" href="/queue?tab=overdue">
+      <div class="kpi-v2-top">
+        <div class="kpi-v2-icon red">⚠️</div>
+        <span class="kpi-v2-badge critical">Crítico</span>
       </div>
-      <div>
-        <div class="kpi-title">Total Vencido</div>
-        <div class="kpi-value" style="color: var(--danger)">{{ total_overdue }}</div>
-      </div>
+      <div class="kpi-v2-label">Total Vencido</div>
+      <div class="kpi-v2-value critical">{{ total_overdue }}</div>
     </a>
 
-    <!-- Due Today -->
-    <a class="kpi-card" href="/queue?tab=due_today" aria-label="Ver títulos que vencem hoje">
-      <div class="kpi-top">
-        <div class="kpi-icon"><i data-lucide="calendar-check"></i></div>
-        <span class="kpi-pill warn">Ação Necessária</span>
+    <a class="kpi-v2" href="/queue?tab=due_today">
+      <div class="kpi-v2-top">
+        <div class="kpi-v2-icon orange">📅</div>
+        <span class="kpi-v2-badge warning">Ação</span>
       </div>
-      <div>
-        <div class="kpi-title">Vence Hoje</div>
-        <div class="kpi-value">{{ due_today_total | brl }}</div>
-      </div>
+      <div class="kpi-v2-label">Vence Hoje</div>
+      <div class="kpi-v2-value">{{ due_today_total | brl }}</div>
     </a>
 
-    <!-- Recovery Progress -->
-    <div class="kpi-card">
-      <div class="kpi-top">
-        <div class="kpi-icon"><i data-lucide="trending-up"></i></div>
+    <div class="kpi-v2">
+      <div class="kpi-v2-top">
+        <div class="kpi-v2-icon green">📈</div>
       </div>
-      <div>
-        <div class="kpi-title">Taxa de Recuperação</div>
-        <div class="kpi-value">{{ "{:,.1f}".format(recovery_rate) }}%</div>
-        <div class="bar-track" style="margin-top:8px; height:6px;">
-          <div class="bar-fill" style="width: {{ recovery_rate }}%;"></div>
-        </div>
-      </div>
+      <div class="kpi-v2-label">Taxa de Recuperação</div>
+      <div class="kpi-v2-value positive">{{ "{:,.1f}".format(recovery_rate) }}%</div>
     </div>
   </div>
 
-  <!-- 2. Main Center Block (Queue + Agenda) -->
-  <div class="split-view">
+  <!-- Aging Section -->
+  <div class="aging-section">
+    <div class="aging-header">
+      <div class="aging-title">
+        <div class="aging-title-icon">⏰</div>
+        <span>Parcelas Vencidas por Tempo de Atraso</span>
+      </div>
+      <a href="/queue?tab=overdue" class="btn-outline">Ver Detalhes</a>
+    </div>
+    <div class="aging-grid">
+      <a href="/queue?range=30" class="aging-card lv1">
+        <div class="aging-days">1-30 dias</div>
+        <div class="aging-count">{{ aging.1_30.count }}</div>
+        <div class="aging-label">parcelas</div>
+        <div class="aging-card-value">{{ aging.1_30.value_fmt }}</div>
+      </a>
+      <a href="/queue?range=60" class="aging-card lv2">
+        <div class="aging-days">31-60 dias</div>
+        <div class="aging-count">{{ aging.31_60.count }}</div>
+        <div class="aging-label">parcelas</div>
+        <div class="aging-card-value">{{ aging.31_60.value_fmt }}</div>
+      </a>
+      <a href="/queue?range=90" class="aging-card lv3">
+        <div class="aging-days">61-90 dias</div>
+        <div class="aging-count">{{ aging.61_90.count }}</div>
+        <div class="aging-label">parcelas</div>
+        <div class="aging-card-value">{{ aging.61_90.value_fmt }}</div>
+      </a>
+      <a href="/queue?range=90plus" class="aging-card lv4">
+        <div class="aging-days">+90 dias</div>
+        <div class="aging-count">{{ aging.90_plus.count }}</div>
+        <div class="aging-label">parcelas</div>
+        <div class="aging-card-value">{{ aging.90_plus.value_fmt }}</div>
+      </a>
+    </div>
+  </div>
 
-    <!-- Priority Queue Table -->
-    <div class="split-card">
-      <div class="card-h">
-        <div class="card-title">
-          <i data-lucide="list-video" style="color: var(--primary-text)"></i>
-          Fila de Prioridade
+  <!-- Content Grid: Queue + Right Column -->
+  <div class="content-grid">
+
+    <!-- Priority Queue -->
+    <div class="queue-section">
+      <div class="section-hdr">
+        <div class="section-ttl">
+          <div class="section-ttl-icon">📋</div>
+          <span>Fila de Prioridade</span>
         </div>
-        <a href="/queue" class="btn btn-secondary">Ver Toda a Fila</a>
+        <a href="/queue" class="btn-outline">Ver Toda a Fila</a>
       </div>
 
-      <table class="clean-table">
+      <table class="q-table">
         <thead>
           <tr>
             <th>Cliente</th>
@@ -94,7 +720,7 @@
         </thead>
         <tbody id="queue-body">
           <tr>
-            <td colspan="4" style="text-align:center; padding: 40px;">Carregando fila...</td>
+            <td colspan="4" style="text-align:center; padding:40px; color:#94a3b8;">Carregando fila...</td>
           </tr>
         </tbody>
       </table>
@@ -104,103 +730,99 @@
       async function loadPriorityQueue() {
         const body = document.getElementById('queue-body');
         try {
-          const resp = await fetch('/api/fila/prioridade?limit=15');
+          const resp = await fetch('/api/fila/prioridade?limit=8');
           const data = await resp.json();
 
           if (data.length === 0) {
-            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-3);">Sem clientes em atraso na fila de prioridade.</td></tr>';
+            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:#94a3b8;">Sem clientes em atraso.</td></tr>';
             return;
           }
 
           body.innerHTML = '';
           data.forEach(item => {
+            const badgeClass = item.max_atraso > 60 ? 'critical' : (item.max_atraso > 30 ? 'moderate' : 'warning');
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                    <td>
-                      <div class="client-cell">
-                        <span class="client-name">${item.nome_cliente}</span>
-                        <span class="client-sub">Último contato: ${item.ultimo_contato_str}</span>
-                      </div>
-                    </td>
-                    <td>R$ ${item.valor_em_aberto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td><span class="badge ${item.max_atraso > 30 ? 'red' : 'yellow'}">${item.status_label}</span></td>
-                    <td>
-                      <div class="actions-cell">
-                        <a href="/customers/${item.cliente_id}" class="btn-primary btn" style="padding: 6px 14px; text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                          <i data-lucide="file-text" style="width:16px; height:16px;"></i> Detalhes
-                        </a>
-                        ${item.phone
-                ? `<a class="btn-action-icon" title="WhatsApp: ${item.phone}" href="https://wa.me/55${item.phone.replace(/\D/g, '')}" target="_blank" rel="noopener"><i data-lucide="phone"></i></a>`
-                : `<button class="btn-action-icon" title="Sem telefone cadastrado" onclick="alert('Este cliente não possui telefone cadastrado.')"><i data-lucide="phone"></i></button>`
+              <td>
+                <div class="q-client-name">${item.nome_cliente}</div>
+                <div class="q-client-meta">Último contato: ${item.ultimo_contato_str}</div>
+              </td>
+              <td><span class="q-amount">R$ ${item.valor_em_aberto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
+              <td><span class="q-badge ${badgeClass}">${item.status_label}</span></td>
+              <td>
+                <div class="q-actions">
+                  <a class="q-action-btn" href="/customers/${item.cliente_id}" title="Detalhes">📄</a>
+                  ${item.phone
+                ? `<a class="q-action-btn whatsapp" href="https://wa.me/55${item.phone.replace(/\\D/g, '')}" target="_blank" title="WhatsApp">💬</a>`
+                : `<button class="q-action-btn" title="Sem telefone" onclick="alert('Sem telefone cadastrado.')">💬</button>`
               }
-                        <a class="btn-action-icon" title="Registrar Contato" href="/customers/${item.cliente_id}#registrar"><i data-lucide="clipboard-check"></i></a>
-                      </div>
-                    </td>
-                `;
+                  <a class="q-action-btn" href="/customers/${item.cliente_id}#registrar" title="Registrar">✅</a>
+                </div>
+              </td>`;
             body.appendChild(tr);
           });
 
-          // Re-render Lucide icons
-          if (window.lucide) {
-            lucide.createIcons();
-          }
-
+          if (window.lucide) lucide.createIcons();
         } catch (err) {
-          console.error('Erro ao carregar fila:', err);
-          body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--danger);">Erro ao carregar dados.</td></tr>';
+          console.error('Erro:', err);
+          body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:#ef4444;">Erro ao carregar dados.</td></tr>';
         }
       }
-
       document.addEventListener('DOMContentLoaded', loadPriorityQueue);
     </script>
 
-    <!-- Right Side Panel: Daily Agenda -->
-    <div class="split-card" style="background: #FAFAFA; border: 1px solid var(--border)">
-      <div class="card-h">
-        <div class="card-title">
-          <i data-lucide="clock" style="color: var(--text-2)"></i>
-          Agenda do Dia
+    <!-- Right Column -->
+    <div class="right-col">
+      <!-- Agenda do Dia -->
+      <div class="sidebar-section">
+        <div class="section-hdr">
+          <div class="section-ttl">
+            <div class="section-ttl-icon">📅</div>
+            <span>Agenda do Dia</span>
+          </div>
+          <span class="agenda-count-badge">{{ promises | length }}</span>
         </div>
-        <span class="card-counter">3</span>
+        <div class="agenda-items">
+          {% if promises | length == 0 %}
+          <div style="text-align:center; padding:20px; color:#94a3b8; font-size:13px;">
+            Nenhum compromisso para hoje.
+          </div>
+          {% else %}
+          {% for p in promises[:5] %}
+          <div class="agenda-row">
+            <div
+              class="agenda-row-icon {% if p.action_type == 'LIGACAO' %}call{% elif p.action_type == 'REUNIAO' %}meet{% else %}warn{% endif %}">
+              {% if p.action_type == 'LIGACAO' %}📞{% elif p.action_type == 'REUNIAO' %}🤝{% else %}📋{% endif %}
+            </div>
+            <div class="agenda-row-body">
+              <div class="agenda-row-title">{{ p.customer.name[:25] }}</div>
+              <div class="agenda-row-desc">{{ p.outcome[:30] if p.outcome else p.action_type }}</div>
+            </div>
+            <div class="agenda-row-time">{{ p.promised_date.strftime('%d/%m') if p.promised_date else '' }}</div>
+          </div>
+          {% endfor %}
+          {% endif %}
+        </div>
       </div>
 
-      <ul class="agenda-list">
-        <li class="agenda-item">
-          <div class="agenda-icon"><i data-lucide="phone-call"></i></div>
-          <div class="agenda-info">
-            <span class="agenda-title">Acompanhamento: Marcos Silva</span>
-            <span class="agenda-time">10:00 · Checar Promessa</span>
+      <!-- Meta de Recuperação -->
+      <div class="sidebar-section">
+        <div class="section-hdr">
+          <div class="section-ttl">
+            <div class="section-ttl-icon">🎯</div>
+            <span>Meta de Recuperação</span>
           </div>
-        </li>
-        <li class="agenda-item">
-          <div class="agenda-icon" style="background:#DCFCE7; color:#166534"><i data-lucide="file-check"></i></div>
-          <div class="agenda-info">
-            <span class="agenda-title">Assinar Acordo</span>
-            <span class="agenda-time">14:30 · Escritório</span>
-          </div>
-        </li>
-        <li class="agenda-item">
-          <div class="agenda-icon" style="background:#FEF3C7; color:#B45309"><i data-lucide="alert-triangle"></i></div>
-          <div class="agenda-info">
-            <span class="agenda-title">Crítico: Loja Matriz</span>
-            <span class="agenda-time">16:00 · Revisão Gerência</span>
-          </div>
-        </li>
-      </ul>
-
-      <div class="card-h" style="margin-top: 30px; margin-bottom: 10px">
-        <div class="card-title" style="font-size: 14px">Meta de Recuperação</div>
-      </div>
-      <div class="bar-track" style="height:10px">
-        <div class="bar-fill" style="width: 85%"></div>
-      </div>
-      <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-3)">
-        <span>R$ 85k Recuperado</span>
-        <span>Meta: R$ 100k</span>
+        </div>
+        <div class="meta-bar-bg">
+          <div class="meta-bar-fill" style="width: {{ recovery_rate }}%;"></div>
+        </div>
+        <div class="meta-vals">
+          <span class="meta-curr">{{ "{:,.1f}".format(recovery_rate) }}% Recuperado</span>
+          <span class="meta-tgt">Meta: 100%</span>
+        </div>
       </div>
     </div>
 
   </div>
-
 </div>
 {% endblock %}

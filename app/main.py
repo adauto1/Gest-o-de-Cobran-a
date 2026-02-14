@@ -602,14 +602,31 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     upcoming = [i for i in insts if -7 <= days_overdue(i.due_date) < 0 and Decimal(i.open_amount) > 0]
     total_upcoming = sum([Decimal(i.open_amount) for i in upcoming], Decimal("0"))
 
-    buckets = {"0-4":0,"5-14":0,"15-29":0,"30-59":0,"60+":0}
+    # Aging buckets matching mockup design
+    aging = {
+        "1_30":  {"count": 0, "value": Decimal("0")},
+        "31_60": {"count": 0, "value": Decimal("0")},
+        "61_90": {"count": 0, "value": Decimal("0")},
+        "90_plus": {"count": 0, "value": Decimal("0")},
+    }
+    urgent_count = 0  # >60 days without recent contact
     for i in overdue:
         d = days_overdue(i.due_date)
-        if 1 <= d <= 4: buckets["0-4"] += 1
-        elif 5 <= d <= 14: buckets["5-14"] += 1
-        elif 15 <= d <= 29: buckets["15-29"] += 1
-        elif 30 <= d <= 59: buckets["30-59"] += 1
-        else: buckets["60+"] += 1
+        amt = Decimal(str(i.open_amount))
+        if 1 <= d <= 30:
+            aging["1_30"]["count"] += 1; aging["1_30"]["value"] += amt
+        elif 31 <= d <= 60:
+            aging["31_60"]["count"] += 1; aging["31_60"]["value"] += amt
+        elif 61 <= d <= 90:
+            aging["61_90"]["count"] += 1; aging["61_90"]["value"] += amt
+        else:
+            aging["90_plus"]["count"] += 1; aging["90_plus"]["value"] += amt
+        if d > 60:
+            urgent_count += 1
+
+    # Format aging values for template
+    for k in aging:
+        aging[k]["value_fmt"] = format_money(aging[k]["value"])
 
     promises = db.query(CollectionAction).filter(CollectionAction.promised_date == today()).order_by(CollectionAction.created_at.desc()).limit(10).all()
 
@@ -633,8 +650,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                   total_open=format_money(total_open),
                   total_overdue=format_money(total_overdue),
                   total_upcoming=format_money(total_upcoming),
-                  due_today_total=due_today_total, # Raw decimal for brl filter
-                  buckets=buckets, promises=promises, today=today().isoformat(),
+                  due_today_total=due_today_total,
+                  aging=aging, urgent_count=urgent_count,
+                  promises=promises, today=today().isoformat(),
                   recovery_rate=recovery_rate,
                   current_commission=current_commission,
                   admin_stats=admin_stats)
