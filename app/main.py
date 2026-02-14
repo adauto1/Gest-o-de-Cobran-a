@@ -570,6 +570,72 @@ def api_fila_prioridade(request: Request, limit: int = 20, db: Session = Depends
 
     return result
 
+
+def calculate_recovery_goals(db: Session, user: User):
+    today_dt = datetime.utcnow().date()
+    start_of_month = datetime(today_dt.year, today_dt.month, 1)
+
+    # Paid this month
+    q_paid = db.query(Installment).filter(Installment.status == "PAGA", Installment.paid_at >= start_of_month)
+    if user.role == "COBRANCA" and user.store:
+         q_paid = q_paid.join(Customer).filter(Customer.store == user.store)
+    paid_installs = q_paid.all()
+
+    # Open (currently overdue)
+    q_open = db.query(Installment).filter(Installment.status == "ABERTA")
+    if user.role == "COBRANCA" and user.store:
+         q_open = q_open.join(Customer).filter(Customer.store == user.store)
+    open_installs = q_open.all()
+
+    dataset = {
+        "30": {"paid": Decimal(0), "total": Decimal(0)}, # 1-30 days
+        "60": {"paid": Decimal(0), "total": Decimal(0)}, # 31-60 days
+        "90": {"paid": Decimal(0), "total": Decimal(0)}, # 61-90 days
+    }
+
+    def get_bucket(d):
+        if 1 <= d <= 30: return "30"
+        if 31 <= d <= 60: return "60"
+        if 61 <= d <= 90: return "90"
+        return None
+
+    # Sum Paid (based on delay at payment)
+    for i in paid_installs:
+        if i.due_date and i.paid_at:
+            delay = (i.paid_at.date() - i.due_date).days
+            k = get_bucket(delay)
+            if k:
+                dataset[k]["paid"] += i.amount
+                dataset[k]["total"] += i.amount # It was part of the bucket
+
+    # Sum Open (currently overdue)
+    for i in open_installs:
+        if i.due_date:
+            delay = (today_dt - i.due_date).days
+            k = get_bucket(delay)
+            if k:
+                dataset[k]["total"] += i.open_amount
+
+    # Build results
+    results = []
+    target_pct = Decimal("0.70")
+    for k in ["30", "60", "90"]:
+        d = dataset[k]
+        goal = d["total"] * target_pct
+        actual = d["paid"]
+        missing = goal - actual
+        
+        # Formatting
+        results.append({
+            "label": f"{k} DIAS",
+            "goal_fmt": format_money(goal),
+            "actual_fmt": format_money(actual),
+            "missing_fmt": format_money(missing) if missing > 0 else "R$ 0,00", # Or negative? Screenshot shows "-R$ 351". User said "quds falta".
+            "missing_val": missing,
+            "is_reached": missing <= 0
+        })
+    return results
+
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     user = require_login(request, db)
@@ -660,6 +726,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                   promises=promises, today=today().isoformat(),
                   recovery_rate=recovery_rate,
                   fiado_percentage=fiado_percentage,
+                  recovery_goals=calculate_recovery_goals(db, user),
                   current_commission=current_commission,
                   admin_stats=admin_stats)
 
