@@ -155,6 +155,10 @@ def process_html_import(file_content: bytes, db: Session, user_id: int):
                 
             name = " ".join(name_parts).strip()
             
+            # Skip rows where name starts with a date (Subtotals or Metadata)
+            if re.match(r'^\d{2}/\d{2}/', name):
+                continue
+
             # Validation
             if not name or len(name) < 3: continue 
             # sometimes header row has "Vencimento" which matches nothing, good.
