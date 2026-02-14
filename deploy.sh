@@ -1,16 +1,32 @@
 #!/bin/bash
+# =====================================================
+# Deploy Script — Gestão de Cobrança (Portal Móveis)
+# /home/deploy/deploy.sh
+# =====================================================
+set -e
 
-# Atualiza o repositório
+APP_DIR="/home/deploy/Gest-o-de-Cobran-a"
+VENV="$APP_DIR/.venv"
+
+echo "🚀 Iniciando deploy..."
+
+# 1. Atualizar código
+cd "$APP_DIR"
+echo "📥 Atualizando código..."
 git pull origin main
 
-# Ativa o ambiente virtual (ajuste o caminho se necessário)
-source .venv/bin/activate
+# 2. Ativar venv e instalar dependências
+echo "📦 Instalando dependências..."
+source "$VENV/bin/activate"
+pip install -r requirements.txt --quiet
 
-# Instala dependências
-pip install -r requirements.txt
+# 3. Migração do banco é automática!
+# O startup da aplicação executa:
+# - Base.metadata.create_all() → cria tabelas novas
+# - _auto_migrate()            → adiciona colunas novas
 
-# Reinicia o serviço (ajuste conforme seu gerenciador de processos, ex: systemd, supervisor)
-# systemctl restart portal-cobranca
+# 4. Reiniciar serviço
+echo "🔄 Reiniciando serviço..."
+sudo systemctl restart gestao-cobranca
 
-# Comentário vazio para teste de trigger
-#
+echo "✅ Deploy concluído com sucesso!"

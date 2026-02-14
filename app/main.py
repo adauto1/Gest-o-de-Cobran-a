@@ -373,9 +373,43 @@ def healthz():
 def version():
     return {"title": APP_TITLE, "version": APP_VERSION}
 
+# --------------------------------------------------------------------------
+# Auto-migration: adds missing columns to existing tables
+# --------------------------------------------------------------------------
+import logging as _logging
+_migrate_log = _logging.getLogger("auto_migrate")
+
+def _auto_migrate(eng):
+    """Compare SQLAlchemy models with DB schema, add missing columns."""
+    from sqlalchemy import inspect as sa_inspect, text
+    inspector = sa_inspect(eng)
+    for table in Base.metadata.sorted_tables:
+        if table.name not in inspector.get_table_names():
+            continue  # create_all already handles new tables
+        existing = {c["name"] for c in inspector.get_columns(table.name)}
+        for col in table.columns:
+            if col.name not in existing:
+                col_type = col.type.compile(eng.dialect)
+                default = ""
+                if col.default is not None:
+                    dv = col.default.arg
+                    if isinstance(dv, str):
+                        default = f" DEFAULT '{dv}'"
+                    elif dv is not None:
+                        default = f" DEFAULT {dv}"
+                nullable = "" if col.nullable else " NOT NULL"
+                # SQLite can't add NOT NULL without default
+                if nullable and not default:
+                    nullable = ""
+                sql = f"ALTER TABLE {table.name} ADD COLUMN {col.name} {col_type}{default}{nullable}"
+                _migrate_log.info(f"Migrating: {sql}")
+                with eng.begin() as conn:
+                    conn.execute(text(sql))
+
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+    _auto_migrate(engine)  # add missing columns to existing tables
     db = SessionLocal()
     try:
         if db.query(User).count() == 0:
