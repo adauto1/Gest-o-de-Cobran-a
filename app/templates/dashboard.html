@@ -671,27 +671,27 @@
     <div class="aging-grid">
       <a href="/queue?range=30" class="aging-card lv1">
         <div class="aging-days">1-30 dias</div>
-        <div class="aging-count">{{ aging.1_30.count }}</div>
+        <div class="aging-count">{{ aging['1_30']['count'] }}</div>
         <div class="aging-label">parcelas</div>
-        <div class="aging-card-value">{{ aging.1_30.value_fmt }}</div>
+        <div class="aging-card-value">{{ aging['1_30']['value_fmt'] }}</div>
       </a>
       <a href="/queue?range=60" class="aging-card lv2">
         <div class="aging-days">31-60 dias</div>
-        <div class="aging-count">{{ aging.31_60.count }}</div>
+        <div class="aging-count">{{ aging['31_60']['count'] }}</div>
         <div class="aging-label">parcelas</div>
-        <div class="aging-card-value">{{ aging.31_60.value_fmt }}</div>
+        <div class="aging-card-value">{{ aging['31_60']['value_fmt'] }}</div>
       </a>
       <a href="/queue?range=90" class="aging-card lv3">
         <div class="aging-days">61-90 dias</div>
-        <div class="aging-count">{{ aging.61_90.count }}</div>
+        <div class="aging-count">{{ aging['61_90']['count'] }}</div>
         <div class="aging-label">parcelas</div>
-        <div class="aging-card-value">{{ aging.61_90.value_fmt }}</div>
+        <div class="aging-card-value">{{ aging['61_90']['value_fmt'] }}</div>
       </a>
       <a href="/queue?range=90plus" class="aging-card lv4">
         <div class="aging-days">+90 dias</div>
-        <div class="aging-count">{{ aging.90_plus.count }}</div>
+        <div class="aging-count">{{ aging['90_plus']['count'] }}</div>
         <div class="aging-label">parcelas</div>
-        <div class="aging-card-value">{{ aging.90_plus.value_fmt }}</div>
+        <div class="aging-card-value">{{ aging['90_plus']['value_fmt'] }}</div>
       </a>
     </div>
   </div>
