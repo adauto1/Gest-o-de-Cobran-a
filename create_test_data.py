@@ -2,38 +2,48 @@ from app.main import SessionLocal, Customer, Installment, today
 from datetime import timedelta
 import random
 
-def create_test_data():
+def create_or_update_test_data():
     db = SessionLocal()
     
-    print("Criando dados de teste...")
+    print("--- Gerenciando Dados de Teste ---")
     
-    # 1. Criar Cliente de Teste
-    cliente = Customer(
-        name="Cliente Teste WhatsApp",
-        external_key=f"TESTE_{random.randint(1000, 9999)}",
-        cpf_cnpj="000.000.000-00",
-        whatsapp="67996524740",
-        store="LOJA TESTE",
-        address="Rua dos Testes, 123 - Centro"
-    )
-    db.add(cliente)
+    # 1. Buscar ou Criar Cliente
+    cliente = db.query(Customer).filter(Customer.name == "Cliente Teste WhatsApp").first()
+    
+    if cliente:
+        print(f"✅ Cliente encontrado: {cliente.name} (ID: {cliente.id})")
+        print(f"   Atualizando telefone: {cliente.whatsapp} -> 67996524740")
+        cliente.whatsapp = "67996524740"
+    else:
+        print("🆕 Criando novo Cliente de Teste...")
+        cliente = Customer(
+            name="Cliente Teste WhatsApp",
+            external_key=f"TESTE_{random.randint(1000, 9999)}",
+            cpf_cnpj="000.000.000-00",
+            whatsapp="67996524740",
+            store="LOJA TESTE",
+            address="Rua dos Testes, 123 - Centro"
+        )
+        db.add(cliente)
+    
     db.commit()
     db.refresh(cliente)
-    print(f"Cliente criado: {cliente.name} (ID: {cliente.id})")
     
-    # 2. Criar Parcelas
+    # 2. Resetar Parcelas (Deletar e Recriar para garantir o cenário)
+    num_deleted = db.query(Installment).filter(Installment.customer_id == cliente.id).delete()
+    print(f"🧹 Parcelas antigas removidas: {num_deleted}")
+    
     t = today()
     parcels = [
-        # Vencida há 10 dias (Prioridade Alta)
+        # Vencida há 10 dias
         {"due": t - timedelta(days=10), "amt": 150.00, "n": 1},
-        
-        # Vence Hoje (Para testar filtro 'Vence Hoje')
+        # Vence Hoje
         {"due": t, "amt": 200.50, "n": 2},
-        
-        # Vence em 5 dias (Futura)
+        # Vence em 5 dias
         {"due": t + timedelta(days=5), "amt": 300.00, "n": 3}
     ]
     
+    print("📝 Criando novas parcelas...")
     for p in parcels:
         inst = Installment(
             customer_id=cliente.id,
@@ -48,12 +58,10 @@ def create_test_data():
         db.add(inst)
     
     db.commit()
-    print("Parcelas criadas com sucesso!")
-    print("\nAGORA O QUE FAZER:")
-    print("1. Vá na Fila de Cobrança.")
-    print(f"2. Procure por '{cliente.name}'.")
-    print("3. Edite o telefone para o SEU número real para testar o envio.")
-    print("4. Clique no botão do WhatsApp.")
+    print("✅ Dados de teste atualizados com sucesso!")
+    print(f"   Cliente: {cliente.name}")
+    print(f"   WhatsApp: {cliente.whatsapp}")
+    print(f"   Parcelas criadas: {len(parcels)}")
 
 if __name__ == "__main__":
-    create_test_data()
+    create_or_update_test_data()
