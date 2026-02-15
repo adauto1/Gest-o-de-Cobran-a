@@ -25,6 +25,14 @@ pip install -r requirements.txt --quiet
 # - Base.metadata.create_all() → cria tabelas novas
 # - _auto_migrate()            → adiciona colunas novas
 
+# 3.5. Corrigir permissões do banco de dados
+echo "🔐 Corrigindo permissões do banco de dados..."
+mkdir -p "$APP_DIR/data"
+chmod 755 "$APP_DIR/data"
+if [ -f "$APP_DIR/data/app.db" ]; then
+    chmod 664 "$APP_DIR/data/app.db"
+fi
+
 # 4. Reiniciar serviço
 echo "🔄 Reiniciando serviço..."
 sudo systemctl restart gestao-cobranca
