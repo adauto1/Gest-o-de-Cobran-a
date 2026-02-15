@@ -127,6 +127,7 @@ def run_collection_check(session_factory) -> dict:
                 "{dias_atraso}": str(max_overdue), "{DIAS}": str(max_overdue),
                 "{dias}": str(max_overdue),
                 "{vencimento}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
+                "{data_vencimento}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
                 "{data}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
                 "{DATA}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
                 "{qtd}": str(len(insts)), "{QTD}": str(len(insts)),
