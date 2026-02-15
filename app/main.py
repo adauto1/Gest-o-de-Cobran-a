@@ -17,9 +17,9 @@ from starlette.status import HTTP_302_FOUND
 
 from sqlalchemy import (
     create_engine, Column, Integer, String, Date, DateTime, Boolean,
-    ForeignKey, Numeric, Text, Index
+    ForeignKey, Numeric, Text, Index, func, case, desc, literal_column
 )
-from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session, joinedload, subqueryload
 
 from passlib.context import CryptContext
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -47,6 +47,10 @@ Base = declarative_base()
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
+# Services
+from app.services.sync_customers import sync_erp_customers
+
+
 # -----------------------------------------------------------------------------
 # Models
 # -----------------------------------------------------------------------------
@@ -71,6 +75,8 @@ class Customer(Base):
     whatsapp = Column(String(40), nullable=True)
     store = Column(String(80), nullable=True)
     address = Column(String(255), nullable=True)
+    email = Column(String(120), nullable=True)
+    notes = Column(Text, nullable=True)
     assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
@@ -78,6 +84,12 @@ class Customer(Base):
     assigned_to = relationship("User")
     installments = relationship("Installment", back_populates="customer", cascade="all, delete-orphan")
     actions = relationship("CollectionAction", back_populates="customer", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index('ix_customers_name', 'name'),
+        Index('ix_customers_store', 'store'),
+        Index('ix_customers_assigned_to', 'assigned_to_user_id'),
+    )
 
 class Installment(Base):
     __tablename__ = "installments"
@@ -747,6 +759,12 @@ def customers_page(request: Request, q: str = "", store: str = "", db: Session =
         s = f"%{q.strip()}%"
         query = query.filter(Customer.name.ilike(s))
 
+    # Eager load for performance
+    query = query.options(
+        subqueryload(Customer.installments),
+        joinedload(Customer.assigned_to)
+    )
+
     customers = query.order_by(Customer.name.asc()).limit(300).all()
 
     # compute summary (open total + max overdue)
@@ -1092,72 +1110,136 @@ def reset_database(request: Request, db: Session = Depends(get_db)):
 @app.get("/queue", response_class=HTMLResponse)
 def queue_page(request: Request, 
                store: Optional[str] = None, 
-               range: Optional[str] = None, 
+               range: Optional[str] = None, # Legacy
                tab: Optional[str] = None,
+               page: int = 1, # Pagination
                db: Session = Depends(get_db)):
     user = require_login(request, db)
+    
+    # Defaults
+    page_size = 20
+    if page < 1: page = 1
+    offset = (page - 1) * page_size
 
-    # Base query for customers
-    query = db.query(Customer)
+    # --- SQL APPROACH FOR PERFORMANCE AND PAGINATION ---
+    # We need to calculate max_overdue and total_open per customer, filter by store/user,
+    # order by priority, and then paginate. Doing this in Python with 21k customers is too slow.
+
+    # 1. Base query on Installments (status='ABERTA')
+    # Use SQLite's julianday for date diff: (julianday('now') - julianday(due_date))
+    # We group by customer_id to get aggregated metrics.
+    
+    # Base Filters
+    filters = [
+        Installment.status == "ABERTA",
+        Installment.open_amount > 0
+    ]
+
+    # Special logic for "Due Today" (shows ONLY today's titles)
+    days_diff_expr = func.julianday(func.date('now')) - func.julianday(Installment.due_date)
+    
+    if tab == "due_today":
+        filters.append(days_diff_expr == 0)
+    
+    stmt = db.query(
+        Installment.customer_id,
+        func.max(days_diff_expr).label("max_overdue_days"),
+        func.sum(Installment.open_amount).label("total_open_val"),
+        func.count(Installment.id).label("count_open_val")
+    ).filter(*filters)
+
+    # 2. Filter buckets (tabs) IN SQL
+    # "overdue" -> overdue > 0
+    # For "due_today", the WHERE clause already filtered it, so we don't need HAVING,
+    # but we can keep logic if we want to be safe or reuse stmt.
+    
+    if tab == "overdue":
+        stmt = stmt.having(func.max(days_diff_expr) > 0)
+    
+    stmt = stmt.group_by(Installment.customer_id).subquery()
+
+    # 3. Main Query: Join Customer with Aggregated Subquery
+    query = db.query(Customer, stmt.c.max_overdue_days, stmt.c.total_open_val, stmt.c.count_open_val)\
+        .join(stmt, Customer.id == stmt.c.customer_id)
+
+    # 4. Filters (Store/User)
     if user.role == "COBRANCA":
         if user.store:
             query = query.filter(Customer.store == user.store)
-        # Restriction by assignment if any assignments exist
+        # Assigned Check
         assigned_exist = db.query(Customer).filter(Customer.assigned_to_user_id != None).count() > 0
         if assigned_exist:
             query = query.filter(Customer.assigned_to_user_id == user.id)
-
+    
     if store:
         query = query.filter(Customer.store == store)
 
-    customers = query.all()
+    # 5. Sorting Priority Logic (SQL Case)
+    # Priority 5: >= 60 days
+    # Priority 4: >= 30 days
+    # Priority 3: >= 15 days
+    # Priority 2: >= 5 days
+    # Priority 1: >= 0 days
+    # Priority 0: < 0 days (not overdue)
+    prio_case = case(
+        (stmt.c.max_overdue_days >= 60, 5),
+        (stmt.c.max_overdue_days >= 30, 4),
+        (stmt.c.max_overdue_days >= 15, 3),
+        (stmt.c.max_overdue_days >= 5, 2),
+        (stmt.c.max_overdue_days >= 0, 1),
+        else_=0
+    )
 
+    # 6. Order By + Pagination
+    # Orders: Priority DESC, Max Overdue DESC, Total Open DESC
+    query = query.order_by(
+        prio_case.desc(),
+        stmt.c.max_overdue_days.desc(),
+        stmt.c.total_open_val.desc()
+    )
+
+    # Count total for pagination
+    total_items = query.count()
+    total_pages = (total_items + page_size - 1) // page_size
+
+    # Fetch Page
+    results = query.offset(offset).limit(page_size).all()
+
+    # 7. Convert to display format
     items = []
-    for c in customers:
-        # filter installments: always open and > 0
-        insts = [i for i in c.installments if i.status == "ABERTA" and Decimal(i.open_amount) > 0]
-        
-        # Apply strict tab filtering if requested
-        if tab == "due_today":
-            insts = [i for i in insts if days_overdue(i.due_date) == 0]
-        elif tab == "overdue":
-            insts = [i for i in insts if days_overdue(i.due_date) > 0]
-        
-        if not insts:
-            continue
-            
-        max_over = max([days_overdue(i.due_date) for i in insts])
-        total_open = sum([Decimal(i.open_amount) for i in insts], Decimal("0"))
-        pr = bucket_priority(max_over)
+    for row in results:
+        cust, mo, to, co = row
+        max_over = int(mo) if mo else 0
         items.append({
-            "customer": c, 
-            "max_overdue": max_over, 
-            "priority": pr, 
-            "total_open": total_open, 
-            "count_open": len(insts)
+            "customer": cust,
+            "max_overdue": max_over,
+            "priority": bucket_priority(max_over),
+            "total_open": Decimal(to) if to else Decimal(0),
+            "count_open": co,
+            # Pre-calculate labels for template
+            "status_label": "Crítico (>60d)" if max_over > 60 else ("Alerta (30d+)" if max_over > 30 else f"{max_over} dias atraso"),
+            "ultimo_contato": None, # Loading these per page is fast enough now (20 items) or use subquery
+            "data_vencimento": (today() - timedelta(days=max_over)).isoformat()
         })
-
-    # Legacy Range Filtering (Dashboard buckets)
-    if range:
-        def ok(d):
-            if range == "0-4": return 1 <= d <= 4
-            if range == "5-14": return 5 <= d <= 14
-            if range == "15-29": return 15 <= d <= 29
-            if range == "30-59": return 30 <= d <= 59
-            if range == "60+": return d >= 60
-            if range == "a-vencer": return d < 0
-            return True
-        items = [it for it in items if ok(it["max_overdue"])]
-
-    # Sorting: Prio, Overdue, Amount
-    items.sort(key=lambda it: (it["priority"], it["max_overdue"], it["total_open"]), reverse=True)
+    
+    # Load last contact securely for just these 20 items
+    for item in items:
+        cid = item["customer"].id
+        last = db.query(CollectionAction).filter(CollectionAction.customer_id == cid).order_by(CollectionAction.created_at.desc()).first()
+        if last:
+            item["ultimo_contato"] = last.created_at.isoformat()
+            item["ultimo_contato_str"] = last.created_at.strftime("%d/%m/%Y")
+        else:
+             item["ultimo_contato_str"] = "Sem contato"
 
     return render("queue.html", request=request, user=user, title="Fila de Cobrança", 
-                  items=items[:500],
+                  items=items,
                   stores=stores_list(db), 
                   selected_store=store or "", 
                   selected_range=range or "",
-                  tab=tab)
+                  tab=tab,
+                  page=page,
+                  total_pages=total_pages)
 
 # -----------------------------------------------------------------------------
 # Customer detail + actions
@@ -1559,8 +1641,131 @@ async def import_upload_file(
     
     return RedirectResponse(f"/import?msg={msg}&type=success", status_code=303)
 
+# -----------------------------------------------------------------------------
+# API Routes for Dashboard Modals
+# -----------------------------------------------------------------------------
+@app.get("/api/customers/{customer_id}")
+def get_customer_api(customer_id: int, request: Request, db: Session = Depends(get_db)):
+    """Busca dados do cliente para edição."""
+    user = require_login(request, db)
+    cust = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    # Verifica permissão (COBRANCA só vê seus clientes)
+    if user.role == "COBRANCA":
+        if user.store and cust.store != user.store:
+            raise HTTPException(status_code=403, detail="Sem permissão")
+        assigned_exist = db.query(Customer).filter(Customer.assigned_to_user_id != None).count() > 0
+        if assigned_exist and cust.assigned_to_user_id != user.id:
+            raise HTTPException(status_code=403, detail="Sem permissão")
+    
+    return {
+        "id": cust.id,
+        "name": cust.name,
+        "whatsapp": cust.whatsapp or "",
+        "address": cust.address or "",
+        "email": cust.email or "",
+        "notes": cust.notes or ""
+    }
+
+@app.patch("/api/customers/{customer_id}")
+def update_customer_api(
+    customer_id: int,
+    data: dict,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Atualiza dados do cliente."""
+    user = require_login(request, db)
+    cust = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    # Verifica permissão
+    if user.role == "COBRANCA":
+        if user.store and cust.store != user.store:
+            raise HTTPException(status_code=403, detail="Sem permissão")
+        assigned_exist = db.query(Customer).filter(Customer.assigned_to_user_id != None).count() > 0
+        if assigned_exist and cust.assigned_to_user_id != user.id:
+            raise HTTPException(status_code=403, detail="Sem permissão")
+    
+    # Atualiza campos
+    if "whatsapp" in data:
+        cust.whatsapp = data["whatsapp"].strip() if data["whatsapp"] else None
+    if "address" in data:
+        cust.address = data["address"].strip() if data["address"] else None
+    if "email" in data:
+        cust.email = data["email"].strip() if data["email"] else None
+    if "notes" in data:
+        cust.notes = data["notes"].strip() if data["notes"] else None
+    
+    db.commit()
+    return {"success": True}
+
+@app.post("/api/collection-actions")
+def create_collection_action_api(
+    data: dict,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Registra ação de cobrança."""
+    user = require_login(request, db)
+    
+    # Valida customer_id
+    customer_id = data.get("customer_id")
+    if not customer_id:
+        raise HTTPException(status_code=400, detail="customer_id obrigatório")
+    
+    cust = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    # Verifica permissão
+    if user.role == "COBRANCA":
+        if user.store and cust.store != user.store:
+            raise HTTPException(status_code=403, detail="Sem permissão")
+        assigned_exist = db.query(Customer).filter(Customer.assigned_to_user_id != None).count() > 0
+        if assigned_exist and cust.assigned_to_user_id != user.id:
+            raise HTTPException(status_code=403, detail="Sem permissão")
+    
+    # Cria ação
+    promised_date = None
+    if data.get("promised_date"):
+        try:
+            promised_date = datetime.strptime(data["promised_date"], "%Y-%m-%d").date()
+        except:
+            pass
+    
+    action = CollectionAction(
+        customer_id=customer_id,
+        user_id=user.id,
+        action_type=data.get("action_type", "LIGACAO"),
+        outcome=data.get("outcome", ""),
+        notes=data.get("notes", ""),
+        promised_date=promised_date
+    )
+    db.add(action)
+    db.commit()
+    
+    return {"success": True, "id": action.id}
+
 
 @app.get("/import")
 async def import_page(request: Request):
     user = require_login(request, get_db()) # simplified auth check
     return templates.TemplateResponse("import.html", {"request": request, "user": user, "title": "Importar Planilha"})
+
+@app.post("/api/sync/customers")
+def api_sync_customers(request: Request, db: Session = Depends(get_db)):
+    """Sincroniza todos os clientes do ERP InfoCommerce."""
+    user = require_login(request, db)
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Apenas administradores podem sincronizar o cadastro completo.")
+    
+    file_path = r"C:\Users\Adauto Pereira\Desktop\DADOS ERP\RelatorioDECLIENTE InfoCommerce.HTM"
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail=f"Arquivo não encontrado em: {file_path}")
+    
+    result = sync_erp_customers(file_path, db)
+    return result

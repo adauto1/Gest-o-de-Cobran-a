@@ -61,10 +61,14 @@
         {% for it in items %}
         <tr>
           <td>
-            {% if it.priority >= 4 %}
+            {% if it.priority >= 5 %}
+            <span class="badge red">Crítica</span>
+            {% elif it.priority >= 4 %}
             <span class="badge red">Alta</span>
-            {% elif it.priority >= 2 %}
+            {% elif it.priority >= 3 %}
             <span class="badge yellow">Média</span>
+            {% elif it.priority >= 2 %}
+            <span class="badge blue">Baixa</span>
             {% else %}
             <span class="badge green">Normal</span>
             {% endif %}
@@ -72,17 +76,17 @@
           <td>
             <div class="client-cell">
               <span class="client-name">{{ it.customer.name }}</span>
-              <span class="client-sub">{{ it.count_open }} parcelas</span>
+              <span class="client-sub">{{ it.count_open }} parcelas, {{ it.ultimo_contato_str }}</span>
             </div>
           </td>
           <td>{{ it.customer.store or "-" }}</td>
           <td>
             {% if it.max_overdue > 0 %}
-            {{ it.max_overdue }} dias
+            <span style="font-weight: 500; color: var(--red);">{{ it.max_overdue }} dias</span>
             {% elif it.max_overdue == 0 %}
             <span class="badge yellow">Vence Hoje</span>
             {% else %}
-            Em dia
+            <span class="badge green">Em dia</span>
             {% endif %}
           </td>
           <td style="font-weight:700">{{ it.total_open | brl }}</td>
@@ -102,6 +106,40 @@
         {% endif %}
       </tbody>
     </table>
+
+    <!-- Pagination Controls -->
+    {% if total_pages > 1 %}
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; padding: 20px 10px; border-top: 1px solid var(--border);">
+      <div>
+        {% if page > 1 %}
+        <a href="/queue?page={{ page - 1 }}&tab={{ tab or '' }}&store={{ selected_store or '' }}"
+          class="btn btn-secondary">
+          <i data-lucide="chevron-left"></i> Anterior
+        </a>
+        {% else %}
+        <button class="btn btn-secondary" disabled style="opacity: 0.5; cursor: not-allowed;">
+          <i data-lucide="chevron-left"></i> Anterior
+        </button>
+        {% endif %}
+      </div>
+
+      <span class="small muted">Página {{ page }} de {{ total_pages }}</span>
+
+      <div>
+        {% if page < total_pages %} <a
+          href="/queue?page={{ page + 1 }}&tab={{ tab or '' }}&store={{ selected_store or '' }}"
+          class="btn btn-secondary">
+          Próxima <i data-lucide="chevron-right"></i>
+          </a>
+          {% else %}
+          <button class="btn btn-secondary" disabled style="opacity: 0.5; cursor: not-allowed;">
+            Próxima <i data-lucide="chevron-right"></i>
+          </button>
+          {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
