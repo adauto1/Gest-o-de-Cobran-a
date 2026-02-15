@@ -78,6 +78,7 @@ class Customer(Base):
     address = Column(String(255), nullable=True)
     email = Column(String(120), nullable=True)
     notes = Column(Text, nullable=True)
+    profile_cobranca = Column(String(20), nullable=False, default="AUTOMATICO")
     assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
@@ -576,6 +577,7 @@ def api_fila_prioridade(request: Request, limit: int = 20, db: Session = Depends
                 "valor_em_aberto": 0,
                 "max_atraso": 0,
                 "data_vencimento": i.due_date,
+                "profile_cobranca": i.customer.profile_cobranca or "AUTOMATICO",
                 "ultimo_contato": last_action.created_at if last_action else None,
                 "ultimo_contato_str": last_action.created_at.strftime("%d/%m/%Y") if last_action else "Sem contato"
             }
@@ -1689,7 +1691,8 @@ def get_customer_api(customer_id: int, request: Request, db: Session = Depends(g
         "whatsapp": cust.whatsapp or "",
         "address": cust.address or "",
         "email": cust.email or "",
-        "notes": cust.notes or ""
+        "notes": cust.notes or "",
+        "profile_cobranca": cust.profile_cobranca or "AUTOMATICO"
     }
 
 @app.patch("/api/customers/{customer_id}")
@@ -1722,6 +1725,8 @@ def update_customer_api(
         cust.email = data["email"].strip() if data["email"] else None
     if "notes" in data:
         cust.notes = data["notes"].strip() if data["notes"] else None
+    if "profile_cobranca" in data:
+        cust.profile_cobranca = data["profile_cobranca"].strip().upper()
     
     db.commit()
     return {"success": True}

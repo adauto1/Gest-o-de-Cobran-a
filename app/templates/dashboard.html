@@ -932,7 +932,14 @@
                 <div class="q-client-meta">Último contato: ${item.ultimo_contato_str}</div>
               </td>
               <td><span class="q-amount">R$ ${item.valor_em_aberto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
-              <td><span class="q-badge ${badgeClass}">${item.status_label}</span></td>
+              <td>
+                <span class="q-badge ${badgeClass}">${item.status_label}</span>
+                <div style="margin-top:4px; font-size:11px; opacity:0.8; display:flex; align-items:center; gap:4px;">
+                   ${item.profile_cobranca && item.profile_cobranca !== 'AUTOMATICO'
+                ? `<span style="background:var(--accent); color:#fff; padding:2px 6px; border-radius:4px;">${item.profile_cobranca}</span>`
+                : '<span style="color:var(--text-3);"><i data-lucide="settings-2" style="width:10px;"></i> Auto</span>'}
+                </div>
+              </td>
               <td>
                 <div class="q-actions">
                   <button class="q-action-btn edit" onclick="openEditModal(${item.cliente_id}, '${item.nome_cliente.replace(/'/g, "\\'")}')" title="Editar Cadastro">
@@ -1069,6 +1076,17 @@
         <label>Observações</label>
         <textarea id="edit_notes" rows="3" placeholder="Informações adicionais sobre o cliente..."></textarea>
 
+        <label>Perfil de Cobrança</label>
+        <select id="edit_profile">
+          <option value="AUTOMATICO">⚙️ Automático (Padrão)</option>
+          <option value="LEVE">🟢 Leve</option>
+          <option value="MODERADA">🟡 Moderada</option>
+          <option value="INTENSA">🔴 Intensa</option>
+        </select>
+        <small style="color:var(--text-3); display:block; margin-bottom:16px;">
+          * Força o uso de uma régua específica independente do atraso.
+        </small>
+
         <div class="modal-actions">
           <button type="button" onclick="closeEditModal()">Cancelar</button>
           <button type="submit" class="btn primary">Salvar Alterações</button>
@@ -1134,7 +1152,9 @@
           document.getElementById('edit_phone').value = data.whatsapp || '';
           document.getElementById('edit_address').value = data.address || '';
           document.getElementById('edit_email').value = data.email || '';
+          document.getElementById('edit_email').value = data.email || '';
           document.getElementById('edit_notes').value = data.notes || '';
+          document.getElementById('edit_profile').value = data.profile_cobranca || 'AUTOMATICO';
           document.getElementById('editModal').classList.add('active');
           if (window.lucide) lucide.createIcons();
         })
@@ -1160,7 +1180,9 @@
         whatsapp: document.getElementById('edit_phone').value,
         address: document.getElementById('edit_address').value,
         email: document.getElementById('edit_email').value,
-        notes: document.getElementById('edit_notes').value
+        email: document.getElementById('edit_email').value,
+        notes: document.getElementById('edit_notes').value,
+        profile_cobranca: document.getElementById('edit_profile').value
       };
 
       try {

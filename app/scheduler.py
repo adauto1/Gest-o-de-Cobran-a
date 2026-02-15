@@ -91,8 +91,16 @@ def run_collection_check(session_factory) -> dict:
                     nearest_due = inst.due_date
 
             # Encontrar regra aplicável
+            # Filtrar regras baseadas no perfil do cliente
+            applicable_rules = rules
+            c_profile = getattr(customer, "profile_cobranca", "AUTOMATICO")
+            
+            if c_profile and c_profile != "AUTOMATICO":
+                # Se tem perfil manual, só considera regras desse nível
+                applicable_rules = [r for r in rules if r.level == c_profile]
+            
             matched_rule = None
-            for r in rules:
+            for r in applicable_rules:
                 if r.start_days <= max_overdue <= r.end_days:
                     if matched_rule is None or (r.priority, r.start_days) > (matched_rule.priority, matched_rule.start_days):
                         matched_rule = r
