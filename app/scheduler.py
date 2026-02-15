@@ -22,8 +22,10 @@ def run_collection_check(session_factory) -> dict:
     # Import models here to avoid circular imports
     from app.main import (
         Customer, Installment, CollectionRule, SentMessage,
+        Configuracoes, WhatsappHistorico,
         format_money, today as get_today,
     )
+    from app.services.whatsapp import enviar_whatsapp
 
     db: Session = session_factory()
     stats = {"checked": 0, "created": 0, "skipped_freq": 0, "skipped_no_phone": 0}
@@ -35,6 +37,19 @@ def run_collection_check(session_factory) -> dict:
         rules = db.query(CollectionRule).filter(CollectionRule.active == True).all()
         if not rules:
             log.info("Nenhuma regra ativa encontrada.")
+            return stats
+
+        # 1.5) Buscar configurações de WhatsApp
+        config = db.query(Configuracoes).first()
+        if not config:
+            config = Configuracoes(whatsapp_ativo=False, whatsapp_modo_teste=True)
+            db.add(config)
+            db.commit()
+        
+        # Se WhatsApp desativado, aborta (conforme regra do usuário) ou apenas simula?
+        # User prompt suggests: if not config.whatsapp_ativo: return
+        if not config.whatsapp_ativo:
+            log.info("Régua de cobrança ignorada (WhatsApp desativado nas configurações).")
             return stats
 
         # 2) Buscar todas as parcelas abertas
@@ -122,19 +137,34 @@ def run_collection_check(session_factory) -> dict:
             phone = customer.whatsapp or ""
             if not phone:
                 stats["skipped_no_phone"] += 1
-
-            # 6) Salvar mensagem simulada
+            
+            # 6) Enviar WhatsApp (Real ou Simulado/Teste)
+            res_envio = enviar_whatsapp(phone, msg_body, modo_teste=config.whatsapp_modo_teste)
+            
+            # Registrar SentMessage (Log de Regra)
             sent = SentMessage(
                 customer_id=cid,
                 user_id=None,
-                channel=matched_rule.default_action,
+                channel="WHATSAPP_ZAPI",
                 template_used=matched_rule.template_message,
                 message_body=msg_body,
                 phone=phone,
-                status="SIMULADO",
+                status=res_envio.get("modo", "ERRO"),
                 rule_id=matched_rule.id,
             )
             db.add(sent)
+            
+            # Registrar WhatsappHistorico (Log Técnico)
+            hist = WhatsappHistorico(
+                cliente_id=cid,
+                telefone=phone,
+                mensagem=msg_body,
+                tipo="regua_automatica",
+                status=res_envio.get("modo", "").lower(),
+                resposta=str(res_envio)
+            )
+            db.add(hist)
+            
             stats["created"] += 1
 
         db.commit()

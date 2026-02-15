@@ -938,8 +938,14 @@
                   <button class="q-action-btn edit" onclick="openEditModal(${item.cliente_id}, '${item.nome_cliente.replace(/'/g, "\\'")}')" title="Editar Cadastro">
                     <i data-lucide="user-pen"></i>
                   </button>
+                  
+                  <!-- WhatsApp Manual (Z-API) -->
+                  <button class="q-action-btn whatsapp-manual" onclick="enviarWhatsappManual(${item.cliente_id}, '${item.nome_cliente.replace(/'/g, "\\'")}')" title="Disparar Cobrança (Z-API)" style="background:rgba(37,211,102,0.1);color:#25d366;border-color:rgba(37,211,102,0.2)">
+                    <i data-lucide="send"></i>
+                  </button>
+
                   ${item.phone
-                ? `<a class="q-action-btn whatsapp" href="https://wa.me/55${item.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${item.nome_cliente}! Aqui é da Portal Móveis. Identificamos que você tem parcelas em aberto no valor de R$ ${item.valor_em_aberto.toFixed(2)}. Podemos conversar sobre isso?`)}" target="_blank" title="WhatsApp"><i data-lucide="message-circle"></i></a>`
+                ? `<a class="q-action-btn whatsapp" href="https://wa.me/55${item.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${item.nome_cliente}! Aqui é da Portal Móveis. Identificamos que você tem parcelas em aberto no valor de R$ ${item.valor_em_aberto.toFixed(2)}. Podemos conversar sobre isso?`)}" target="_blank" title="Abrir Chat WhatsApp"><i data-lucide="message-circle"></i></a>`
                 : `<button class="q-action-btn" title="Sem telefone" onclick="alert('Sem telefone cadastrado.')"><i data-lucide="message-circle-off"></i></button>`
               }
                   <button class="q-action-btn register" onclick="openContactModal(${item.cliente_id}, '${item.nome_cliente.replace(/'/g, "\\'")}')" title="Registrar Contato">
@@ -950,10 +956,27 @@
             body.appendChild(tr);
           });
 
-          if (window.lucide) lucide.createIcons();
-        } catch (err) {
-          console.error('Erro:', err);
-          body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--danger);">Erro ao carregar dados.</td></tr>';
+          lucide.createIcons();
+        } catch (e) {
+          console.error(e);
+          body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-3);">Erro ao carregar fila.</td></tr>';
+        }
+      }
+
+      async function enviarWhatsappManual(clienteId, nome) {
+        if (!confirm(`Confirma o envio de mensagem de cobrança para ${nome}?`)) return;
+
+        try {
+          const res = await fetch(`/api/whatsapp/enviar-manual/${clienteId}`, { method: 'POST' });
+          const data = await res.json();
+
+          if (data.success) {
+            alert(`Mensagem enviada com sucesso! (${data.modo})`);
+          } else {
+            alert(`Erro ao enviar: ${data.erro}`);
+          }
+        } catch (e) {
+          alert('Erro de conexão ao enviar mensagem.');
         }
       }
       document.addEventListener('DOMContentLoaded', loadPriorityQueue);

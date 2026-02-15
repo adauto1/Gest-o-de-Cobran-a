@@ -49,6 +49,7 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # Services
 from app.services.sync_customers import sync_erp_customers
+from app.services.whatsapp import enviar_whatsapp, ZAPI_BASE_URL
 
 
 # -----------------------------------------------------------------------------
@@ -180,6 +181,27 @@ class ComissaoCobranca(Base):
     user = relationship("User")
 
 
+class Configuracoes(Base):
+    __tablename__ = "configuracoes"
+    id = Column(Integer, primary_key=True)
+    whatsapp_ativo = Column(Boolean, default=False)
+    whatsapp_modo_teste = Column(Boolean, default=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+class WhatsappHistorico(Base):
+    __tablename__ = "whatsapp_historico"
+    id = Column(Integer, primary_key=True)
+    cliente_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    telefone = Column(String(20), nullable=True)
+    mensagem = Column(Text, nullable=True)
+    tipo = Column(String(50), nullable=True)  # 'regua_automatica', 'manual', 'lembrete'
+    status = Column(String(20), nullable=True) # 'enviado', 'simulado', 'erro'
+    resposta = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    cliente = relationship("Customer")
+
+
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -211,6 +233,7 @@ PAGE_MAP = {
     "users.html": ("users", "Usuários"),
     "commissions.html": ("commissions", "Comissão"),
     "messages.html": ("messages", "Mensagens"),
+    "settings.html": ("settings", "Configurações"),
 }
 
 def render(template: str, **ctx):
@@ -1769,3 +1792,95 @@ def api_sync_customers(request: Request, db: Session = Depends(get_db)):
     
     result = sync_erp_customers(file_path, db)
     return result
+
+# --- WhatsApp Integration ---
+
+@app.get("/settings", response_class=HTMLResponse)
+def settings_page(request: Request, db: Session = Depends(get_db)):
+    user = require_login(request, db)
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    config = db.query(Configuracoes).first()
+    if not config:
+        config = Configuracoes(whatsapp_ativo=False, whatsapp_modo_teste=True)
+        db.add(config)
+        db.commit()
+        db.refresh(config)
+    
+    return render("settings.html", request=request, user=user, title="Configurações", config=config)
+
+@app.post("/settings")
+async def update_settings(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    user = require_login(request, db)
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    form = await request.form()
+    whatsapp_ativo = form.get("whatsapp_ativo") == "on"
+    whatsapp_modo_teste = form.get("whatsapp_modo_teste") == "on"
+    
+    config = db.query(Configuracoes).first()
+    if not config:
+        config = Configuracoes()
+        db.add(config)
+    
+    config.whatsapp_ativo = whatsapp_ativo
+    config.whatsapp_modo_teste = whatsapp_modo_teste
+    config.updated_at = datetime.utcnow()
+    db.commit()
+    
+    return RedirectResponse(url="/settings", status_code=303)
+
+@app.post("/api/whatsapp/enviar-manual/{cliente_id}")
+def enviar_whatsapp_manual(cliente_id: int, request: Request, db: Session = Depends(get_db)):
+    user = require_login(request, db)
+    
+    # Fetch config
+    config = db.query(Configuracoes).first()
+    is_test = True
+    if config:
+        is_test = config.whatsapp_modo_teste
+
+    cliente = db.query(Customer).filter(Customer.id == cliente_id).first()
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+
+    if not cliente.whatsapp:
+         return {"success": False, "erro": "Cliente sem WhatsApp cadastrado"}
+
+    mensagem = f"Olá {cliente.name}!\n\nAqui é a Portal Móveis. Identificamos pendências em seu nome.\n\nEntre em contato conosco para regularizar sua situação.\n\n📍 Portal Móveis - Tacuru/MS"
+
+    resultado = enviar_whatsapp(
+        telefone=cliente.whatsapp,
+        mensagem=mensagem,
+        modo_teste=is_test
+    )
+    
+    # Historico
+    hist = WhatsappHistorico(
+        cliente_id=cliente.id,
+        telefone=cliente.whatsapp,
+        mensagem=mensagem,
+        tipo="manual",
+        status=resultado.get("modo", "").lower(),
+        resposta=str(resultado)
+    )
+    db.add(hist)
+    db.commit()
+    
+    return resultado
+
+@app.get("/api/whatsapp/status")
+def verificar_status_zapi():
+    import requests
+    try:
+        url = f"{ZAPI_BASE_URL}/status"
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        return {"conectado": True, "status": data}
+    except Exception as e:
+        return {"conectado": False, "erro": str(e)}
