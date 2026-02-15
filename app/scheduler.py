@@ -91,13 +91,29 @@ def run_collection_check(session_factory) -> dict:
                     nearest_due = inst.due_date
 
             # Encontrar regra aplicável
-            # Filtrar regras baseadas no perfil do cliente
-            applicable_rules = rules
+            # Lógica de Migração Automática de Nível
             c_profile = getattr(customer, "profile_cobranca", "AUTOMATICO")
+            effective_profile = c_profile
+
+            # Calcular totais do cliente para variáveis e decisão
+            # total_open já calculado acima.
+            # contar parcelas vencidas
+            overdue_count = sum(1 for i in insts if (_today - i.due_date).days > 0)
             
-            if c_profile and c_profile != "AUTOMATICO":
-                # Se tem perfil manual, só considera regras desse nível
-                applicable_rules = [r for r in rules if r.level == c_profile]
+            if c_profile == "AUTOMATICO":
+                # Regra de Migração:
+                # < 2 vencidas -> LEVE
+                # >= 2 vencidas -> MODERADA
+                # >= 3 vencidas -> INTENSA
+                if overdue_count >= 3:
+                    effective_profile = "INTENSA"
+                elif overdue_count >= 2:
+                    effective_profile = "MODERADA"
+                else:
+                    effective_profile = "LEVE"
+            
+            # Filtrar regras baseadas no perfil efetivo
+            applicable_rules = [r for r in rules if r.level == effective_profile]
             
             matched_rule = None
             for r in applicable_rules:
@@ -127,11 +143,27 @@ def run_collection_check(session_factory) -> dict:
 
             # 5) Montar mensagem usando template
             msg_body = matched_rule.template_message
+            
+            # Formatação de CPF (mascarado)
+            cpf_raw = customer.cpf_cnpj or ""
+            cpf_masked = f"***.{cpf_raw[3:6]}.{cpf_raw[6:9]}-**" if len(cpf_raw) >= 11 else cpf_raw
+            
+            # Links (Simulados se não existirem no config)
+            chave_pix = "00.000.000/0001-00" # Placeholder
+            link_pagto = f"https://portalmoveis.com.br/pagar/{customer.external_key}"
+            
+            # Valor com juros (Simulado +10% se atrasado > 30 dias, else +2%)
+            # Apenas visual para o template
+            juros = Decimal("1.10") if max_overdue > 30 else Decimal("1.02")
+            valor_com_juros = insts[0].open_amount * juros if insts else Decimal("0")
+            
             replacements = {
                 "{nome}": customer.name, "{NOME}": customer.name,
-                "{valor}": format_money(insts[0].open_amount) if insts else "",
-                "{VALOR}": format_money(insts[0].open_amount) if insts else "",
+                "{valor}": format_money(insts[0].open_amount) if insts else "0,00",
+                "{VALOR}": format_money(insts[0].open_amount) if insts else "0,00",
+                "{valor_com_juros}": format_money(valor_com_juros),
                 "{total}": format_money(total_open), "{TOTAL}": format_money(total_open),
+                "{total_divida}": format_money(total_open),
                 "{dias_atraso}": str(max_overdue), "{DIAS}": str(max_overdue),
                 "{dias}": str(max_overdue),
                 "{vencimento}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
@@ -139,6 +171,11 @@ def run_collection_check(session_factory) -> dict:
                 "{data}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
                 "{DATA}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
                 "{qtd}": str(len(insts)), "{QTD}": str(len(insts)),
+                "{quantidade_parcelas}": str(overdue_count),
+                "{cpf}": cpf_masked,
+                "{telefone}": "(67) 9999-9999", # Exemplo
+                "{chave_pix}": chave_pix,
+                "{link_pagamento}": link_pagto,
             }
             for k, v in replacements.items():
                 msg_body = msg_body.replace(k, v)
