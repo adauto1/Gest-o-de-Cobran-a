@@ -927,12 +927,12 @@
             const badgeClass = item.max_atraso > 60 ? 'critical' : (item.max_atraso > 30 ? 'moderate' : 'warning');
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td>
+              <td data-label="Cliente">
                 <div class="q-client-name">${item.nome_cliente}</div>
                 <div class="q-client-meta">Último contato: ${item.ultimo_contato_str}</div>
               </td>
-              <td><span class="q-amount">R$ ${item.valor_em_aberto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
-              <td>
+              <td data-label="Em Aberto"><span class="q-amount">R$ ${item.valor_em_aberto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
+              <td data-label="Status">
                 <span class="q-badge ${badgeClass}">${item.status_label}</span>
                 <div style="margin-top:4px; font-size:11px; opacity:0.8; display:flex; align-items:center; gap:4px;">
                    ${item.profile_cobranca && item.profile_cobranca !== 'AUTOMATICO'
@@ -940,7 +940,7 @@
                 : '<span style="color:var(--text-3);"><i data-lucide="settings-2" style="width:10px;"></i> Auto</span>'}
                 </div>
               </td>
-              <td>
+              <td data-label="Ações">
                 <div class="q-actions">
                   <button class="q-action-btn edit" onclick="openEditModal(${item.cliente_id}, '${item.nome_cliente.replace(/'/g, "\\'")}')" title="Editar Cadastro">
                     <i data-lucide="user-pen"></i>
