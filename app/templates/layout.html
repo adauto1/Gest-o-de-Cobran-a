@@ -45,7 +45,7 @@
         <a class="nav-link {% if active_page == 'commissions' %}active{% endif %}" href="/commissions">
           <i data-lucide="badge-dollar-sign"></i> Comissão
         </a>
-        <a class="nav-link {% if active_page == 'messages' %}active{% endif %}" href="/messages">
+        <a class="nav-link {% if active_page == 'messages' %}active{% endif %}" href="/outbox">
           <i data-lucide="mail"></i> Mensagens
         </a>
 
@@ -85,9 +85,13 @@
     <header class="topbar">
       <div class="topbar-left">
         <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
-        <div class="topbar-title">{{ page_title or "Painel" }}</div>
+        <!-- Mobile Logo -->
+        <img src="/static/logo.png" alt="Portal Móveis" class="mobile-logo"
+          style="height: 32px; width: auto; display: none;">
+        <!-- Desktop Title -->
+        <div class="topbar-title desktop-only">{{ page_title or "Painel" }}</div>
         {% if page_subtitle %}
-        <div class="topbar-breadcrumb"><span>·</span> {{ page_subtitle }}</div>
+        <div class="topbar-breadcrumb desktop-only"><span>·</span> {{ page_subtitle }}</div>
         {% endif %}
       </div>
       <div class="topbar-right">

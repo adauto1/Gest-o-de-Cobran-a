@@ -791,17 +791,9 @@
   {% endif %}
 
   <!-- KPI Cards -->
+  <!-- KPI Cards (Mobile: Stacked, Desktop: Grid) -->
   <div class="kpi-grid-v2">
-    {% if user.role == "COBRANCA" %}
-    <a class="kpi-v2" href="/commissions">
-      <div class="kpi-v2-top">
-        <span class="kpi-v2-badge positive">Meta ativada</span>
-      </div>
-      <div class="kpi-v2-label">Minha Comissão</div>
-      <div class="kpi-v2-value positive">{{ current_commission }}</div>
-    </a>
-    {% endif %}
-
+    <!-- 1. Carteira Total -->
     <a class="kpi-v2" href="/queue?tab=all">
       <div class="kpi-v2-top">
         <span class="kpi-v2-badge positive">+2.4%</span>
@@ -810,6 +802,7 @@
       <div class="kpi-v2-value">{{ total_open }}</div>
     </a>
 
+    <!-- 2. Total Vencido -->
     <a class="kpi-v2" href="/queue?tab=overdue">
       <div class="kpi-v2-top">
         <span class="kpi-v2-badge critical">Crítico</span>
@@ -818,6 +811,7 @@
       <div class="kpi-v2-value critical">{{ total_overdue }}</div>
     </a>
 
+    <!-- 3. Vence Hoje -->
     <a class="kpi-v2" href="/queue?tab=due_today">
       <div class="kpi-v2-top">
         <span class="kpi-v2-badge warning">Ação</span>
@@ -826,12 +820,24 @@
       <div class="kpi-v2-value">{{ due_today_total | brl }}</div>
     </a>
 
+    <!-- 4. Meta do Fiado -->
     <div class="kpi-v2">
       <div class="kpi-v2-top">
       </div>
       <div class="kpi-v2-label">Meta do Fiado</div>
       <div class="kpi-v2-value">{{ "{:,.1f}".format(fiado_percentage) }}%</div>
     </div>
+
+    {% if user.role == "COBRANCA" %}
+    <!-- Extra: Comissão (apenas exibido se for cobrador, em ordem secundária) -->
+    <a class="kpi-v2" href="/commissions">
+      <div class="kpi-v2-top">
+        <span class="kpi-v2-badge positive">Meta ativada</span>
+      </div>
+      <div class="kpi-v2-label">Minha Comissão</div>
+      <div class="kpi-v2-value positive">{{ current_commission }}</div>
+    </a>
+    {% endif %}
   </div>
 
   <!-- Aging Section -->
