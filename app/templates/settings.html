@@ -165,7 +165,10 @@
             const res = await fetch('/api/whatsapp/status?t=' + Date.now());
             const data = await res.json();
 
-            if (data.conectado && data.status && data.status.connected) {
+            // Z-API pode retornar 'connected' ou 'phoneConnected'
+            const isConnected = data.conectado && data.status && (data.status.connected === true || data.status.phoneConnected === true);
+
+            if (isConnected) {
                 statusEl.innerText = 'Conectado ✅';
                 statusEl.style.color = 'var(--success)';
             } else if (data.conectado) {
