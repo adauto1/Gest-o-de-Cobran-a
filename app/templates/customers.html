@@ -1,5 +1,118 @@
 {% extends "layout.html" %}
 {% block content %}
+<style>
+  .table th,
+  .table td {
+    padding: 12px 10px !important;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .table th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+  }
+
+  /* Client Cell Styles (from Queue) */
+  .client-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .client-name {
+    font-weight: 700;
+    color: var(--text-1);
+    font-size: 0.95rem;
+  }
+
+  .client-sub {
+    font-size: 0.8rem;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+
+  /* Badge Styles (from Queue) */
+  .badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+  }
+
+  .badge.red {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .badge.yellow {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .badge.blue {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .badge.green {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  /* Estilos para o menu de régua */
+  .menu-regua {
+    display: none;
+    position: absolute;
+    z-index: 9999;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    text-align: left;
+    margin-top: 5px;
+  }
+
+  .menu-btn {
+    width: 100%;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: none;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .menu-btn:hover {
+    background: #f9fafb;
+  }
+
+  .dot-preview {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .btn-action-icon {
+    color: var(--text-2);
+    transition: color 0.2s;
+  }
+
+  .btn-action-icon:hover {
+    color: var(--primary);
+  }
+</style>
 <div class="card">
   <div class="card-header">
     <div>
@@ -23,42 +136,92 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Prior.</th>
-          <th>Cliente</th>
-          <th>Loja</th>
-          <th>Total em Aberto</th>
-          <th>Maior Atraso</th>
-          <th>Responsável</th>
-          {% if user.role == "ADMIN" %}<th>Atribuir</th>{% endif %}
-          <th></th>
+          <th style="text-align: left;">Prioridade</th>
+          <th style="text-align: left;">Cliente</th>
+          <th style="text-align: left;">Régua</th>
+          <th style="text-align: left;">Loja</th>
+          <th style="text-align: left;">Atraso</th>
+          <th style="text-align: left;">Valor Aberto</th>
+          <th style="text-align: left;">Ação</th>
         </tr>
       </thead>
       <tbody>
         {% for r in rows %}
         <tr>
-          <td><span class="pill p{{ r.prio }}">{{ r.prio }}</span></td>
-          <td><b>{{ r.c.name }}</b></td>
-          <td class="muted">{{ r.c.store or "-" }}</td>
-          <td>R$ {{ "{:,.2f}".format(r.total_open).replace(",", "X").replace(".", ",").replace("X", ".") }}</td>
-          <td>{{ r.max_over }} dia(s)</td>
-          <td class="muted">{{ r.c.assigned_to.name if r.c.assigned_to else "-" }}</td>
-
-          {% if user.role == "ADMIN" %}
-          <td>
-            <form method="post" action="/customers/{{ r.c.id }}/assign" class="inline">
-              <select name="assigned_to_user_id">
-                <option value="0">—</option>
-                {% for u in users %}
-                <option value="{{ u.id }}" {% if r.c.assigned_to and r.c.assigned_to.id==u.id %}selected{% endif %}>{{
-                  u.name }}{% if u.store %} ({{ u.store }}){% endif %}</option>
-                {% endfor %}
-              </select>
-              <button class="btn small" type="submit">Salvar</button>
-            </form>
+          <!-- Prioridade -->
+          <td data-label="Prioridade">
+            {% if r.prio >= 3 %}
+            <span class="badge red">Alta</span>
+            {% elif r.prio == 2 %}
+            <span class="badge yellow">Média</span>
+            {% else %}
+            <span class="badge green">Normal</span>
+            {% endif %}
           </td>
-          {% endif %}
 
-          <td><a class="btn small" href="/customers/{{ r.c.id }}">Abrir</a></td>
+          <!-- Cliente -->
+          <td data-label="Cliente">
+            <div class="client-cell">
+              <span class="client-name">{{ r.c.name }}</span>
+              <span class="client-sub">{{ r.count_open }} parcelas, {{ r.ultimo_contato_str }}</span>
+            </div>
+          </td>
+
+          <!-- Régua (Com Menu) -->
+          <!-- Régua (Com Menu) -->
+          <td data-label="Régua" style="text-align: left; position: relative;">
+            <div class="regua-dot dot-{{ r.regua_nivel }}" onclick="toggleReguaMenu{{ r.c.id }}()"
+              title="Perfil: {{ r.c.profile_cobranca }} (Auto: {{ r.regua_nivel }})"
+              style="cursor: pointer; margin: 0;"></div>
+
+            <!-- MENU DROPDOWN -->
+            <div id="menu{{ r.c.id }}" class="menu-regua">
+              <button type="button" onclick="salvarRegua({{ r.c.id }}, 'LEVE')" class="menu-btn">
+                <span class="dot-preview"
+                  style="background: radial-gradient(circle at 35% 35%, #6ee7b7, #10b981);"></span>
+                <span style="font-size: 14px; color: #374151; font-weight: 500;">Leve</span>
+              </button>
+              <button type="button" onclick="salvarRegua({{ r.c.id }}, 'MODERADA')" class="menu-btn">
+                <span class="dot-preview"
+                  style="background: radial-gradient(circle at 35% 35%, #fcd34d, #f97316);"></span>
+                <span style="font-size: 14px; color: #374151; font-weight: 500;">Moderada</span>
+              </button>
+              <button type="button" onclick="salvarRegua({{ r.c.id }}, 'INTENSA')" class="menu-btn">
+                <span class="dot-preview"
+                  style="background: radial-gradient(circle at 35% 35%, #fca5a5, #ef4444);"></span>
+                <span style="font-size: 14px; color: #374151; font-weight: 500;">Intensa</span>
+              </button>
+              <button type="button" onclick="salvarRegua({{ r.c.id }}, 'AUTOMATICO')" class="menu-btn">
+                <span class="dot-preview"
+                  style="background: radial-gradient(circle at 35% 35%, #e5e7eb, #9ca3af);"></span>
+                <span style="font-size: 14px; color: #374151; font-weight: 500;">Automático</span>
+              </button>
+            </div>
+          </td>
+
+          <!-- Loja -->
+          <td data-label="Loja">{{ r.c.store or "-" }}</td>
+
+          <!-- Atraso -->
+          <td data-label="Atraso">
+            {% if r.max_over > 0 %}
+            <span class="font-medium text-red">{{ r.max_over }} dias</span>
+            {% elif r.max_over == 0 %}
+            <span class="badge yellow">Vence Hoje</span>
+            {% else %}
+            <span class="badge green">Em dia</span>
+            {% endif %}
+          </td>
+
+          <!-- Valor Aberto -->
+          <td data-label="Valor Aberto" style="font-weight:700">{{ r.total_open | brl }}</td>
+
+          <!-- Ação -->
+          <td data-label="Ação">
+            <a class="btn-action-icon" href="/customers/{{ r.c.id }}" title="Abrir Cliente">
+              <i data-lucide="arrow-right-circle"></i>
+            </a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -68,3 +231,44 @@
   <div class="muted small" style="margin-top:12px">Mostrando até 300 clientes por busca.</div>
 </div>
 {% endblock %}
+
+<script>
+  // Criar funções de toggle para cada cliente
+  {% for r in rows %}
+  function toggleReguaMenu{ { r.c.id } } () {
+    const menu = document.getElementById('menu{{ r.c.id }}');
+    // Fecha todos os outros menus
+    document.querySelectorAll('[id^="menu"]').forEach(m => {
+      if (m.id !== 'menu{{ r.c.id }}') {
+        m.style.display = 'none';
+      }
+    });
+    // Toggle do menu atual
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  }
+  {% endfor %}
+
+  // Fechar ao clicar fora
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('button')) {
+      document.querySelectorAll('[id^="menu"]').forEach(m => {
+        m.style.display = 'none';
+      });
+    }
+  });
+
+  // Salvar régua
+  function salvarRegua(clienteId, regua) {
+    fetch(`/api/customers/${clienteId}/regua`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile_cobranca: regua })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) location.reload();
+        else alert('Erro: ' + data.message);
+      })
+      .catch(err => alert('Erro ao salvar'));
+  }
+</script>

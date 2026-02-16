@@ -1,0 +1,117 @@
+/* ── MOBILE FIXES V2 (URGENT) ────────────────────────── */
+@media (max-width: 768px) {
+
+    /* 1. SIDEBAR & MENU (Hamburger) */
+    .app-shell {
+        grid-template-columns: 1fr;
+        /* Sidebar is hidden from flow */
+        grid-template-areas: "main";
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 80%;
+        max-width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        /* High z-index */
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.2);
+        border-right: none;
+    }
+
+    /* Show Sidebar when .open class is toggled by JS */
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    /* Overlay Background */
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        /* top/right/bottom/left: 0 */
+        background: rgba(0, 0, 0, 0.5);
+        /* Dark overlay */
+        z-index: 900;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+        backdrop-filter: blur(2px);
+    }
+
+    .sidebar-overlay.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* 2. TOPBAR (Fixed/Sticky) */
+    .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 800;
+        height: 56px;
+        /* Explicit 56px */
+        background: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        /* Soft shadow */
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+    }
+
+    .topbar-left {
+        gap: 12px;
+    }
+
+    .menu-toggle {
+        display: flex !important;
+        font-size: 24px;
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: transparent;
+        color: var(--text);
+    }
+
+    /* Hide Breadcrumbs on mobile to save space */
+    .topbar-breadcrumb {
+        display: none;
+    }
+
+    .topbar-title {
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    /* 3. CONTENT SPACING */
+    .main-content {
+        padding: 16px;
+        /* Reduced padding */
+        padding-bottom: 80px;
+    }
+
+    /* 4. GENERAL TYPOGRAPHY MOBILE */
+    body {
+        font-size: 14px;
+    }
+
+    h1,
+    .page-title {
+        font-size: 20px;
+    }
+
+    /* Cards & Rounding */
+    .kpi-card,
+    .aging-card,
+    .queue-section,
+    .sidebar-section,
+    .kpi-v2 {
+        border-radius: 12px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+}

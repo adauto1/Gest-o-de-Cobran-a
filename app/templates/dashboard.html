@@ -903,6 +903,7 @@
         <thead>
           <tr>
             <th>Cliente</th>
+            <th style="text-align: center;">Régua</th>
             <th>Em Aberto</th>
             <th>Status</th>
             <th>Ações</th>
@@ -910,7 +911,7 @@
         </thead>
         <tbody id="queue-body">
           <tr>
-            <td colspan="4" style="text-align:center; padding:40px; color:var(--text-3);">Carregando fila...</td>
+            <td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">Carregando fila...</td>
           </tr>
         </tbody>
       </table>
@@ -924,7 +925,7 @@
           const data = await resp.json();
 
           if (data.length === 0) {
-            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-3);">Sem clientes em atraso.</td></tr>';
+            body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">Sem clientes em atraso.</td></tr>';
             return;
           }
 
@@ -937,14 +938,12 @@
                 <div class="q-client-name">${item.nome_cliente}</div>
                 <div class="q-client-meta">Último contato: ${item.ultimo_contato_str}</div>
               </td>
+              <td data-label="Régua" style="text-align: center;">
+                <div class="regua-dot dot-${item.regua_nivel}" title="Régua: ${item.regua_nivel}"></div>
+              </td>
               <td data-label="Em Aberto"><span class="q-amount">R$ ${item.valor_em_aberto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
               <td data-label="Status">
                 <span class="q-badge ${badgeClass}">${item.status_label}</span>
-                <div style="margin-top:4px; font-size:11px; opacity:0.8; display:flex; align-items:center; gap:4px;">
-                   ${item.profile_cobranca && item.profile_cobranca !== 'AUTOMATICO'
-                ? `<span style="background:var(--accent); color:#fff; padding:2px 6px; border-radius:4px;">${item.profile_cobranca}</span>`
-                : '<span style="color:var(--text-3);"><i data-lucide="settings-2" style="width:10px;"></i> Auto</span>'}
-                </div>
               </td>
               <td data-label="Ações">
                 <div class="q-actions">
@@ -972,7 +971,7 @@
           lucide.createIcons();
         } catch (e) {
           console.error(e);
-          body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-3);">Erro ao carregar fila.</td></tr>';
+          body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">Erro ao carregar fila.</td></tr>';
         }
       }
 

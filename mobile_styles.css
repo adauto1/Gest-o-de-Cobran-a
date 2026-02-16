@@ -1,0 +1,191 @@
+/* ── Mobile Responsive (Max 768px) ──────────────────── */
+@media (max-width: 768px) {
+
+    /* 1. Layout & Sidebar */
+    .app-shell {
+        grid-template-columns: 1fr;
+        grid-template-areas: "main";
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(2px);
+        z-index: 90;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .sidebar-overlay.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .menu-toggle {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        font-size: 24px;
+        color: var(--text);
+        cursor: pointer;
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+    }
+
+    .topbar {
+        padding: 0 16px;
+        height: 60px;
+    }
+
+    .topbar-left {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Hide quick links on mobile if space is tight, or adapt them */
+    .topbar-quick-links {
+        display: none;
+    }
+
+    .main-content {
+        padding: 20px 16px 80px;
+        /* More bottom padding for safe area */
+    }
+
+    /* 2. Dashboard KPIs (Stacked) */
+    .kpi-row {
+        grid-template-columns: 1fr;
+        /* Stack vertically */
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .kpi-card {
+        height: auto;
+        min-height: 120px;
+        flex-direction: row;
+        /* Horizontal layout inside card for compactness */
+        align-items: center;
+        padding: 20px;
+    }
+
+    .kpi-header {
+        margin-bottom: 0;
+        margin-right: 20px;
+    }
+
+    .split-view {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    /* 3. Tables to Cards (Priority Queue & Others) */
+    .clean-table thead {
+        display: none;
+        /* Hide headers */
+    }
+
+    .clean-table,
+    .clean-table tbody,
+    .clean-table tr,
+    .clean-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .clean-table tr {
+        background: var(--surface);
+        margin-bottom: 16px;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border);
+        padding: 16px;
+    }
+
+    .clean-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+
+    .clean-table td:last-child {
+        border-bottom: none;
+        padding-top: 16px;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .clean-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--text-3);
+        font-size: 11px;
+        text-transform: uppercase;
+        text-align: left;
+        margin-right: auto;
+        flex-shrink: 0;
+        width: 40%;
+    }
+
+    /* Cliente name special handling */
+    .clean-table td .client-cell {
+        text-align: right;
+        align-items: flex-end;
+    }
+
+    /* Actions cell special handling */
+    .clean-table td.actions-cell {
+        justify-content: flex-end;
+        /* Align buttons right */
+        width: 100%;
+    }
+
+    /* 4. Touch Targets & Typography */
+    input,
+    select,
+    button,
+    .btn {
+        min-height: 48px;
+        /* Touch friendly */
+        font-size: 16px;
+        /* No zoom on iOS */
+    }
+
+    .btn-action-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* Filter form stacking */
+    form[method="get"] {
+        flex-direction: column;
+    }
+
+    form[method="get"] select,
+    form[method="get"] button {
+        max-width: 100% !important;
+        width: 100%;
+    }
+}

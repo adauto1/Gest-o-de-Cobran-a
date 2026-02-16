@@ -228,10 +228,64 @@ Departamento Jurídico
 Portal Móveis"""
     )
     
+    # --- INTENSA (Adicionando para cobrir gaps do teste) ---
+    # D+3 (Para cobrir o caso "Start=3" que não existia) - C008 pode cair aqui se atraso for pequeno
+    # Mas C008 no dataset tem D+30. C009 tem D+7.
+    
+    # D+7
+    r_int_7 = CollectionRule(
+        level="INTENSA", start_days=7, end_days=7, priority=3, frequency=1, default_action="WHATSAPP",
+        template_message="""{nome},
+URGENTE - Falta de Pagamento (INTENSA)
+CPF: {cpf}
+Débito: {total_divida}
+
+Sua situação é delicada.
+Regularize HOJE para evitar bloqueios.
+Pix: {chave_pix}"""
+    )
+
+    # D+15
+    r_int_15 = CollectionRule(
+        level="INTENSA", start_days=15, end_days=15, priority=3, frequency=1, default_action="WHATSAPP",
+        template_message="""{nome},
+COBRANÇA JUDICIAL - PRÉ NOTIFICAÇÃO
+Atraso de 15 dias identificado.
+Perfil de risco: ALTO.
+
+Evite protesto em cartório.
+Pague agora: {link_pagamento}"""
+    )
+    
+    # D+25
+    r_int_25 = CollectionRule(
+        level="INTENSA", start_days=25, end_days=25, priority=3, frequency=1, default_action="WHATSAPP",
+        template_message="""{nome},
+NOTIFICAÇÃO EXTRAJUDICIAL
+25 Dias de Atraso.
+Seu contrato será encaminhado para execução.
+
+Última chance:
+Pix: {chave_pix}"""
+    )
+    
+    # D+30 (Existente, mas vamos garantir)
+    r_int_30 = CollectionRule(
+        level="INTENSA", start_days=30, end_days=30, priority=3, frequency=1, default_action="WHATSAPP",
+        template_message="""{nome},
+BLOQUEIO DE CRÉDITO
+30 Dias de Atraso.
+Seu nome será incluído nos órgãos de proteção ao crédito (SPC/Serasa).
+
+Regularize imediatamente:
+Pix: {chave_pix}"""
+    )
+
     # Adicionar todas
     db.add_all([
         r_leve_3, r_leve_7, r_leve_15, r_leve_25,
-        r_mod_0, r_mod_3, r_mod_7, r_mod_15, r_mod_25
+        r_mod_0, r_mod_3, r_mod_7, r_mod_15, r_mod_25,
+        r_int_7, r_int_15, r_int_25, r_int_30
     ])
     
     db.commit()

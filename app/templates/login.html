@@ -6,7 +6,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    background: var(--bg);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     padding: 20px;
     position: relative;
@@ -20,9 +20,10 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle at 30% 40%, rgba(220, 38, 38, 0.06) 0%, transparent 50%),
-      radial-gradient(circle at 70% 60%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
-    animation: loginBgPulse 12s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 30% 40%, var(--primary) 0%, transparent 10%),
+      radial-gradient(circle at 70% 60%, var(--danger-bg) 0%, transparent 10%);
+    opacity: 0.1;
+    animation: loginBgPulse 20s ease-in-out infinite alternate;
   }
 
   @keyframes loginBgPulse {
@@ -39,52 +40,55 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 420px;
-    background: rgba(30, 41, 59, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    padding: 48px 40px 40px;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03);
+    max-width: 400px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: var(--shadow-lg);
   }
 
   .login-brand {
     text-align: center;
     margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
   }
 
   .login-brand img {
-    width: 80px;
-    height: 80px;
+    display: block;
+    width: 165px;
+    height: auto;
     object-fit: contain;
-    border-radius: 16px;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    margin: 0 auto 8px auto;
   }
 
   .login-brand-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #f1f5f9;
-    letter-spacing: -0.3px;
+    display: none;
   }
 
   .login-brand-sub {
     font-size: 13px;
-    color: #94a3b8;
+    color: var(--text-2);
     margin-top: 4px;
     font-weight: 500;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    text-align: center;
+    display: block;
+    width: 100%;
+    transform: translateX(5%);
   }
 
   .login-card .login-alert {
-    background: rgba(220, 38, 38, 0.15);
-    border: 1px solid rgba(220, 38, 38, 0.3);
-    color: #fca5a5;
+    background: var(--danger-bg);
+    border: 1px solid var(--danger);
+    color: var(--danger);
     padding: 12px 16px;
-    border-radius: 10px;
+    border-radius: 8px;
     font-size: 13px;
     margin-bottom: 20px;
     display: flex;
@@ -107,31 +111,31 @@
   .login-field label {
     font-size: 12px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-2);
     text-transform: uppercase;
     letter-spacing: 0.8px;
   }
 
   .login-field input {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
     font-size: 15px;
-    color: #f1f5f9;
+    color: var(--text);
     font-family: inherit;
     outline: none;
     transition: all 0.25s ease;
   }
 
   .login-field input::placeholder {
-    color: #475569;
+    color: var(--text-3);
   }
 
   .login-field input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-    background: rgba(15, 23, 42, 0.8);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+    background: var(--surface);
   }
 
   .login-btn {
@@ -139,22 +143,22 @@
     padding: 14px 24px;
     font-size: 15px;
     font-weight: 700;
-    color: #fff;
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: var(--primary-text);
+    background: var(--primary);
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-family: inherit;
     letter-spacing: 0.3px;
     margin-top: 6px;
-    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+    box-shadow: var(--shadow);
   }
 
   .login-btn:hover {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+    filter: brightness(0.95);
     transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
 
   .login-btn:active {
@@ -164,7 +168,7 @@
   .login-footer {
     text-align: center;
     margin-top: 28px;
-    color: #475569;
+    color: var(--text-3);
     font-size: 12px;
   }
 
@@ -189,7 +193,7 @@
   <div class="login-card">
     <div class="login-brand">
       <img src="/static/logo.png" alt="Portal Móveis">
-      <div class="login-brand-title">Portal Móveis</div>
+      <!-- Título removido, apenas logo -->
       <div class="login-brand-sub">Gestor de Cobrança</div>
     </div>
 

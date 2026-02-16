@@ -1,0 +1,87 @@
+/* ── DASHBOARD MOBILE SPECIFICS ──────────────────────── */
+@media (max-width: 768px) {
+
+    /* KPI Grid: Stacked 1 Column */
+    .kpi-grid-v2 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .kpi-v2 {
+        width: 100% !important;
+        min-height: 100px;
+        padding: 16px 20px !important;
+    }
+
+    /* KPI Typography Override */
+    .kpi-v2-label {
+        font-size: 14px !important;
+        color: var(--text-2);
+        margin-bottom: 4px !important;
+    }
+
+    .kpi-v2-value {
+        font-size: 28px !important;
+        letter-spacing: -0.5px;
+    }
+
+    /* Aging Grid: Stacked */
+    .aging-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* Content Grid */
+    .content-grid {
+        grid-template-columns: 1fr !important;
+        gap: 24px !important;
+    }
+
+    /* Table to Cards (Ensure it applies to Queue Table too) */
+    .q-table,
+    .q-table tbody,
+    .q-table tr,
+    .q-table td {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    .q-table thead {
+        display: none !important;
+    }
+
+    .q-table tr {
+        margin-bottom: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .q-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 0;
+        text-align: right;
+    }
+
+    .q-table td:last-child {
+        border-bottom: none;
+        justify-content: flex-end;
+        padding-top: 12px;
+    }
+
+    .q-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 11px;
+        color: var(--text-3);
+        text-transform: uppercase;
+        text-align: left;
+        margin-right: auto;
+    }
+}

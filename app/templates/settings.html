@@ -55,9 +55,107 @@
             <button type="submit" class="btn primary">Salvar Configurações</button>
         </form>
     </div>
+
+    <!-- Seção de Diretores -->
+    <div class="config-section"
+        style="margin-top: 20px; padding: 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            👔 Diretores para Notificação
+        </h3>
+        <p class="muted small" style="margin-bottom: 20px;">
+            Recebem alertas automáticos via WhatsApp quando um cliente atinge 3 ou mais parcelas vencidas.
+        </p>
+
+        <!-- Formulário Adicionar -->
+        <form id="formDirector" onsubmit="addDirector(event)"
+            style="display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end;">
+            <div style="flex: 2;">
+                <label class="small muted">Nome</label>
+                <input type="text" name="name" required placeholder="Ex: Adauto Bibiano" class="input"
+                    style="width: 100%;">
+            </div>
+            <div style="flex: 1;">
+                <label class="small muted">WhatsApp (com DDD)</label>
+                <input type="text" name="phone" required placeholder="67999999999" class="input" style="width: 100%;">
+            </div>
+            <button type="submit" class="btn primary">Adicionar</button>
+        </form>
+
+        <!-- Lista de Diretores -->
+        <div id="directorsList" style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="muted small">Carregando diretores...</div>
+        </div>
+    </div>
 </div>
 
 <script>
+    async function loadDirectors() {
+        const listEl = document.getElementById('directorsList');
+        try {
+            const res = await fetch('/api/directors');
+            const directors = await res.json();
+
+            listEl.innerHTML = '';
+            if (directors.length === 0) {
+                listEl.innerHTML = '<div class="muted small">Nenhum diretor cadastrado.</div>';
+                return;
+            }
+
+            directors.forEach(d => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg); border-radius: 6px;';
+                item.innerHTML = `
+                    <div>
+                        <strong>${d.name}</strong>
+                        <span class="muted small" style="margin-left: 10px;">${d.phone}</span>
+                    </div>
+                    <button onclick="removeDirector(${d.id})" class="btn small danger" title="Remover">X</button>
+                `;
+                listEl.appendChild(item);
+            });
+        } catch (e) {
+            listEl.innerHTML = '<div class="text-danger small">Erro ao carregar diretores.</div>';
+        }
+    }
+
+    async function addDirector(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+
+        try {
+            const res = await fetch('/api/directors', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                form.reset();
+                loadDirectors();
+            } else {
+                alert('Erro: ' + (data.detail || 'Falha ao adicionar'));
+            }
+        } catch (e) {
+            alert('Erro ao conectar com servidor');
+        }
+    }
+
+    async function removeDirector(id) {
+        if (!confirm('Remover este diretor?')) return;
+
+        try {
+            const res = await fetch(`/api/directors/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                loadDirectors();
+            } else {
+                alert('Erro ao remover');
+            }
+        } catch (e) {
+            alert('Erro de conexão');
+        }
+    }
+
     async function testarConexaoZAPI() {
         const statusEl = document.getElementById('zapi-status');
         statusEl.innerText = 'Verificando...';
@@ -84,6 +182,9 @@
     }
 
     // Verifica status ao carregar
-    document.addEventListener('DOMContentLoaded', testarConexaoZAPI);
+    document.addEventListener('DOMContentLoaded', () => {
+        testarConexaoZAPI();
+        loadDirectors();
+    });
 </script>
 {% endblock %}

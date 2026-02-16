@@ -1085,3 +1085,46 @@ img {
  t r a n s i t i o n :    
  t r a n s f o r m   0 . 2 s ;    
  
+.regua-button { position: relative; }
+.regua-button:active { transform: scale(0.95); }
+.regua-dropdown { animation: slideDown 0.2s ease-out; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Regua Dots - Visual indicator for collection level */
+.regua-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  vertical-align: middle;
+}
+.regua-dot::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 5px;
+  height: 5px;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.6;
+}
+.dot-LEVE {
+  background: radial-gradient(circle at 35% 35%, #6ee7b7, #10b981);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+.dot-MODERADA {
+  background: radial-gradient(circle at 35% 35%, #fcd34d, #f97316);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
+}
+.dot-INTENSA {
+  background: radial-gradient(circle at 35% 35%, #fca5a5, #ef4444);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+.dot-AUTOMATICO {
+  background: radial-gradient(circle at 35% 35%, #e2e8f0, #94a3b8);
+  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.4);
+}

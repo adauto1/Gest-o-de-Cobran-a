@@ -167,7 +167,8 @@
             status: document.getElementById('filter-status').value,
             regua: document.getElementById('filter-regua').value,
             cliente: document.getElementById('filter-cliente').value,
-            only_test: document.getElementById('filter-only-test').checked ? 'true' : ''
+            only_test: document.getElementById('filter-only-test').checked,
+            only_rescheduled: false
         });
 
         try {
