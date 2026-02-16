@@ -162,7 +162,7 @@
         statusEl.style.color = 'var(--text)';
 
         try {
-            const res = await fetch('/api/whatsapp/status');
+            const res = await fetch('/api/whatsapp/status?t=' + Date.now());
             const data = await res.json();
 
             if (data.conectado && data.status && data.status.connected) {

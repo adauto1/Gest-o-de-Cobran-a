@@ -49,7 +49,7 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # Services
 from app.services.sync_customers import sync_erp_customers
-from app.services.whatsapp import enviar_whatsapp, ZAPI_BASE_URL
+from app.services.whatsapp import enviar_whatsapp, verificar_conexao, ZAPI_BASE_URL
 
 
 # -----------------------------------------------------------------------------
@@ -2166,8 +2166,7 @@ def enviar_whatsapp_manual(cliente_id: int, request: Request, db: Session = Depe
 
 @app.get("/api/whatsapp/status")
 def verificar_status_zapi():
-    # ... logic already exists or can be simple mock
-    return {"connected": True}
+    return verificar_conexao()
 
 # -----------------------------------------------------------------------------
 # Directors API

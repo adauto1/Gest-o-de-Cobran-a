@@ -65,3 +65,33 @@ def enviar_whatsapp(telefone: str, mensagem: str, modo_teste: bool = True):
             "erro": str(e),
             "data": datetime.now().isoformat()
         }
+
+def verificar_conexao():
+    """
+    Verifica se a instância Z-API está conectada
+    """
+    try:
+        url = f"{ZAPI_BASE_URL}/status"
+        headers = {
+            "Client-Token": ZAPI_CLIENT_TOKEN
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        # response.raise_for_status() # Vamos tratar o status code manualmente para ver erro
+        data = response.json()
+        
+        print(f"[DEBUG Z-API] Status Code: {response.status_code}")
+        print(f"[DEBUG Z-API] Response: {data}")
+
+        is_connected = False
+        if response.status_code == 200 and data.get("connected") is True:
+            is_connected = True
+            
+        return {
+            "conectado": True, # Conseguimos falar com a API
+            "status": data
+        }
+    except Exception as e:
+        return {
+            "conectado": False,
+            "erro": str(e)
+        }
