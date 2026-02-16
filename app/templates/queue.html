@@ -10,7 +10,7 @@
   </div>
   <div class="card-h" style="border-bottom: 1px solid var(--border); margin-bottom: 0; padding-bottom: 15px;">
     <div style="display: flex; gap: 20px;">
-      <a href="/queue" class="nav-link {% if not tab %}active{% endif %}"
+      <a href="/queue" class="nav-link {% if not tab and not filtro_ativo %}active{% endif %}"
         style="padding: 5px 10px; border-radius: 5px;">Todos</a>
       <a href="/queue?tab=due_today" class="nav-link {% if tab=='due_today' %}active{% endif %}"
         style="padding: 5px 10px; border-radius: 5px;">Vence Hoje</a>
@@ -18,6 +18,25 @@
         style="padding: 5px 10px; border-radius: 5px;">Vencidos</a>
     </div>
   </div>
+
+  {% if filtro_ativo %}
+  <div
+    style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem; border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+      </svg>
+      <p style="color: #1d4ed8; font-weight: 500; margin: 0;">
+        Filtro ativo: <span style="font-weight: 700;">{{ filtro_ativo }}</span>
+      </p>
+    </div>
+    <a href="/queue"
+      style="color: #2563eb; text-decoration: none; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center;">
+      Limpar filtro ✕
+    </a>
+  </div>
+  {% endif %}
 
   <form method="get" action="/queue"
     style="display:flex; gap:12px; margin:24px 0; background:var(--bg); padding:16px; border-radius:var(--radius-md)">

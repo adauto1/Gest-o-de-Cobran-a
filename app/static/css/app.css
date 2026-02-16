@@ -1078,4 +1078,10 @@ img {
                  d i s p l a y :   n o n e   ! i m p o r t a n t ;  
          }  
  }  
+ . a g i n g - c a r d : h o v e r  
+   c u r s o r :   p o i n t e r ;    
+ t r a n s f o r m :    
+ s c a l e ( 1 . 0 2 ) ;    
+ t r a n s i t i o n :    
+ t r a n s f o r m   0 . 2 s ;    
  

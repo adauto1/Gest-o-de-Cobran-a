@@ -1182,6 +1182,7 @@ def reset_database(request: Request, db: Session = Depends(get_db)):
 def queue_page(request: Request, 
                store: Optional[str] = None, 
                range: Optional[str] = None, # Legacy
+               filtro_atraso: Optional[str] = None, # New
                tab: Optional[str] = None,
                page: int = 1, # Pagination
                db: Session = Depends(get_db)):
@@ -1232,6 +1233,22 @@ def queue_page(request: Request,
     # 3. Main Query: Join Customer with Aggregated Subquery
     query = db.query(Customer, stmt.c.max_overdue_days, stmt.c.total_open_val, stmt.c.count_open_val)\
         .join(stmt, Customer.id == stmt.c.customer_id)
+
+    # 3.5 Apply Drill-down Filter (filtro_atraso)
+    filtro_label = None
+    if filtro_atraso:
+        if filtro_atraso == "1-30":
+            query = query.filter(stmt.c.max_overdue_days >= 1, stmt.c.max_overdue_days <= 30)
+            filtro_label = "1-30 dias de atraso"
+        elif filtro_atraso == "31-60":
+            query = query.filter(stmt.c.max_overdue_days >= 31, stmt.c.max_overdue_days <= 60)
+            filtro_label = "31-60 dias de atraso"
+        elif filtro_atraso == "61-90":
+            query = query.filter(stmt.c.max_overdue_days >= 61, stmt.c.max_overdue_days <= 90)
+            filtro_label = "61-90 dias de atraso"
+        elif filtro_atraso == "90-plus":
+            query = query.filter(stmt.c.max_overdue_days > 90)
+            filtro_label = "+90 dias de atraso"
 
     # 4. Filters (Store/User)
     if user.role == "COBRANCA":
@@ -1310,7 +1327,8 @@ def queue_page(request: Request,
                   selected_range=range or "",
                   tab=tab,
                   page=page,
-                  total_pages=total_pages)
+                  total_pages=total_pages,
+                  filtro_ativo=filtro_label)
 
 # -----------------------------------------------------------------------------
 # Customer detail + actions
