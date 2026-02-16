@@ -192,7 +192,8 @@ def run_collection_check(session_factory) -> dict:
                 "{qtd}": str(len(insts)), "{QTD}": str(len(insts)),
                 "{quantidade_parcelas}": str(overdue_count),
                 "{cpf}": cpf_masked,
-                "{telefone}": "(67) 9999-9999",
+                "{cpf_mascarado}": cpf_masked,
+                "{telefone}": "(67) 99916-1881",
                 "{chave_pix}": chave_pix,
                 "{link_pagamento}": link_pagto,
             }
