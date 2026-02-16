@@ -2249,6 +2249,29 @@ def delete_financial_user(user_id: int, request: Request, db: Session = Depends(
     db.commit()
     return {"success": True}
 
+# -----------------------------------------------------------------------------
+# Financial Reports API
+# -----------------------------------------------------------------------------
+@app.get("/api/financeiro/logs")
+def get_financial_logs(request: Request, db: Session = Depends(get_db)):
+    require_login(request, db)
+    logs = db.query(FinancialAlertLog).order_by(FinancialAlertLog.created_at.desc()).limit(50).all()
+    return [{
+        "id": l.id,
+        "user_name": l.financial_user.name if l.financial_user else "N/A",
+        "date": l.alert_date.isoformat(),
+        "created_at": l.created_at.isoformat(),
+        "item_count": l.item_count
+    } for l in logs]
+
+@app.post("/api/financeiro/run-now")
+async def run_financial_now(request: Request, db: Session = Depends(get_db)):
+    require_login(request, db)
+    result = await process_financial_notifications(db, force=True)
+    return result
+
+# -----------------------------------------------------------------------------
+
 @app.post("/api/directors")
 async def add_director(request: Request, db: Session = Depends(get_db)):
     user = require_login(request, db)
@@ -2379,70 +2402,85 @@ async def director_notification_loop():
         # Esperar 1 hora (3600 segundos)
         await asyncio.sleep(3600)
 
+async def process_financial_notifications(db: Session, force: bool = False):
+    """
+    Processa as notificações financeiras (promessas de pagamento do dia).
+    Se force=True, ignora a trava de envio único diário.
+    """
+    config = db.query(Configuracoes).first()
+    if not config or not config.whatsapp_ativo:
+        return {"success": False, "detail": "WhatsApp inativo"}
+
+    fin_users = db.query(FinancialUser).filter(FinancialUser.active == True).all()
+    if not fin_users:
+        return {"success": False, "detail": "Nenhum usuário financeiro ativo"}
+
+    target_date = today()
+    promises = db.query(CollectionAction).filter(
+        CollectionAction.promised_date == target_date,
+        CollectionAction.outcome == "PROMESSA"
+    ).all()
+
+    if not promises:
+        return {"success": True, "detail": "Nenhum agendamento para hoje", "sent_count": 0}
+
+    # Montar mensagem
+    total_val = sum([p.promised_amount or 0 for p in promises])
+    msg_lines = [f"📅 *Agendamentos de Hoje ({target_date.strftime('%d/%m')})*"]
+    
+    for p in promises:
+        c = db.get(Customer, p.customer_id)
+        val = p.promised_amount or 0
+        s_val = f"{val:,.2f}".replace(".", ",")
+        msg_lines.append(f"• {c.name}: R$ {s_val}")
+    
+    s_total = f"{total_val:,.2f}".replace(".", ",")
+    msg_lines.append(f"\n💰 *Total Previsto: R$ {s_total}*")
+    
+    full_msg = "\n".join(msg_lines)
+    sent_count = 0
+
+    for fu in fin_users:
+        # Verificar se já recebeu hoje (se não for forçado)
+        if not force:
+            log = db.query(FinancialAlertLog).filter(
+                FinancialAlertLog.financial_user_id == fu.id,
+                FinancialAlertLog.alert_date == target_date
+            ).first()
+            if log:
+                continue
+
+        print(f"[FinancialBot] Enviando resumo para {fu.name}...")
+        enviar_whatsapp(fu.phone, full_msg, modo_teste=config.whatsapp_modo_teste)
+        
+        # Logar envio
+        new_log = FinancialAlertLog(
+            financial_user_id=fu.id,
+            alert_date=target_date,
+            item_count=len(promises)
+        )
+        db.add(new_log)
+        sent_count += 1
+    
+    db.commit()
+    return {"success": True, "sent_count": sent_count, "items": len(promises)}
+
 async def financial_notification_loop():
     print("[FinancialBot] Iniciando serviço de monitoramento de agendamentos...")
     while True:
         try:
             now = datetime.now()
-            # Rodar apenas entre 08:00 e 19:00 para não incomodar a noite
+            # Rodar apenas entre 08:00 e 19:00
             if 8 <= now.hour <= 19:
                 db = SessionLocal()
-                config = db.query(Configuracoes).first()
-                
-                if config and config.whatsapp_ativo:
-                    fin_users = db.query(FinancialUser).filter(FinancialUser.active == True).all()
-                    
-                    if fin_users:
-                        target_date = today()
-                        # Buscar promessas para hoje
-                        promises = db.query(CollectionAction).filter(
-                            CollectionAction.promised_date == target_date
-                        ).all()
-                        
-                        if promises:
-                            # Montar mensagem
-                            total_val = sum([p.promised_amount or 0 for p in promises])
-                            msg_lines = [f"📅 *Agendamentos de Hoje ({target_date.strftime('%d/%m')})*"]
-                            
-                            for p in promises:
-                                c = db.get(Customer, p.customer_id) # Reload customer
-                                val = p.promised_amount or 0
-                                s_val = f"{val:,.2f}".replace(".", ",")
-                                msg_lines.append(f"• {c.name}: R$ {s_val}")
-                            
-                            s_total = f"{total_val:,.2f}".replace(".", ",")
-                            msg_lines.append(f"\n💰 *Total Previsto: R$ {s_total}*")
-                            
-                            full_msg = "\n".join(msg_lines)
-                            
-                            for fu in fin_users:
-                                # Verificar se já recebeu hoje
-                                log = db.query(FinancialAlertLog).filter(
-                                    FinancialAlertLog.financial_user_id == fu.id,
-                                    FinancialAlertLog.alert_date == target_date
-                                ).first()
-                                
-                                if not log:
-                                    print(f"[FinancialBot] Enviando resumo para {fu.name}...")
-                                    enviar_whatsapp(fu.phone, full_msg, modo_teste=config.whatsapp_modo_teste)
-                                    
-                                    # Logar envio
-                                    new_log = FinancialAlertLog(
-                                        financial_user_id=fu.id,
-                                        alert_date=target_date,
-                                        item_count=len(promises)
-                                    )
-                                    db.add(new_log)
-                                    db.commit()
-                                    await asyncio.sleep(2) # Pausa amigável
-                
+                await process_financial_notifications(db)
                 db.close()
             
         except Exception as e:
             print(f"[FinancialBot] Erro no loop: {e}")
             
-        # Esperar 45 minutos (verificação periódica)
         await asyncio.sleep(2700)
+
 
 @app.on_event("startup")
 async def startup_event():

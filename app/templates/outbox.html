@@ -14,9 +14,12 @@
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
             {% if user.role == "ADMIN" %}
-            <form method="post" action="/messages/run-now" style="margin:0">
+            <button class="btn secondary small" onclick="runFinancialNow()" id="btn-run-fin" style="display:none;">
+                <i data-lucide="send"></i> Testar Envios Financeiros
+            </button>
+            <form method="post" action="/messages/run-now" style="margin:0" id="form-run-general">
                 <button class="btn primary small" type="submit">
-                    <i data-lucide="play"></i> Executar Agora
+                    <i data-lucide="play"></i> Executar Agora (Régua)
                 </button>
             </form>
             {% endif %}
@@ -24,99 +27,133 @@
         </div>
     </div>
 
-    {% if request.query_params.get('msg') %}
-    <div class="alert alert-success"
-        style="margin:0 20px 20px 20px; padding:14px 20px; background:var(--success-bg); color:#15803D; border-radius:var(--radius-md); font-weight:500;">
-        ✅ {{ request.query_params.get('msg') }}
-    </div>
-    {% endif %}
-
-    <!-- KPI Cards -->
-    <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:16px; margin:20px; margin-top:0;">
-        <div class="kpi-card" style="background:var(--bg); padding:15px; border-radius:8px; text-align:center;">
-            <div class="label" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase;">Total</div>
-            <div class="value" id="kpi-total" style="font-size:24px; font-weight:700;">-</div>
-        </div>
-        <div class="kpi-card" style="background:#FEF3C7; padding:15px; border-radius:8px; text-align:center;">
-            <div class="label" style="font-size:11px; font-weight:700; color:#B45309; text-transform:uppercase;">Simuladas</div>
-            <div class="value" id="kpi-simulated" style="font-size:24px; font-weight:700; color:#B45309;">-</div>
-        </div>
-        <div class="kpi-card" style="background:#E0E7FF; padding:15px; border-radius:8px; text-align:center;">
-            <div class="label" style="font-size:11px; font-weight:700; color:#4338CA; text-transform:uppercase;">Reagendadas</div>
-            <div class="value" id="kpi-rescheduled" style="font-size:24px; font-weight:700; color:#4338CA;">-</div>
-        </div>
-        <div class="kpi-card" style="background:#DCFCE7; padding:15px; border-radius:8px; text-align:center;">
-            <div class="label" style="font-size:11px; font-weight:700; color:#15803D; text-transform:uppercase;">Enviadas</div>
-            <div class="value" id="kpi-sent" style="font-size:24px; font-weight:700; color:#15803D;">-</div>
-        </div>
-        <div class="kpi-card" style="background:#FEE2E2; padding:15px; border-radius:8px; text-align:center;">
-            <div class="label" style="font-size:11px; font-weight:700; color:#B91C1C; text-transform:uppercase;">Falhas</div>
-            <div class="value" id="kpi-failed" style="font-size:24px; font-weight:700; color:#B91C1C;">-</div>
-        </div>
+    <!-- Sub-Tabs for Outbox -->
+    <div style="margin: 0 20px 20px 20px; display: flex; gap: 15px;">
+        <button onclick="switchOutboxView('general')" id="btn-view-general" class="btn small primary">Logs da Régua</button>
+        <button onclick="switchOutboxView('financial')" id="btn-view-financial" class="btn small secondary">Relatórios Financeiro</button>
     </div>
 
-    <!-- Filters -->
-    <div style="background:var(--surface-2); padding:15px; margin:0 20px 20px 20px; border-radius:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-        <div class="form-group" style="margin-bottom:0;">
-            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Período De</label>
-            <input type="date" id="filter-date-from" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+    <div id="view-general">
+        {% if request.query_params.get('msg') %}
+        <div class="alert alert-success"
+            style="margin:0 0 20px 0; padding:14px 20px; background:var(--success-bg); color:#15803D; border-radius:var(--radius-md); font-weight:500;">
+            ✅ {{ request.query_params.get('msg') }}
         </div>
-        <div class="form-group" style="margin-bottom:0;">
-            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Até</label>
-            <input type="date" id="filter-date-to" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+        {% endif %}
+
+        <!-- KPI Cards -->
+        <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:16px; margin-bottom:20px;">
+            <div class="kpi-card" style="background:var(--bg); padding:15px; border-radius:8px; text-align:center;">
+                <div class="label" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase;">Total</div>
+                <div class="value" id="kpi-total" style="font-size:24px; font-weight:700;">-</div>
+            </div>
+            <div class="kpi-card" style="background:#FEF3C7; padding:15px; border-radius:8px; text-align:center;">
+                <div class="label" style="font-size:11px; font-weight:700; color:#B45309; text-transform:uppercase;">Simuladas</div>
+                <div class="value" id="kpi-simulated" style="font-size:24px; font-weight:700; color:#B45309;">-</div>
+            </div>
+            <div class="kpi-card" style="background:#E0E7FF; padding:15px; border-radius:8px; text-align:center;">
+                <div class="label" style="font-size:11px; font-weight:700; color:#4338CA; text-transform:uppercase;">Reagendadas</div>
+                <div class="value" id="kpi-rescheduled" style="font-size:24px; font-weight:700; color:#4338CA;">-</div>
+            </div>
+            <div class="kpi-card" style="background:#DCFCE7; padding:15px; border-radius:8px; text-align:center;">
+                <div class="label" style="font-size:11px; font-weight:700; color:#15803D; text-transform:uppercase;">Enviadas</div>
+                <div class="value" id="kpi-sent" style="font-size:24px; font-weight:700; color:#15803D;">-</div>
+            </div>
+            <div class="kpi-card" style="background:#FEE2E2; padding:15px; border-radius:8px; text-align:center;">
+                <div class="label" style="font-size:11px; font-weight:700; color:#B91C1C; text-transform:uppercase;">Falhas</div>
+                <div class="value" id="kpi-failed" style="font-size:24px; font-weight:700; color:#B91C1C;">-</div>
+            </div>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
-            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Status</label>
-            <select id="filter-status" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
-                <option value="">Todos</option>
-                <option value="SIMULADO">Simulado</option>
-                <option value="RESCHEDULED">Reagendado</option>
-                <option value="ENVIADO">Enviado</option>
-                <option value="FAILED">Falha</option>
-            </select>
+
+        <!-- Filters -->
+        <div style="background:var(--surface-2); padding:15px; margin-bottom: 20px; border-radius:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Período De</label>
+                <input type="date" id="filter-date-from" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Até</label>
+                <input type="date" id="filter-date-to" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Status</label>
+                <select id="filter-status" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+                    <option value="">Todos</option>
+                    <option value="SIMULADO">Simulado</option>
+                    <option value="RESCHEDULED">Reagendado</option>
+                    <option value="ENVIADO">Enviado</option>
+                    <option value="FAILED">Falha</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Régua</label>
+                <select id="filter-regua" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+                    <option value="">Todas</option>
+                    <option value="LEVE">Leve</option>
+                    <option value="MODERADA">Moderada</option>
+                    <option value="INTENSA">Intensa</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Cliente</label>
+                <input type="text" id="filter-cliente" placeholder="Nome, CPF ou Telefone" style="padding:6px; border:1px solid var(--border); border-radius:4px; width:150px;">
+            </div>
+            <div class="form-group" style="margin-bottom:0; display:flex; align-items:center; gap:5px; padding-bottom:8px;">
+                <input type="checkbox" id="filter-only-test">
+                <label for="filter-only-test" style="font-size:12px; cursor:pointer;">Só Teste</label>
+            </div>
+            <button class="btn primary small" onclick="fetchOutbox(1)" style="height:32px;">
+                <i data-lucide="filter"></i> Filtrar
+            </button>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
-            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Régua</label>
-            <select id="filter-regua" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
-                <option value="">Todas</option>
-                <option value="LEVE">Leve</option>
-                <option value="MODERADA">Moderada</option>
-                <option value="INTENSA">Intensa</option>
-            </select>
+
+        <div class="detail-table-wrap" style="margin-bottom:20px;">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Agendado Para</th>
+                        <th>Status</th>
+                        <th>Régua / Gatilho</th>
+                        <th>Cliente</th>
+                        <th>Telefone</th>
+                        <th>Valor Dívida</th>
+                        <th>Motivo / Info</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="outbox-body">
+                    <!-- JS Populates -->
+                </tbody>
+            </table>
+            <div id="pagination" style="padding:10px; display:flex; justify-content:center; gap:10px;">
+                <!-- Pagination Controls -->
+            </div>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
-            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Cliente</label>
-            <input type="text" id="filter-cliente" placeholder="Nome, CPF ou Telefone" style="padding:6px; border:1px solid var(--border); border-radius:4px; width:150px;">
-        </div>
-        <div class="form-group" style="margin-bottom:0; display:flex; align-items:center; gap:5px; padding-bottom:8px;">
-            <input type="checkbox" id="filter-only-test">
-            <label for="filter-only-test" style="font-size:12px; cursor:pointer;">Só Teste</label>
-        </div>
-        <button class="btn primary small" onclick="fetchOutbox(1)" style="height:32px;">
-            <i data-lucide="filter"></i> Filtrar
-        </button>
     </div>
 
-    <!-- Table -->
-    <div class="detail-table-wrap" style="margin:0 20px 20px 20px;">
-        <table class="detail-table">
-            <thead>
-                <tr>
-                    <th>Data/Hora</th>
-                    <th>Agendado Para</th>
-                    <th>Status</th>
-                    <th>Régua / Gatilho</th>
-                    <th>Cliente</th>
-                    <th>Telefone</th>
-                    <th>Valor Dívida</th>
-                    <th>Motivo / Info</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody id="outbox-body">
-                <!-- JS Populates -->
-            </tbody>
-        </table>
+    <!-- Financial View (Hidden by default) -->
+    <div id="view-financial" style="display:none; padding:0 20px 20px 20px;">
+        <div class="alert alert-info" style="margin-bottom:20px; font-size:13px;">
+            ℹ️ Histórico de resumos de agendamentos enviados para a equipe financeira.
+        </div>
+        <div class="detail-table-wrap">
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Data do Envio</th>
+                        <th>Data Agendamentos</th>
+                        <th>Destinatário</th>
+                        <th>Total Itens</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="financial-logs-body">
+                    <!-- JS Populates -->
+                </tbody>
+            </table>
+        </div>
+    </div>
         <div id="pagination" style="padding:10px; display:flex; justify-content:center; gap:10px;">
             <!-- Pagination Controls -->
         </div>
@@ -240,12 +277,83 @@
         }
     }
     
-    function openModal(id) {
-        const log = window.lastLogs.find(l => l.id === id);
-        if(log) {
-            document.getElementById('modal-msg-content').innerText = log.message_rendered || log.metadata || 'Sem conteúdo';
-            document.getElementById('modal-msg-error').innerText = (log.error ? "Erro: " + log.error : "") + (log.compliance_reason !== 'OK' ? " Motivo: " + log.compliance_reason : "");
-            document.getElementById('modal-message').style.display = 'flex';
+    function switchOutboxView(view) {
+        const viewGeneral = document.getElementById('view-general');
+        const viewFinancial = document.getElementById('view-financial');
+        const btnGeneral = document.getElementById('btn-view-general');
+        const btnFinancial = document.getElementById('btn-view-financial');
+        const btnRunGeneral = document.getElementById('form-run-general');
+        const btnRunFinancial = document.getElementById('btn-run-fin');
+
+        if (view === 'financial') {
+            viewGeneral.style.display = 'none';
+            viewFinancial.style.display = 'block';
+            btnGeneral.className = 'btn small secondary';
+            btnFinancial.className = 'btn small primary';
+            if (btnRunGeneral) btnRunGeneral.style.display = 'none';
+            if (btnRunFinancial) btnRunFinancial.style.display = 'inline-block';
+            fetchFinancialLogs();
+        } else {
+            viewGeneral.style.display = 'block';
+            viewFinancial.style.display = 'none';
+            btnGeneral.className = 'btn small primary';
+            btnFinancial.className = 'btn small secondary';
+            if (btnRunGeneral) btnRunGeneral.style.display = 'block';
+            if (btnRunFinancial) btnRunFinancial.style.display = 'none';
+        }
+    }
+
+    async function fetchFinancialLogs() {
+        const tbody = document.getElementById('financial-logs-body');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Carregando...</td></tr>';
+
+        try {
+            const res = await fetch('/api/financeiro/logs');
+            const data = await res.json();
+
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-3);">Nenhum log encontrado.</td></tr>';
+                return;
+            }
+
+            data.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-size:12px;">${new Date(log.created_at).toLocaleString('pt-BR')}</td>
+                    <td style="font-size:12px;">${new Date(log.date).toLocaleDateString('pt-BR')}</td>
+                    <td style="font-weight:600;">${log.user_name}</td>
+                    <td>${log.item_count} promoções</td>
+                    <td><span class="badge green">Enviado</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro ao carregar logs.</td></tr>';
+        }
+    }
+
+    async function runFinancialNow() {
+        const btn = document.getElementById('btn-run-fin');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerText = 'Disparando...';
+
+        try {
+            const res = await fetch('/api/financeiro/run-now', { method: 'POST' });
+            const data = await res.json();
+            
+            if (data.success) {
+                alert(`✅ Sucesso! Mensagens enviadas para ${data.sent_count} destinatários.`);
+                fetchFinancialLogs();
+            } else {
+                alert('⚠️ Atenção: ' + (data.detail || 'Erro desconhecido'));
+            }
+        } catch (e) {
+            alert('❌ Erro na requisição');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         }
     }
 
