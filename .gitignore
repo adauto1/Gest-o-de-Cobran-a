@@ -2,8 +2,16 @@
 __pycache__/
 *.py[cod]
 .venv/
-data/# *.db # Comentado para permitir deploy do banco populado
+
+# Banco de dados SQLite (não versionar - cada ambiente tem o seu)
+data/app.db
+data/app.db-shm
+data/app.db-wal
+*.db
+*.db-shm
+*.db-wal
 # *.sqlite3
+
 .env
 analyze_csv.py
 debug_bytes.py
