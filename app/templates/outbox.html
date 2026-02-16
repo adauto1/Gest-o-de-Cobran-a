@@ -1,0 +1,274 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+    <div class="tabs-container" style="display:flex; gap:20px; margin:0 20px 20px 20px; border-bottom:1px solid var(--border);">
+        <a href="/outbox" class="tab-link active" style="padding:10px 0; border-bottom:2px solid var(--primary); font-weight:600; color:var(--primary); text-decoration:none;">Outbox (Teste/Conferência)</a>
+        <a href="/messages" class="tab-link" style="padding:10px 0; color:var(--text-3); text-decoration:none;">Histórico de Envios</a>
+        <a href="/rules" class="tab-link" style="padding:10px 0; color:var(--text-3); text-decoration:none;">Modelos/Regras</a>
+    </div>
+
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h1>Outbox de Conferência</h1>
+            <p class="muted small">Auditoria de disparos, simulações e bloqueios de compliance.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            {% if user.role == "ADMIN" %}
+            <form method="post" action="/messages/run-now" style="margin:0">
+                <button class="btn primary small" type="submit">
+                    <i data-lucide="play"></i> Executar Agora
+                </button>
+            </form>
+            {% endif %}
+            <a href="/settings" class="btn secondary small"><i data-lucide="settings"></i> Configurações</a>
+        </div>
+    </div>
+
+    {% if request.query_params.get('msg') %}
+    <div class="alert alert-success"
+        style="margin:0 20px 20px 20px; padding:14px 20px; background:var(--success-bg); color:#15803D; border-radius:var(--radius-md); font-weight:500;">
+        ✅ {{ request.query_params.get('msg') }}
+    </div>
+    {% endif %}
+
+    <!-- KPI Cards -->
+    <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:16px; margin:20px; margin-top:0;">
+        <div class="kpi-card" style="background:var(--bg); padding:15px; border-radius:8px; text-align:center;">
+            <div class="label" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase;">Total</div>
+            <div class="value" id="kpi-total" style="font-size:24px; font-weight:700;">-</div>
+        </div>
+        <div class="kpi-card" style="background:#FEF3C7; padding:15px; border-radius:8px; text-align:center;">
+            <div class="label" style="font-size:11px; font-weight:700; color:#B45309; text-transform:uppercase;">Simuladas</div>
+            <div class="value" id="kpi-simulated" style="font-size:24px; font-weight:700; color:#B45309;">-</div>
+        </div>
+        <div class="kpi-card" style="background:#E0E7FF; padding:15px; border-radius:8px; text-align:center;">
+            <div class="label" style="font-size:11px; font-weight:700; color:#4338CA; text-transform:uppercase;">Reagendadas</div>
+            <div class="value" id="kpi-rescheduled" style="font-size:24px; font-weight:700; color:#4338CA;">-</div>
+        </div>
+        <div class="kpi-card" style="background:#DCFCE7; padding:15px; border-radius:8px; text-align:center;">
+            <div class="label" style="font-size:11px; font-weight:700; color:#15803D; text-transform:uppercase;">Enviadas</div>
+            <div class="value" id="kpi-sent" style="font-size:24px; font-weight:700; color:#15803D;">-</div>
+        </div>
+        <div class="kpi-card" style="background:#FEE2E2; padding:15px; border-radius:8px; text-align:center;">
+            <div class="label" style="font-size:11px; font-weight:700; color:#B91C1C; text-transform:uppercase;">Falhas</div>
+            <div class="value" id="kpi-failed" style="font-size:24px; font-weight:700; color:#B91C1C;">-</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div style="background:var(--surface-2); padding:15px; margin:0 20px 20px 20px; border-radius:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+        <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Período De</label>
+            <input type="date" id="filter-date-from" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Até</label>
+            <input type="date" id="filter-date-to" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Status</label>
+            <select id="filter-status" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+                <option value="">Todos</option>
+                <option value="SIMULADO">Simulado</option>
+                <option value="RESCHEDULED">Reagendado</option>
+                <option value="ENVIADO">Enviado</option>
+                <option value="FAILED">Falha</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Régua</label>
+            <select id="filter-regua" style="padding:6px; border:1px solid var(--border); border-radius:4px;">
+                <option value="">Todas</option>
+                <option value="LEVE">Leve</option>
+                <option value="MODERADA">Moderada</option>
+                <option value="INTENSA">Intensa</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-3); display:block; margin-bottom:4px;">Cliente</label>
+            <input type="text" id="filter-cliente" placeholder="Nome, CPF ou Telefone" style="padding:6px; border:1px solid var(--border); border-radius:4px; width:150px;">
+        </div>
+        <div class="form-group" style="margin-bottom:0; display:flex; align-items:center; gap:5px; padding-bottom:8px;">
+            <input type="checkbox" id="filter-only-test">
+            <label for="filter-only-test" style="font-size:12px; cursor:pointer;">Só Teste</label>
+        </div>
+        <button class="btn primary small" onclick="fetchOutbox(1)" style="height:32px;">
+            <i data-lucide="filter"></i> Filtrar
+        </button>
+    </div>
+
+    <!-- Table -->
+    <div class="detail-table-wrap" style="margin:0 20px 20px 20px;">
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Agendado Para</th>
+                    <th>Status</th>
+                    <th>Régua / Gatilho</th>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Valor Dívida</th>
+                    <th>Motivo / Info</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="outbox-body">
+                <!-- JS Populates -->
+            </tbody>
+        </table>
+        <div id="pagination" style="padding:10px; display:flex; justify-content:center; gap:10px;">
+            <!-- Pagination Controls -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal Message Preview -->
+<div id="modal-message" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:var(--surface); width:500px; max-width:90%; border-radius:8px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0;">Detalhes da Mensagem</h3>
+        <div style="margin:15px 0;">
+            <label style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase;">Mensagem Renderizada</label>
+            <div id="modal-msg-content" style="background:var(--bg); padding:10px; border-radius:4px; white-space:pre-wrap; font-size:13px; max-height:300px; overflow-y:auto; border:1px solid var(--border);"></div>
+        </div>
+        <div style="margin:15px 0;">
+            <label style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase;">Compliance / Erro</label>
+            <div id="modal-msg-error" style="font-size:13px; color:var(--danger);"></div>
+        </div>
+        <div style="text-align:right; display:flex; justify-content:flex-end; gap:10px;">
+            <button class="btn secondary" onclick="closeModal()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    
+    // Set default dates (Today)
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('filter-date-from').value = today;
+        document.getElementById('filter-date-to').value = today;
+        fetchOutbox(1);
+    });
+
+    async function fetchOutbox(page) {
+        currentPage = page;
+        const tbody = document.getElementById('outbox-body');
+        const pagination = document.getElementById('pagination');
+        
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px;">Carregando...</td></tr>';
+        
+        const params = new URLSearchParams({
+            page: page,
+            limit: 50,
+            date_from: document.getElementById('filter-date-from').value,
+            date_to: document.getElementById('filter-date-to').value,
+            status: document.getElementById('filter-status').value,
+            regua: document.getElementById('filter-regua').value,
+            cliente: document.getElementById('filter-cliente').value,
+            only_test: document.getElementById('filter-only-test').checked ? 'true' : ''
+        });
+
+        try {
+            const res = await fetch(`/api/mensagens/outbox?${params}`);
+            const json = await res.json();
+            
+            // Store logs for modal access
+            window.lastLogs = json.data;
+            
+            // Render KPIs
+            document.getElementById('kpi-total').innerText = json.kpis.total;
+            document.getElementById('kpi-simulated').innerText = json.kpis.simulated;
+            document.getElementById('kpi-rescheduled').innerText = json.kpis.rescheduled;
+            document.getElementById('kpi-sent').innerText = json.kpis.sent;
+            document.getElementById('kpi-failed').innerText = json.kpis.failed;
+            
+            // Render Table
+            tbody.innerHTML = '';
+            if (json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-3);">Nenhum registro encontrado.</td></tr>';
+                return;
+            }
+            
+            json.data.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                // Status Badge
+                let statusBadge = `<span class="badge">${item.status}</span>`;
+                if(item.status === 'SIMULADO') statusBadge = `<span class="badge yellow">Simulado</span>`;
+                if(item.status === 'ENVIADO') statusBadge = `<span class="badge green">Enviado</span>`;
+                if(item.status === 'RESCHEDULED') statusBadge = `<span class="badge" style="background:#E0E7FF; color:#4338CA;">Reagendado</span>`;
+                if(item.status === 'FAILED') statusBadge = `<span class="badge red">Falha</span>`;
+                
+                // Info Column (Compliance reason or error)
+                let info = item.compliance_reason !== 'OK' ? `<span style="color:#C2410C; font-size:11px;">⚠️ ${item.compliance_reason}</span>` : '';
+                if(item.error) info += `<div style="color:var(--danger); font-size:10px;">${item.error}</div>`;
+
+                tr.innerHTML = `
+                    <td style="font-size:12px;">${new Date(item.created_at).toLocaleString('pt-BR')}</td>
+                    <td style="font-size:12px;">${item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td>${statusBadge}</td>
+                    <td style="font-size:12px;">${item.regua_display}</td>
+                    <td><a href="/customers/${item.cliente_id}" style="font-weight:600;">${item.cliente_nome ? item.cliente_nome.substring(0,30) : '-'}</a></td>
+                    <td class="mono" style="font-size:11px;">${item.telefone || '-'}</td>
+                    <td>${item.valor.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+                    <td>${info}</td>
+                    <td>
+                        <button class="btn secondary small" onclick="openModal(${item.id})"><i data-lucide="eye"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Pagination
+            pagination.innerHTML = '';
+            if(json.meta.page > 1) {
+                pagination.innerHTML += `<button class="btn secondary small" onclick="fetchOutbox(${json.meta.page - 1})">Anterior</button>`;
+            }
+            pagination.innerHTML += `<span style="padding:5px 10px; font-size:12px;">Pág ${json.meta.page}</span>`;
+            if(json.data.length === 50) { 
+                pagination.innerHTML += `<button class="btn secondary small" onclick="fetchOutbox(${json.meta.page + 1})">Próxima</button>`;
+            }
+            
+            lucide.createIcons();
+            
+        } catch (e) {
+            console.error(e);
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:red;">Erro ao carregar dados.</td></tr>';
+        }
+    }
+    
+    function openModal(id) {
+        const log = window.lastLogs.find(l => l.id === id);
+        if(log) {
+            document.getElementById('modal-msg-content').innerText = log.message_rendered || log.metadata || 'Sem conteúdo';
+            document.getElementById('modal-msg-error').innerText = (log.error ? "Erro: " + log.error : "") + (log.compliance_reason !== 'OK' ? " Motivo: " + log.compliance_reason : "");
+            document.getElementById('modal-message').style.display = 'flex';
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('modal-message').style.display = 'none';
+    }
+</script>
+<!-- Update script to store logs -->
+<script>
+    // Overriding the function slightly to add storage logic would be messy.
+    // I will write the correct logic in the file content directly.
+    
+    // RERUNNING LOGIC locally to paste into file content:
+    // ... json.data.forEach ...
+    // window.lastLogs = json.data;
+    
+    // function openModal(id) {
+    //    const log = window.lastLogs.find(l => l.id === id);
+    //    if(log) {
+    //        document.getElementById('modal-msg-content').textContent = log.message_rendered;
+    //        document.getElementById('modal-msg-error').textContent = log.error || log.compliance_reason;
+    //        document.getElementById('modal-message').style.display = 'flex';
+    //    }
+    // }
+</script>
+<!-- Applying fix to the content above before writing -->
+{% endblock %}

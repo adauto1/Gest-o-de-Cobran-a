@@ -200,7 +200,45 @@ class WhatsappHistorico(Base):
     resposta = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    
     cliente = relationship("Customer")
+
+
+class MessageDispatchLog(Base):
+    __tablename__ = "message_dispatch_log"
+    id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    scheduled_for = Column(Date, nullable=True) # quando deveria enviar
+    executed_at = Column(DateTime, default=datetime.utcnow)
+    mode = Column(String(20)) # TEST/PROD
+    status = Column(String(20)) # SIMULATED, SENT, FAILED, RESCHEDULED, SKIPPED
+    regua = Column(String(20)) # LEVE, MODERADA, INTENSA
+    gatilho_dias = Column(Integer)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    customer_name = Column(String(190))
+    destination_phone = Column(String(40))
+    cpf_mask = Column(String(20))
+    
+    # Detalhes financeiros snapshot
+    data_vencimento = Column(Date, nullable=True)
+    valor_original = Column(Numeric(10, 2), nullable=True)
+    valor_atualizado = Column(Numeric(10, 2), nullable=True)
+    total_divida = Column(Numeric(10, 2), nullable=True)
+    qtd_parcelas_atrasadas = Column(Integer, nullable=True)
+    
+    compliance_block_reason = Column(String(50), nullable=True) # DOMINGO | FERIADO_NACIONAL | FORA_HORARIO_COMERCIAL | OK
+    message_rendered = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+    metadata_json = Column(Text, nullable=True) # JSON string
+    
+    customer = relationship("Customer")
+
+    __table_args__ = (
+        Index('ix_mdl_scheduled', 'scheduled_for'),
+        Index('ix_mdl_status_created', 'status', 'created_at'),
+        Index('ix_mdl_customer_created', 'customer_id', 'created_at'),
+        Index('ix_mdl_regua_gatilho', 'regua', 'gatilho_dias', 'created_at'),
+    )
 
 
 
@@ -214,6 +252,13 @@ def format_money(v) -> str:
         return f"R$ {s}"
     except:
         return "R$ 0,00"
+
+def parse_date(date_str: str) -> Optional[date]:
+    if not date_str: return None
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except:
+        return None
 
 # -----------------------------------------------------------------------------
 # Templating
@@ -234,6 +279,7 @@ PAGE_MAP = {
     "users.html": ("users", "Usuários"),
     "commissions.html": ("commissions", "Comissão"),
     "messages.html": ("messages", "Mensagens"),
+    "outbox.html": ("messages", "Outbox — Conferência"),
     "settings.html": ("settings", "Configurações"),
 }
 
@@ -1436,6 +1482,11 @@ def rules_create(
 # -----------------------------------------------------------------------------
 # Messages (report + manual trigger)
 # -----------------------------------------------------------------------------
+@app.get("/outbox")
+def outbox_page(request: Request, db: Session = Depends(get_db)):
+    user = require_login(request, db)
+    return render("outbox.html", request=request, user=user)
+
 @app.get("/messages", response_class=HTMLResponse)
 def messages_page(
     request: Request,
@@ -1495,8 +1546,115 @@ def messages_run_now(request: Request, db: Session = Depends(get_db)):
     if user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Apenas ADMIN")
     stats = run_collection_check(SessionLocal)
-    msg = f"Execução concluída! Verificados: {stats['checked']}, Criadas: {stats['created']}, Puladas (freq): {stats['skipped_freq']}, Sem telefone: {stats['skipped_no_phone']}"
-    return RedirectResponse(f"/messages?msg={msg}", status_code=HTTP_302_FOUND)
+    msg = f"Execução concluída! Verificados: {stats['checked']}, Criadas/Enviadas: {stats['created']}, Reagendadas: {stats['rescheduled']}, Puladas (freq): {stats['skipped_freq']}, Sem telefone: {stats['skipped_no_phone']}"
+    referer = request.headers.get("referer", "/outbox")
+    return RedirectResponse(f"{referer}{'&' if '?' in referer else '?'}msg={msg}", status_code=HTTP_302_FOUND)
+
+@app.get("/api/mensagens/outbox")
+def api_get_outbox(
+    request: Request,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    status: Optional[str] = None,
+    regua: Optional[str] = None,
+    cliente: Optional[str] = None,
+    only_test: bool = False,
+    only_rescheduled: bool = False,
+    page: int = 1,
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    user = require_login(request, db)
+    
+    query = db.query(MessageDispatchLog)
+    
+    # Filtros
+    if date_from:
+        try:
+            dt = parse_date(date_from)
+            query = query.filter(MessageDispatchLog.created_at >= datetime(dt.year, dt.month, dt.day))
+        except: pass
+        
+    if date_to:
+        try:
+            dt = parse_date(date_to)
+            query = query.filter(MessageDispatchLog.created_at < datetime(dt.year, dt.month, dt.day) + timedelta(days=1))
+        except: pass
+        
+    if status:
+        stat_list = status.split(",")
+        query = query.filter(MessageDispatchLog.status.in_(stat_list))
+        
+    if regua:
+        query = query.filter(MessageDispatchLog.regua == regua)
+        
+    if cliente:
+        query = query.filter(
+            (MessageDispatchLog.customer_name.ilike(f"%{cliente}%")) |
+            (MessageDispatchLog.destination_phone.ilike(f"%{cliente}%")) |
+            (MessageDispatchLog.cpf_mask.ilike(f"%{cliente}%"))
+        )
+        
+    if only_test:
+        query = query.filter(MessageDispatchLog.mode == "TEST")
+        
+    if only_rescheduled:
+        query = query.filter(MessageDispatchLog.status == "RESCHEDULED")
+        
+    # KPIs (snapshot based on current filters or global for period? Usually based on period/filters)
+    # Vamos calcular KPIs baseados na query atual (sem paginação)
+    # Mas fazer count(*) multiplos pode ser pesado. Vamos fazer um group by status.
+    
+    # Clone query for stats
+    # stats_query = query.with_entities(MessageDispatchLog.status, func.count(MessageDispatchLog.id)).group_by(MessageDispatchLog.status)
+    # stats_res = stats_query.all()
+    # stats_map = {s: c for s, c in stats_res}
+    
+    total_items = query.count()
+    total_simulated = query.filter(MessageDispatchLog.status == "SIMULADO").count()
+    total_rescheduled = query.filter(MessageDispatchLog.status == "RESCHEDULED").count()
+    total_sent = query.filter(MessageDispatchLog.status == "ENVIADO").count()
+    total_failed = query.filter(MessageDispatchLog.status == "FAILED").count()
+    
+    # Paginação
+    logs = query.order_by(MessageDispatchLog.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
+    
+    results = []
+    for l in logs:
+        results.append({
+            "id": l.id,
+            "created_at": l.created_at.isoformat(),
+            "scheduled_for": l.scheduled_for.isoformat() if l.scheduled_for else None,
+            "mode": l.mode,
+            "status": l.status,
+            "regua": l.regua,
+            "gatilho": l.gatilho_dias,
+            "regua_display": f"{l.regua} (D{'+' if l.gatilho_dias >=0 else ''}{l.gatilho_dias})",
+            "cliente_nome": l.customer_name,
+            "cliente_id": l.customer_id,
+            "telefone": l.destination_phone,
+            "valor": float(l.total_divida) if l.total_divida else 0.00, # ou valor_original
+            "compliance_reason": l.compliance_block_reason,
+            "error": l.error_message,
+            "metadata": l.metadata_json # Passar string json direto ou parsear? Front pode parsear.
+        })
+        
+    return {
+        "data": results,
+        "meta": {
+            "page": page,
+            "limit": limit,
+            "total": total_items
+        },
+        "kpis": {
+            "total": total_items, # Na visualização atual
+            "simulated": total_simulated,
+            "rescheduled": total_rescheduled,
+            "sent": total_sent,
+            "failed": total_failed
+        }
+    }
+
 
 # -----------------------------------------------------------------------------
 # Commissions
@@ -1882,9 +2040,13 @@ def enviar_whatsapp_manual(cliente_id: int, request: Request, db: Session = Depe
 @app.get("/api/whatsapp/status")
 def verificar_status_zapi():
     import requests
+    from app.services.whatsapp import ZAPI_CLIENT_TOKEN
     try:
         url = f"{ZAPI_BASE_URL}/status"
-        response = requests.get(url, timeout=10)
+        headers = {
+            "Client-Token": ZAPI_CLIENT_TOKEN
+        }
+        response = requests.get(url, headers=headers, timeout=10)
         data = response.json()
         return {"conectado": True, "status": data}
     except Exception as e:
