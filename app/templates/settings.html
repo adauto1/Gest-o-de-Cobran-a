@@ -319,21 +319,28 @@
         statusEl.innerText = 'Verificando...';
         statusEl.style.color = 'var(--text)';
 
+        // Captura dados atuais da tela (teste ad-hoc)
+        const testData = {
+            instance: document.getElementById('whatsapp_instancia').value,
+            token: document.getElementById('whatsapp_token').value,
+            client_token: document.getElementById('whatsapp_client_token').value
+        };
+
         try {
-            const res = await fetch('/api/whatsapp/status?t=' + Date.now());
+            const res = await fetch('/api/whatsapp/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(testData)
+            });
             const data = await res.json();
 
-            // Z-API pode retornar 'connected' ou 'phoneConnected'
-            const isConnected = data.conectado && data.status && (data.status.connected === true || data.status.phoneConnected === true);
-
-            if (isConnected) {
+            if (data.conectado) {
                 statusEl.innerText = 'Conectado ✅';
                 statusEl.style.color = 'var(--success)';
-            } else if (data.conectado) {
-                statusEl.innerText = 'API OK, Celular Desconectado ⚠️';
-                statusEl.style.color = 'var(--warning)';
             } else {
-                statusEl.innerText = 'Erro de Conexão ❌ (' + (data.erro || 'Desconhecido') + ')';
+                // Mostra erro detalhado retornado pelo backend
+                const errMsg = data.erro || 'Desconhecido';
+                statusEl.innerText = 'Erro de Conexão ❌ (' + errMsg + ')';
                 statusEl.style.color = 'var(--danger)';
             }
         } catch (e) {

@@ -86,25 +86,53 @@ def enviar_whatsapp(telefone: str, mensagem: str, modo_teste: bool = True):
             "erro": str(e)
         }
 
-def verificar_conexao():
-    """Verifica conexão com Z-API usando configs do banco."""
+def verificar_conexao(instance_id: str = None, token: str = None, client_token: str = None):
+    """
+    Verifica conexão com Z-API. 
+    Se parâmetros forem passados, usa-os diretamente (teste ad-hoc).
+    Caso contrário, busca as configurações salvas no banco.
+    """
     try:
-        instance, token, client_token, _, _ = get_whatsapp_config()
+        # Se algum parâmetro for fornecido, usamos o modo ad-hoc
+        if instance_id or token:
+            curr_instance = instance_id
+            curr_token = token
+            curr_client = client_token
+        else:
+            curr_instance, curr_token, curr_client, _, _ = get_whatsapp_config()
         
-        if not instance or not token:
-            return {"conectado": False, "erro": "Credenciais não configuradas"}
+        if not curr_instance or not curr_token:
+            return {"conectado": False, "erro": "Credenciais não configuradas ou incompletas"}
 
-        base_url = f"https://api.z-api.io/instances/{instance}/token/{token}"
+        base_url = f"https://api.z-api.io/instances/{curr_instance}/token/{curr_token}"
         
         url = f"{base_url}/status"
-        headers = {"Client-Token": client_token or ""}
-        response = requests.get(url, headers=headers, timeout=10)
-        data = response.json()
+        headers = {"Client-Token": curr_client or ""}
         
-        return {
-            "conectado": (response.status_code == 200 and data.get("connected") is True),
-            "status": data
-        }
+        try:
+            response = requests.get(url, headers=headers, timeout=12)
+            
+            if response.status_code == 401:
+                return {"conectado": False, "erro": "Não autorizado (Token ou ID inválidos)", "code": 401}
+            
+            if response.status_code == 404:
+                return {"conectado": False, "erro": f"Instância '{curr_instance}' não encontrada", "code": 404}
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            # Z-API costuma retornar 'connected' no payload do /status
+            is_connected = data.get("connected") is True or data.get("phoneConnected") is True
+            
+            return {
+                "conectado": is_connected,
+                "status": data
+            }
+        except requests.exceptions.Timeout:
+            return {"conectado": False, "erro": "Tempo de conexão esgotado (Z-API demorou demais)"}
+        except requests.exceptions.RequestException as re:
+            return {"conectado": False, "erro": f"Erro de rede: {str(re)}"}
+            
     except Exception as e:
         logger.error(f"[WhatsApp] Erro na verificação: {e}")
-        return {"conectado": False, "erro": str(e)}
+        return {"conectado": False, "erro": f"Erro interno: {str(e)}"}

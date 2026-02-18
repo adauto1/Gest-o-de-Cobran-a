@@ -42,11 +42,23 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
     return render("settings.html", request=request, user=user, title="Configurações", config=config)
 
 # --- WhatsApp API Status ---
-@router.get("/api/whatsapp/status")
-@router.post("/api/settings/whatsapp/test")
+@router.route("/api/whatsapp/status", methods=["GET", "POST"])
 async def get_whatsapp_status(request: Request, db: Session = Depends(get_db)):
     require_login(request, db)
     from app.services.whatsapp import verificar_conexao
+    
+    if request.method == "POST":
+        try:
+            dados = await request.json()
+            instance = dados.get("instance")
+            token = dados.get("token")
+            client = dados.get("client_token")
+            # Chama verificação com dados fornecidos (ad-hoc)
+            return verificar_conexao(instance, token, client)
+        except Exception as e:
+            return {"conectado": False, "erro": f"Erro ao processar dados de teste: {e}"}
+            
+    # GET: Usa o comportamento padrão (busca do banco)
     return verificar_conexao()
 
 # --- Config Settings (Form and AJAX) ---
