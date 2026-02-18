@@ -1,6 +1,90 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="grid2">
+
+<style>
+  .customer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .editable-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+
+  .info-label {
+    color: var(--text-3);
+    min-width: 90px;
+  }
+
+  .edit-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.2s, border-color 0.2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+    flex: 1;
+  }
+
+  .edit-container:hover {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #eee;
+  }
+
+  .info-val {
+    font-weight: 600;
+    color: var(--text-1);
+    word-break: break-word;
+  }
+
+  .edit-icon {
+    color: var(--primary);
+    opacity: 0.3;
+    transition: opacity 0.2s;
+    width: 14px;
+    height: 14px;
+  }
+
+  .edit-container:hover .edit-icon {
+    opacity: 1;
+  }
+
+  .inline-input {
+    border: 1px solid var(--primary);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    outline: none;
+    width: 100%;
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+  }
+
+  @media (max-width: 992px) {
+    .customer-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="customer-grid">
+  <!-- COLUNA DA ESQUERDA: DADOS E KPIS -->
   <div class="card">
     <h1>
       <div class="regua-dot dot-{{ regua_nivel }}" title="Régua: {{ regua_nivel }}" style="margin-right: 8px;"></div>
@@ -21,10 +105,33 @@
         </select>
       </form>
     </h1>
-    <div class="muted">Loja: <b>{{ customer.store or "-" }}</b> · WhatsApp: <b>{{ customer.whatsapp or "não informado"
-        }}</b></div>
 
-    <div class="kpis-row">
+    <div class="editable-info">
+      <div class="info-row">
+        <span class="info-label">Loja:</span>
+        <span class="info-val">{{ customer.store or "-" }}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">WhatsApp:</span>
+        <div class="edit-container" data-field="whatsapp" data-val="{{ customer.whatsapp or '' }}"
+          onclick="startEdit(this)">
+          <span class="info-val display-span">{{ customer.whatsapp or "Clique para adicionar" }}</span>
+          <i data-lucide="pencil" class="edit-icon"></i>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Endereço:</span>
+        <div class="edit-container" data-field="address" data-val="{{ customer.address or '' }}"
+          onclick="startEdit(this)">
+          <span class="info-val display-span">{{ customer.address or "Clique para adicionar" }}</span>
+          <i data-lucide="pencil" class="edit-icon"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpis-row" style="margin-top: 20px;">
       <div class="kpi-box">
         <div class="kpi-label">Total em Aberto</div>
         <div class="kpi">{{ total_open }}</div>
@@ -34,35 +141,51 @@
         <div class="kpi">{{ max_overdue }} dias</div>
       </div>
     </div>
+  </div>
 
-    <!-- Remoção das seções de WhatsApp e Registro de Contato conforme solicitado -->
+  <!-- COLUNA DA DIREITA: HISTÓRICO -->
+  <div class="card">
+    <div class="card-h" style="padding: 0; margin-bottom: 15px; border: none;">
+      <div class="card-title" style="font-size: 1.1em;">
+        <i data-lucide="history" style="color: var(--primary)"></i>
+        Histórico de Contatos
+      </div>
+    </div>
 
-    <div class="card inner">
-      <h2>Histórico (últimos 80)</h2>
-      {% if actions|length == 0 %}
-      <p class="muted">Nenhum contato registrado ainda.</p>
-      {% else %}
+    {% if actions|length == 0 %}
+    <p class="muted">Nenhum contato registrado ainda.</p>
+    {% else %}
+    <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
       <ul class="list">
         {% for a in actions %}
-        <li>
-          <div><b>{{ a.action_type }}</b> — {{ a.outcome }} · <span class="muted small">{{ a.user.name }} · {{
-              a.created_at }}</span></div>
+        <li style="border-left: 3px solid var(--primary); padding-left: 12px; margin-bottom: 12px;">
+          <div style="font-weight: 600; font-size: 13px;">
+            {{ a.action_type }} — {{ a.outcome }}
+          </div>
+          <div class="muted small" style="margin-top: 2px;">
+            {{ a.user.name }} · {{ a.created_at.strftime('%d/%m/%Y %H:%M') }}
+          </div>
           {% if a.promised_date %}
-          <div class="muted small">Promessa: {{ a.promised_date }}{% if a.promised_amount %} · R$ {{ a.promised_amount
-            }}{% endif %}</div>
+          <div class="muted small" style="color: var(--primary); font-weight: 500;">
+            Promessa: {{ a.promised_date.strftime('%d/%m/%Y') }}{% if a.promised_amount %} · R$ {{
+            "{:,.2f}".format(a.promised_amount).replace(",", "X").replace(".", ",").replace("X", ".") }}{% endif %}
+          </div>
           {% endif %}
           {% if a.notes %}
-          <div class="muted small">{{ a.notes }}</div>
+          <div class="muted small"
+            style="font-style: italic; background: #f9f9f9; padding: 4px 8px; border-radius: 4px; margin-top: 5px;">
+            {{ a.notes }}
+          </div>
           {% endif %}
         </li>
         {% endfor %}
       </ul>
-      {% endif %}
     </div>
+    {% endif %}
   </div>
 
-  <!-- ══════════════ TABELA DETALHADA DE PARCELAS ══════════════ -->
-  <div class="card" style="grid-column: 1 / -1;">
+  <!-- TABELA DE PARCELAS (LARGURA TOTAL) -->
+  <div class="card" style="grid-column: 1 / -1; width: 100%;">
     <div class="card-h">
       <div class="card-title">
         <i data-lucide="file-text" style="color: var(--primary-text)"></i>
@@ -79,39 +202,34 @@
             <th>Data Quitação</th>
             <th>Cod. Pedido</th>
             <th>Parcela</th>
-            <th>Descrição</th>
+            <th style="min-width: 200px;">Descrição</th>
             <th>Valor Quitado</th>
             <th>Vencimento</th>
             <th>Valor Título</th>
-            <th>Moeda</th>
             <th>Data Emissão</th>
-            <th>Pedido</th>
             <th>Nosso Nº</th>
             <th>Dias Atraso</th>
-            <th>R/P</th>
-            <th>Portador</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
           {% for x in installments %}
           {% set paid_amount = x.i.amount - x.i.open_amount %}
           <tr class="{% if x.overdue > 30 %}row-critical{% elif x.overdue > 0 %}row-warn{% endif %}">
-            <td class="mono">{{ x.i.id }}</td>
-            <td>{{ x.i.paid_at.strftime('%d/%m/%Y') if x.i.paid_at else '—' }}</td>
-            <td class="mono">{{ x.i.contract_id }}</td>
+            <td class="mono small">{{ x.i.id }}</td>
+            <td class="small">{{ x.i.paid_at.strftime('%d/%m/%Y') if x.i.paid_at else '—' }}</td>
+            <td class="mono small">{{ x.i.contract_id }}</td>
             <td style="text-align:center">{{ x.i.installment_number }}</td>
-            <td class="td-name">{{ customer.name }}</td>
-            <td class="text-right {% if paid_amount > 0 %}text-success{% endif %}">
+            <td class="td-name" style="font-size: 11px;">{{ customer.name }}</td>
+            <td class="text-right {% if paid_amount > 0 %}text-success{% endif %}" style="font-weight:600">
               R$ {{ "{:,.2f}".format(paid_amount).replace(",", "X").replace(".", ",").replace("X", ".") }}
             </td>
-            <td>{{ x.i.due_date.strftime('%d/%m/%Y') if x.i.due_date else '—' }}</td>
-            <td class="text-right" style="font-weight:600">
+            <td style="font-weight: 600;">{{ x.i.due_date.strftime('%d/%m/%Y') if x.i.due_date else '—' }}</td>
+            <td class="text-right" style="font-weight:700">
               R$ {{ "{:,.2f}".format(x.i.amount).replace(",", "X").replace(".", ",").replace("X", ".") }}
             </td>
-            <td style="text-align:center">R$</td>
-            <td>{{ x.i.issue_date.strftime('%d/%m/%Y') if x.i.issue_date else '—' }}</td>
-            <td class="mono">{{ x.i.contract_id }}</td>
-            <td class="mono">{{ x.i.contract_id }}-{{ x.i.installment_number }}</td>
+            <td class="small">{{ x.i.issue_date.strftime('%d/%m/%Y') if x.i.issue_date else '—' }}</td>
+            <td class="mono small">{{ x.i.contract_id }}-{{ x.i.installment_number }}</td>
             <td style="text-align:center">
               {% if x.overdue > 0 %}
               <span class="pill p5">{{ x.overdue }}d</span>
@@ -123,27 +241,26 @@
             </td>
             <td style="text-align:center">
               {% if x.i.status == 'ABERTA' %}
-              <span class="badge yellow" style="font-size:10px">R</span>
+              <span class="badge yellow" style="font-size:10px">ABERTA</span>
               {% else %}
-              <span class="badge green" style="font-size:10px">P</span>
+              <span class="badge green" style="font-size:10px">PAGA</span>
               {% endif %}
             </td>
-            <td>{{ customer.store or '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>
         <tfoot>
           <tr class="totals-row">
-            <td colspan="5" style="text-align:right; font-weight:700;">Totais:</td>
+            <td colspan="5" style="text-align:right; font-weight:700; padding: 15px;">Totais:</td>
             <td class="text-right" style="font-weight:700; color: var(--success);">{{ total_quitado }}</td>
             <td></td>
             <td class="text-right" style="font-weight:700;">{{ total_titulo }}</td>
-            <td colspan="4"></td>
-            <td colspan="3" style="text-align:right;">
+            <td colspan="4" style="text-align:right;">
               <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
                 <span><b style="color: var(--danger);">Vencido:</b> {{ total_vencido }}</span>
                 <span><b>Em Aberto:</b> {{ total_open }}</span>
-                <span style="font-size:15px;"><b>Total Títulos:</b> {{ total_titulo }}</span>
+                <span style="font-size:16px; border-top: 1px solid #ddd; padding-top: 4px; margin-top: 4px;"><b>Total
+                    Títulos:</b> {{ total_titulo }}</span>
               </div>
             </td>
           </tr>
@@ -151,6 +268,75 @@
       </table>
     </div>
   </div>
-
 </div>
+
+<script>
+  async function startEdit(container) {
+    const field = container.dataset.field;
+    let currentVal = container.dataset.val;
+    const span = container.querySelector('.display-span');
+    const icon = container.querySelector('.edit-icon');
+
+    if (container.querySelector('input')) return;
+
+    // Salva o onclick original para restaurar se cancelar
+    const originalOnClick = container.onclick;
+    container.onclick = null;
+    icon.style.opacity = '0';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentVal;
+    input.className = 'inline-input';
+
+    span.style.display = 'none';
+    container.appendChild(input);
+    input.focus();
+
+    const finish = async (save) => {
+      const newVal = input.value.trim();
+      input.remove();
+      span.style.display = 'inline';
+      icon.style.opacity = '';
+
+      if (save && newVal !== currentVal) {
+        const oldText = span.innerText;
+        span.innerText = "Salvando...";
+        try {
+          const res = await fetch(`/api/customers/{{ customer.id }}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [field]: newVal })
+          });
+          const data = await res.json();
+          if (data.success) {
+            span.innerText = newVal || "Clique para adicionar";
+            container.dataset.val = newVal;
+            currentVal = newVal;
+          } else {
+            alert("Erro ao salvar: " + data.message);
+            span.innerText = oldText;
+          }
+        } catch (err) {
+          alert("Erro de conexão");
+          span.innerText = oldText;
+        }
+      } else {
+        span.innerText = currentVal || "Clique para adicionar";
+      }
+
+      // Restaura o evento após um pequeno delay para evitar trigger imediato
+      setTimeout(() => {
+        container.onclick = originalOnClick;
+      }, 100);
+    };
+
+    input.onblur = () => finish(true);
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') finish(true);
+      if (e.key === 'Escape') finish(false);
+    };
+  }
+</script>
+
 {% endblock %}

@@ -1010,8 +1010,6 @@ def change_profile(request: Request, customer_id: int, profile: str = Form(...),
 
 @app.patch("/api/customers/{customer_id}/regua")
 def alterar_regua(customer_id: int, dados: dict, db: Session = Depends(get_db)):
-    # Note: Using synchronous 'def' to match existing SQLAlchemy session pattern
-    # and avoid event loop blocking, though user requested 'async def'.
     cliente = db.query(Customer).filter(Customer.id == customer_id).first()
     if not cliente:
         return {"success": False, "message": "Cliente não encontrado"}
@@ -1022,8 +1020,29 @@ def alterar_regua(customer_id: int, dados: dict, db: Session = Depends(get_db)):
     
     cliente.profile_cobranca = nova_regua
     db.commit()
-    
     return {"success": True, "message": "Régua alterada com sucesso"}
+
+@app.patch("/api/customers/{customer_id}")
+def update_customer(customer_id: int, dados: dict, request: Request, db: Session = Depends(get_db)):
+    user = require_login(request, db)
+    cliente = db.get(Customer, customer_id)
+    if not cliente:
+        return {"success": False, "message": "Cliente não encontrado"}
+    
+    # Permission check (similar to customer detail page)
+    if user.role == "COBRANCA":
+        if user.store and (cliente.store or "").upper() != user.store.upper():
+            return {"success": False, "message": "Sem permissão (loja)"}
+
+    # Update allowed fields
+    if "whatsapp" in dados:
+        cliente.whatsapp = str(dados["whatsapp"]).strip()
+    if "address" in dados:
+        cliente.address = str(dados["address"]).strip()
+    
+    cliente.updated_at = datetime.utcnow()
+    db.commit()
+    return {"success": True, "message": "Cliente atualizado com sucesso"}
 
 # -----------------------------------------------------------------------------
 # Import
