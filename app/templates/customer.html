@@ -35,50 +35,7 @@
       </div>
     </div>
 
-    <div class="card inner">
-      <h2>WhatsApp (mensagem sugerida)</h2>
-      <textarea class="textarea" rows="4" readonly style="width:100%">{{ wa_message }}</textarea>
-      {% if wa_link %}
-      <a class="btn primary" target="_blank" rel="noopener" href="{{ wa_link }}" style="margin-top:10px">Abrir no
-        WhatsApp</a>
-      {% else %}
-      <div class="alert alert-warning">Sem número cadastrado. Quando importar telefones, este botão ativa.</div>
-      {% endif %}
-    </div>
-
-    <div class="card inner" id="registrar">
-      <h2>Registrar Contato</h2>
-      <form method="post" action="/actions" class="form">
-        <input type="hidden" name="customer_id" value="{{ customer.id }}">
-
-        <label>Tipo</label>
-        <select name="action_type">
-          <option value="WHATSAPP">WhatsApp</option>
-          <option value="LIGACAO">Ligação</option>
-          <option value="VISITA">Visita</option>
-          <option value="ACORDO">Acordo</option>
-        </select>
-
-        <label>Resultado</label>
-        <input name="outcome" placeholder="Ex: Não atendeu / Vai pagar hoje" required>
-
-        <label>Observação</label>
-        <input name="notes" placeholder="Detalhes (opcional)">
-
-        <div class="grid2">
-          <div>
-            <label>Promessa — Data</label>
-            <input name="promised_date" placeholder="DD/MM/AAAA (opcional)">
-          </div>
-          <div>
-            <label>Promessa — Valor</label>
-            <input name="promised_amount" placeholder="Ex: 150,00 (opcional)">
-          </div>
-        </div>
-
-        <button class="btn primary" type="submit">Salvar Registro</button>
-      </form>
-    </div>
+    <!-- Remoção das seções de WhatsApp e Registro de Contato conforme solicitado -->
 
     <div class="card inner">
       <h2>Histórico (últimos 80)</h2>
