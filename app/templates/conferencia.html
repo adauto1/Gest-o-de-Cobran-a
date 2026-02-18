@@ -1,0 +1,282 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Conferência de Títulos</h1>
+        <p class="page-subtitle">Compare o banco do app com relatórios do ERP (RDPrint 5.0)</p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">Upload de Relatórios ERP</h2>
+    </div>
+    <div class="card-body">
+        <form id="formConferencia" style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label class="form-label">Títulos a Receber (Abertos/Vencidos)</label>
+                    <input type="file" id="file_receber" class="form-control" accept=".html">
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Relatório de parcelas em
+                        aberto no ERP.</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Títulos Recebidos (Liquidados)</label>
+                    <input type="file" id="file_recebidos" class="form-control" accept=".html">
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Relatório de parcelas
+                        quitadas no ERP.</p>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="button" class="btn btn-primary" onclick="processarConferencia()">
+                    <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 8px;"></i>
+                    Processar Conferência
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="resultsArea" style="display: none;">
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="card-title">Resultado da Comparação</h2>
+            <div class="tabs" id="filterTabs">
+                <button class="tab-btn active" onclick="filterResults('TODOS')">Todos <span class="badge"
+                        id="count-TODOS">0</span></button>
+                <button class="tab-btn" onclick="filterResults('QUITADA_NO_ERP')">Para Quitar <span class="badge"
+                        id="count-QUITADA">0</span></button>
+                <button class="tab-btn" onclick="filterResults('CANCELADA_OU_EXCLUIDA')">Cancelados <span class="badge"
+                        id="count-CANCELADA">0</span></button>
+                <button class="tab-btn" onclick="filterResults('DIVERGENCIA_VALOR')">Divergências <span class="badge"
+                        id="count-DIVERGENCIA">0</span></button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table" id="tableConferencia">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                        <th>Cliente</th>
+                        <th>N.Doc</th>
+                        <th>Vencimento</th>
+                        <th>Valor App</th>
+                        <th>Valor ERP</th>
+                        <th>Situação</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    <!-- Gerado via JS -->
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+            <span id="selectedCount"
+                style="align-self: center; margin-right: 15px; font-weight: 600; font-size: 14px; color: var(--primary);">0
+                selecionados</span>
+            <button class="btn btn-success" id="btnAplicar" onclick="aplicarAtualizacoes()" disabled>
+                <i data-lucide="check-circle" style="width: 16px; height: 16px; margin-right: 8px;"></i>
+                Aplicar Atualizações (Quitar)
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge {
+        background: var(--border);
+        color: var(--text);
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 11px;
+        margin-left: 5px;
+    }
+
+    .active .badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    .situacao-quitada {
+        color: var(--success);
+        font-weight: 600;
+    }
+
+    .situacao-cancelada {
+        color: var(--danger);
+        font-weight: 600;
+    }
+
+    .situacao-divergente {
+        color: #f59e0b;
+        font-weight: 600;
+    }
+
+    .situacao-ok {
+        color: var(--text-muted);
+    }
+
+    .tabs {
+        display: flex;
+        gap: 10px;
+    }
+
+    .tab-btn {
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+</style>
+
+<script>
+    let rawResults = [];
+
+    async function processarConferencia() {
+        const file1 = document.getElementById('file_receber').files[0];
+        const file2 = document.getElementById('file_recebidos').files[0];
+
+        if (!file1 && !file2) {
+            alert("Selecione pelo menos um dos arquivos HTML do ERP.");
+            return;
+        }
+
+        const formData = new FormData();
+        if (file1) formData.append('file_receber', file1);
+        if (file2) formData.append('file_recebidos', file2);
+
+        // Loading state
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Processando...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/conferencia/processar', {
+                method: 'POST',
+                body: formData
+            });
+            rawResults = await response.json();
+
+            renderResults('TODOS');
+            updateBadges();
+            document.getElementById('resultsArea').style.display = 'block';
+            lucide.createIcons();
+        } catch (error) {
+            alert("Erro ao processar arquivos: " + error);
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            lucide.createIcons();
+        }
+    }
+
+    function updateBadges() {
+        document.getElementById('count-TODOS').innerText = rawResults.length;
+        document.getElementById('count-QUITADA').innerText = rawResults.filter(r => r.situacao === 'QUITADA_NO_ERP').length;
+        document.getElementById('count-CANCELADA').innerText = rawResults.filter(r => r.situacao === 'CANCELADA_OU_EXCLUIDA').length;
+        document.getElementById('count-DIVERGENCIA').innerText = rawResults.filter(r => r.situacao === 'DIVERGENCIA_VALOR').length;
+    }
+
+    function renderResults(filter) {
+        // Update active tab
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const activeTab = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.innerText.includes(filter === 'TODOS' ? 'Todos' : filter === 'QUITADA_NO_ERP' ? 'Para Quitar' : filter === 'CANCELADA_OU_EXCLUIDA' ? 'Cancelados' : 'Divergências'));
+        if (activeTab) activeTab.classList.add('active');
+
+        const tbody = document.getElementById('resultsBody');
+        tbody.innerHTML = '';
+
+        const filtered = filter === 'TODOS' ? rawResults : rawResults.filter(r => r.situacao === filter);
+
+        filtered.forEach(item => {
+            const tr = document.createElement('tr');
+
+            const situacaoLabels = {
+                'QUITADA_NO_ERP': 'Quitada no ERP',
+                'CANCELADA_OU_EXCLUIDA': 'Sumiu do ERP',
+                'DIVERGENCIA_VALOR': 'Divergência de Valor',
+                'SOLIDO': 'OK (Em Aberto)',
+                'SEM_ALTERACAO': 'Sem Alteração'
+            };
+
+            const canSelect = item.situacao === 'QUITADA_NO_ERP';
+
+            tr.innerHTML = `
+                <td><input type="checkbox" class="row-check" value="${item.id}" ${canSelect ? '' : 'disabled'} onclick="updateSelection()"></td>
+                <td><div style="font-weight:600">${item.cliente}</div></td>
+                <td><code style="background:var(--border); padding:2px 4px; border-radius:4px">${item.doc}</code></td>
+                <td>${item.vencimento}</td>
+                <td style="font-weight:500">R$ ${item.valor_app.toFixed(2).replace('.', ',')}</td>
+                <td style="font-weight:500">${item.valor_erp ? 'R$ ' + item.valor_erp.toFixed(2).replace('.', ',') : '-'}</td>
+                <td class="${item.classe}">${situacaoLabels[item.situacao] || item.situacao}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateSelection();
+    }
+
+    function filterResults(filter) {
+        renderResults(filter);
+    }
+
+    function toggleSelectAll() {
+        const checked = document.getElementById('selectAll').checked;
+        document.querySelectorAll('.row-check:not(:disabled)').forEach(cb => {
+            cb.checked = checked;
+        });
+        updateSelection();
+    }
+
+    function updateSelection() {
+        const selected = document.querySelectorAll('.row-check:checked').length;
+        document.getElementById('selectedCount').innerText = selected + ' selecionados';
+        document.getElementById('btnAplicar').disabled = selected === 0;
+    }
+
+    async function aplicarAtualizacoes() {
+        const ids = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => parseInt(cb.value));
+
+        if (!confirm(`Deseja marcar ${ids.length} parcelas como QUITADAS no banco do app?`)) {
+            return;
+        }
+
+        const btn = document.getElementById('btnAplicar');
+        btn.disabled = true;
+        btn.innerText = 'Aplicando...';
+
+        try {
+            const response = await fetch('/api/conferencia/aplicar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ids)
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`${data.updated} parcelas foram atualizadas com sucesso!`);
+                // Limpar resultados e colapsar
+                document.getElementById('resultsArea').style.display = 'none';
+                document.getElementById('formConferencia').reset();
+                rawResults = [];
+            }
+        } catch (error) {
+            alert("Erro ao aplicar atualizações: " + error);
+            btn.disabled = false;
+            btn.innerHTML = 'Aplicar Atualizações (Quitar)';
+        }
+    }
+</script>
+{% endblock %}

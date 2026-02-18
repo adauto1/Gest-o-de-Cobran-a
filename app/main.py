@@ -18,7 +18,7 @@ from app.services.notifications import director_notification_loop, financial_not
 
 # --- Routers ---
 from app.api.routers import (
-    customers, queue, rules, import_data, auth, users, actions, messages, dashboard, commissions, settings
+    customers, queue, rules, import_data, auth, users, actions, messages, dashboard, commissions, settings, conferencia
 )
 
 # --- Logging Estruturado ---
@@ -58,6 +58,7 @@ app.include_router(messages.router)
 app.include_router(dashboard.router)
 app.include_router(commissions.router)
 app.include_router(settings.router)
+app.include_router(conferencia.router)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
