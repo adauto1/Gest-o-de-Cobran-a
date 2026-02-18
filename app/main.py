@@ -693,9 +693,11 @@ def api_fila_prioridade(request: Request, page: int = 1, limit: int = 30, db: Se
                 "data_vencimento": i.due_date,
                 "profile_cobranca": i.customer.profile_cobranca or "AUTOMATICO",
                 "ultimo_contato": last_action.created_at if last_action else None,
-                "ultimo_contato_str": last_action.created_at.strftime("%d/%m/%Y") if last_action else "Sem contato"
+                "ultimo_contato_str": last_action.created_at.strftime("%d/%m/%Y") if last_action else "Sem contato",
+                "qtd_parcelas": 0
             }
         
+        customer_data[cid]["qtd_parcelas"] += 1
         customer_data[cid]["valor_em_aberto"] += float(i.open_amount)
         if delay > customer_data[cid]["max_atraso"]:
             customer_data[cid]["max_atraso"] = delay
