@@ -33,6 +33,13 @@ if [ -f "$APP_DIR/data/app.db" ]; then
     chmod 664 "$APP_DIR/data/app.db"
 fi
 
+# 3.6. Migração automática do banco
+echo "🗄️ Executando migrações automáticas..."
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN whatsapp_instancia TEXT;" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN whatsapp_token TEXT;" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN updated_at TEXT;" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN whatsapp_modo_teste INTEGER DEFAULT 0;" 2>/dev/null || true
+
 # 4. Reiniciar serviço
 echo "🔄 Reiniciando serviço..."
 sudo systemctl restart gestor-cobranca
