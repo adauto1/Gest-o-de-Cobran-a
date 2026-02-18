@@ -45,6 +45,25 @@
                 </small>
             </div>
 
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label class="small muted">ID da Instância (Z-API)</label>
+                    <input type="text" id="whatsapp_instancia" value="{{ config.whatsapp_instancia or '' }}"
+                        class="input" style="width: 100%;">
+                </div>
+                <div>
+                    <label class="small muted">Token da Instância</label>
+                    <input type="password" id="whatsapp_token" value="{{ config.whatsapp_token or '' }}" class="input"
+                        style="width: 100%;">
+                </div>
+                <div>
+                    <label class="small muted">Client Token</label>
+                    <input type="password" id="whatsapp_client_token" value="{{ config.whatsapp_client_token or '' }}"
+                        class="input" style="width: 100%;">
+                </div>
+            </div>
+
             <div class="config-status"
                 style="background: var(--bg); padding: 10px; border-radius: 6px; display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
                 <strong>Status Z-API:</strong>
@@ -130,7 +149,10 @@
 
         const data = {
             whatsapp_ativo: document.getElementById('whatsapp_ativo').checked,
-            whatsapp_modo_teste: document.getElementById('whatsapp_modo_teste').checked
+            whatsapp_modo_teste: document.getElementById('whatsapp_modo_teste').checked,
+            whatsapp_instancia: document.getElementById('whatsapp_instancia').value,
+            whatsapp_token: document.getElementById('whatsapp_token').value,
+            whatsapp_client_token: document.getElementById('whatsapp_client_token').value
         };
 
         btn.disabled = true;

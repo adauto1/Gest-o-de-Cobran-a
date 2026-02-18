@@ -72,6 +72,7 @@ async def update_settings_api(request: Request, db: Session = Depends(get_db)):
     if "whatsapp_modo_teste" in dados: config.whatsapp_modo_teste = bool(dados["whatsapp_modo_teste"])
     if "whatsapp_instancia" in dados: config.whatsapp_instancia = str(dados["whatsapp_instancia"]).strip()
     if "whatsapp_token" in dados: config.whatsapp_token = str(dados["whatsapp_token"]).strip()
+    if "whatsapp_client_token" in dados: config.whatsapp_client_token = str(dados["whatsapp_client_token"]).strip()
     
     db.commit()
     return {"success": True}

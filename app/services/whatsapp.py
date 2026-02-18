@@ -16,7 +16,7 @@ def get_whatsapp_config():
         return (
             config.whatsapp_instancia,
             config.whatsapp_token,
-            "F2d93bb4f23434f82bb1b4d718cd3b74fS", # Client Token fixo ou poderia vir do banco
+            config.whatsapp_client_token,
             config.whatsapp_ativo,
             config.whatsapp_modo_teste
         )

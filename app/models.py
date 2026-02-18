@@ -137,6 +137,7 @@ class Configuracoes(Base):
     whatsapp_modo_teste = Column(Boolean, default=True)
     whatsapp_instancia = Column(String(100), nullable=True)
     whatsapp_token = Column(String(100), nullable=True)
+    whatsapp_client_token = Column(String(100), nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 class WhatsappHistorico(Base):

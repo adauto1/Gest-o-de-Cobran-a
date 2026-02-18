@@ -42,5 +42,16 @@ O deploy é automatizado via GitHub Actions sempre que um push é feito na branc
 - Correção do robô de notificações para usar credenciais dinâmicas do banco.
 - Implementação de campo de valor prometido no modal de registro de contato.
 
+## 🛡️ Regras de Desenvolvimento e Banco de Dados (Mandatório)
+Para evitar quebras no ambiente de produção (VPS), as seguintes regras devem ser seguidas por qualquer desenvolvedor ou IA:
+
+1. **Alterações no Modelo:** Sempre que adicionar uma nova coluna em `app/models.py`, você **deve** adicionar a linha de migração correspondente no arquivo `deploy.sh`.
+2. **Formato da Migração:** Use o comando `sqlite3` com proteção contra erro:
+   ```bash
+   sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE nome_tabela ADD COLUMN nome_coluna TIPO;" 2>/dev/null || true
+   ```
+3. **Commit Atômico:** Nunca faça push de código que dependa de novas colunas sem que a migração correspondente esteja incluída no **mesmo commit**.
+4. **Proteção:** O sufixo `2>/dev/null || true` é **obrigatório** para evitar que o deploy falhe caso a coluna já tenha sido criada anteriormente.
+
 ---
 *Documentação atualizada em: 18/02/2026*

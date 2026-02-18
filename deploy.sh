@@ -39,6 +39,7 @@ sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN whatsapp_in
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN whatsapp_token TEXT;" 2>/dev/null || true
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN updated_at TEXT;" 2>/dev/null || true
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN whatsapp_modo_teste INTEGER DEFAULT 0;" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN whatsapp_client_token TEXT;" 2>/dev/null || true
 
 # 4. Reiniciar serviço
 echo "🔄 Reiniciando serviço..."
