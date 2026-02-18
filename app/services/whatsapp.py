@@ -12,14 +12,19 @@ def get_whatsapp_config():
     try:
         config = db.query(Configuracoes).first()
         if not config:
-            return None, None, None, False, True # instance, token, client_token, active, test_mode
-        return (
-            config.whatsapp_instancia,
-            config.whatsapp_token,
-            config.whatsapp_client_token,
-            config.whatsapp_ativo,
-            config.whatsapp_modo_teste
-        )
+            return None, None, None, False, True
+        
+        # Acesso seguro aos atributos para evitar crash se a migração falhar no VPS
+        instance = getattr(config, 'whatsapp_instancia', None)
+        token = getattr(config, 'whatsapp_token', None)
+        client_token = getattr(config, 'whatsapp_client_token', None)
+        active = getattr(config, 'whatsapp_ativo', False)
+        test_mode = getattr(config, 'whatsapp_modo_teste', True)
+        
+        return instance, token, client_token, active, test_mode
+    except Exception as e:
+        logger.error(f"[WhatsApp] Erro ao ler banco: {e}")
+        return None, None, None, False, True
     finally:
         db.close()
 
@@ -83,16 +88,16 @@ def enviar_whatsapp(telefone: str, mensagem: str, modo_teste: bool = True):
 
 def verificar_conexao():
     """Verifica conexão com Z-API usando configs do banco."""
-    instance, token, client_token, _, _ = get_whatsapp_config()
-    
-    if not instance or not token:
-        return {"conectado": False, "erro": "Credenciais não configuradas"}
-
-    base_url = f"https://api.z-api.io/instances/{instance}/token/{token}"
-    
     try:
+        instance, token, client_token, _, _ = get_whatsapp_config()
+        
+        if not instance or not token:
+            return {"conectado": False, "erro": "Credenciais não configuradas"}
+
+        base_url = f"https://api.z-api.io/instances/{instance}/token/{token}"
+        
         url = f"{base_url}/status"
-        headers = {"Client-Token": client_token}
+        headers = {"Client-Token": client_token or ""}
         response = requests.get(url, headers=headers, timeout=10)
         data = response.json()
         
@@ -101,4 +106,5 @@ def verificar_conexao():
             "status": data
         }
     except Exception as e:
+        logger.error(f"[WhatsApp] Erro na verificação: {e}")
         return {"conectado": False, "erro": str(e)}
