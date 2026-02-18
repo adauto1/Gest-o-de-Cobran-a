@@ -16,13 +16,28 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
     if user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Apenas ADMIN")
     
-    config = db.query(Configuracoes).first()
+    try:
+        config = db.query(Configuracoes).first()
+    except Exception as e:
+        print(f"[ERROR] Falha ao ler configuracoes do banco: {e}")
+        config = None
+
     if not config:
-        # Cria um objeto temporário padrão para evitar erro no template se não houver registro
-        config = Configuracoes(
-            whatsapp_ativo=False,
-            whatsapp_modo_teste=True
-        )
+        # Cria um objeto temporário padrão (ou mock) para o template
+        class MockConfig:
+            def __init__(self):
+                self.whatsapp_ativo = False
+                self.whatsapp_modo_teste = True
+                self.whatsapp_instancia = ""
+                self.whatsapp_token = ""
+                self.whatsapp_client_token = ""
+        config = MockConfig()
+    else:
+        # Garante que atributos novos existam no objeto (mesmo que nulos) 
+        # para evitar AttributeError se a migração falhar
+        for attr in ['whatsapp_instancia', 'whatsapp_token', 'whatsapp_client_token', 'whatsapp_modo_teste']:
+            if not hasattr(config, attr):
+                setattr(config, attr, "")
     
     return render("settings.html", request=request, user=user, title="Configurações", config=config)
 
