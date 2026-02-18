@@ -104,13 +104,13 @@ def run_collection_check(session_factory) -> dict:
             overdue_count = sum(1 for i in insts if (_today - i.due_date).days > 0)
             
             if c_profile == "AUTOMATICO":
-                # Regra de Migração:
-                # < 2 vencidas -> LEVE
-                # >= 2 vencidas -> MODERADA
-                # >= 3 vencidas -> INTENSA
-                if overdue_count >= 3:
+                # Regra de Migração Automática:
+                # < 30 dias -> LEVE
+                # >= 30 dias -> MODERADA
+                # >= 90 dias -> INTENSA
+                if max_overdue >= 90:
                     effective_profile = "INTENSA"
-                elif overdue_count >= 2:
+                elif max_overdue >= 30:
                     effective_profile = "MODERADA"
                 else:
                     effective_profile = "LEVE"

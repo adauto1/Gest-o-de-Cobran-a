@@ -36,7 +36,7 @@ SECRET_KEY = os.getenv("SESSION_SECRET", "CHANGE-ME-IN-PROD")
 DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@portalmoveis.local")
 DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
 APP_TITLE = os.getenv("APP_TITLE", "Gestor de Cobrança — Portal Móveis")
-APP_VERSION = os.getenv("APP_VERSION", "4.0")
+APP_VERSION = "4.0"
 
 engine = create_engine(
     DATABASE_URL,
@@ -382,20 +382,24 @@ def parse_date(v: str) -> date:
 
 
 def bucket_priority(max_overdue: int) -> int:
-    if max_overdue >= 30: return 3 # Alta
-    if max_overdue >= 5:  return 2 # Média
-    return 1 # Normal
+    if max_overdue >= 90: return 5 # Crítica (Intensa)
+    if max_overdue >= 30: return 4 # Alta (Moderada)
+    if max_overdue >= 5:  return 2 # Média (Leve)
+    return 1 # Normal (Lembrete)
 
 def get_regua_nivel(customer_profile: str, max_overdue: int) -> str:
     if customer_profile and customer_profile != "AUTOMATICO":
         return customer_profile
     p = bucket_priority(max_overdue)
-    if p <= 2: return "LEVE"
-    if p <= 4: return "MODERADA"
-    return "INTENSA"
+    if p >= 5: return "INTENSA"
+    if p >= 3: return "MODERADA"
+    return "LEVE"
 
-def rule_for_overdue(db: Session, overdue_days: int) -> Optional[CollectionRule]:
-    rules = db.query(CollectionRule).filter(CollectionRule.active == True).all()
+def rule_for_overdue(db: Session, overdue_days: int, level: str = "LEVE") -> Optional[CollectionRule]:
+    rules = db.query(CollectionRule).filter(
+        CollectionRule.active == True,
+        CollectionRule.level == level
+    ).all()
     matched = [r for r in rules if r.start_days <= overdue_days <= r.end_days]
     if not matched:
         return None
@@ -656,8 +660,11 @@ def logout(request: Request):
     return RedirectResponse("/login", status_code=HTTP_302_FOUND)
 
 @app.get("/api/fila/prioridade")
-def api_fila_prioridade(request: Request, limit: int = 20, db: Session = Depends(get_db)):
+def api_fila_prioridade(request: Request, page: int = 1, limit: int = 30, db: Session = Depends(get_db)):
     user = require_login(request, db)
+    
+    # Page must be at least 1
+    if page < 1: page = 1
     
     # Base query for open installments
     q = db.query(Installment).join(Customer).filter(Installment.status == "ABERTA")
@@ -701,13 +708,20 @@ def api_fila_prioridade(request: Request, limit: int = 20, db: Session = Depends
         return (-item["max_atraso"], -item["valor_em_aberto"], contact_ts)
 
     fila.sort(key=sort_key)
-    result = fila[:limit]
     
-    for item in result:
+    total_items = len(fila)
+    total_pages = (total_items + limit - 1) // limit
+    
+    start = (page - 1) * limit
+    end = start + limit
+    result_items = fila[start:end]
+    
+    for item in result_items:
         days = item["max_atraso"]
-        if days > 60: label = "Crítico (>60d)"
-        elif days > 30: label = "Alerta (30d+) "
-        else: label = f"{days} dias atraso"
+        # Unificando lógica de status com a regra 30/90 para visualização
+        if days >= 90: label = "Crítico (90+ d)"
+        elif days >= 30: label = "Moderado (30+ d)"
+        else: label = f"{days} dias"
         item["status_label"] = label
         
         # Calcular nível da régua para o indicador visual
@@ -717,7 +731,12 @@ def api_fila_prioridade(request: Request, limit: int = 20, db: Session = Depends
             item["ultimo_contato"] = item["ultimo_contato"].isoformat()
         item["data_vencimento"] = item["data_vencimento"].isoformat()
 
-    return result
+    return {
+        "items": result_items,
+        "total_items": total_items,
+        "total_pages": total_pages,
+        "current_page": page
+    }
 
 
 def calculate_recovery_goals(db: Session, user: User):
@@ -1482,7 +1501,15 @@ def customer_page(request: Request, customer_id: int, db: Session = Depends(get_
     max_over = max([days_overdue(i.due_date) for i in open_insts], default=0)
     total_open = sum([Decimal(i.open_amount) for i in open_insts], Decimal("0"))
 
-    rule = rule_for_overdue(db, max_over)
+    # Escalonamento inteligente (Unificado: Tempo de atraso)
+    c_profile = getattr(c, "profile_cobranca", "AUTOMATICO")
+    effective_profile = c_profile
+    if c_profile == "AUTOMATICO":
+        if max_over >= 90: effective_profile = "INTENSA"
+        elif max_over >= 30: effective_profile = "MODERADA"
+        else: effective_profile = "LEVE"
+
+    rule = rule_for_overdue(db, max_over, level=effective_profile)
     template = rule.template_message if rule else "Olá {nome}. Vamos regularizar? — Portal Móveis"
     level = rule.level if rule else "LEVE"
 
@@ -2147,21 +2174,103 @@ async def update_settings(
 @app.post("/api/whatsapp/enviar-manual/{cliente_id}")
 def enviar_whatsapp_manual(cliente_id: int, request: Request, db: Session = Depends(get_db)):
     user = require_login(request, db)
+    log_path = os.path.join(os.path.dirname(__file__), "debug_wa.log")
+    
+    def log_debug(msg):
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.now().isoformat()}] {msg}\n")
+
+    log_debug(f"--- INÍCIO DISPARO MANUAL (Cliente ID: {cliente_id}) ---")
     
     # Fetch config
     config = db.query(Configuracoes).first()
-    is_test = True
-    if config:
-        is_test = config.whatsapp_modo_teste
+    is_test = config.whatsapp_modo_teste if config else True
+    log_debug(f"Modo Teste: {is_test}")
 
     cliente = db.query(Customer).filter(Customer.id == cliente_id).first()
     if not cliente:
+        log_debug("ERRO: Cliente não encontrado")
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
 
     if not cliente.whatsapp:
+         log_debug("ERRO: Cliente sem WhatsApp")
          return {"success": False, "erro": "Cliente sem WhatsApp cadastrado"}
 
-    mensagem = f"Olá {cliente.name}!\n\nAqui é a Portal Móveis. Identificamos pendências em seu nome.\n\nEntre em contato conosco para regularizar sua situação.\n\n📍 Portal Móveis - Tacuru/MS"
+    # Buscar parcelas diretamente no banco
+    all_insts = db.query(Installment).filter(
+        Installment.customer_id == cliente_id,
+        Installment.status.in_(["VENCIDA", "EM ABERTO", "ABERTA"])
+    ).all()
+    
+    insts = sorted(all_insts, key=lambda x: x.due_date)
+    log_debug(f"Parcelas encontradas: {len(insts)}")
+    
+    if not insts:
+        log_debug("Fallback: Nenhuma parcela em aberto.")
+        mensagem = f"Olá {cliente.name}!\n\nAqui é a Portal Móveis. Identificamos pendências em seu nome.\n\nEntre em contato conosco para regularizar sua situação.\n\n📍 Portal Móveis - Tacuru/MS"
+    else:
+        # Calcular dados do atraso
+        total_open = sum(i.open_amount for i in insts)
+        max_overdue = days_overdue(insts[0].due_date)
+        nearest_due = insts[0].due_date
+        log_debug(f"Dias de atraso: {max_overdue} | Vencimento: {nearest_due} | Total: {total_open}")
+        
+        # overdue_count: parcelas que já passaram do vencimento
+        _today = date.today()
+        overdue_count = len([i for i in insts if i.due_date < _today])
+        
+        # Identificar regra (Unificado com scheduler - Perfil Inteligente 30/90)
+        c_profile = getattr(cliente, "profile_cobranca", "AUTOMATICO")
+        effective_profile = c_profile
+        if c_profile == "AUTOMATICO":
+            if max_overdue >= 90: effective_profile = "INTENSA"
+            elif max_overdue >= 30: effective_profile = "MODERADA"
+            else: effective_profile = "LEVE"
+            
+        matched_rule = rule_for_overdue(db, max_overdue, level=effective_profile)
+        
+        if not matched_rule:
+            log_debug(f"Fallback: Nenhuma regra para {max_overdue} dias.")
+            mensagem = f"Olá {cliente.name}!\n\nAqui é a Portal Móveis. Identificamos pendências em seu nome.\n\nEntre em contato conosco para regularizar sua situação.\n\n📍 Portal Móveis - Tacuru/MS"
+        else:
+            log_debug(f"Regra Selecionada: ID {matched_rule.id} (Nível: {matched_rule.level})")
+            
+            # Preparar variáveis (mesma lógica do scheduler.py)
+            msg_body = matched_rule.template_message
+            cpf_raw = cliente.cpf_cnpj or ""
+            cpf_masked = f"***.{cpf_raw[3:6]}.{cpf_raw[6:9]}-**" if len(cpf_raw) >= 11 else cpf_raw
+            chave_pix = "00.000.000/0001-00" 
+            link_pagto = f"https://portalmoveis.com.br/pagar/{cliente.external_key}"
+            
+            juros = Decimal("1.10") if max_overdue > 30 else Decimal("1.02")
+            valor_com_juros = insts[0].open_amount * juros
+            
+            replacements = {
+                "{nome}": cliente.name, "{NOME}": cliente.name,
+                "{valor}": format_money(insts[0].open_amount),
+                "{VALOR}": format_money(insts[0].open_amount),
+                "{valor_com_juros}": format_money(valor_com_juros),
+                "{total}": format_money(total_open), "{TOTAL}": format_money(total_open),
+                "{total_divida}": format_money(total_open),
+                "{dias_atraso}": str(max_overdue), "{DIAS}": str(max_overdue),
+                "{dias}": str(max_overdue),
+                "{vencimento}": nearest_due.strftime("%d/%m/%Y"),
+                "{data_vencimento}": nearest_due.strftime("%d/%m/%Y"),
+                "{data}": nearest_due.strftime("%d/%m/%Y"),
+                "{DATA}": nearest_due.strftime("%d/%m/%Y"),
+                "{qtd}": str(len(insts)), "{QTD}": str(len(insts)),
+                "{quantidade_parcelas}": str(overdue_count),
+                "{cpf}": cpf_masked,
+                "{cpf_mascarado}": cpf_masked,
+                "{telefone}": "(67) 99916-1881",
+                "{chave_pix}": chave_pix,
+                "{link_pagamento}": link_pagto,
+            }
+            for k, v in replacements.items():
+                msg_body = msg_body.replace(k, v)
+            
+            mensagem = msg_body
+            log_debug(f"Mensagem gerada: {mensagem[:50]}...")
 
     resultado = enviar_whatsapp(
         telefone=cliente.whatsapp,
@@ -2169,17 +2278,25 @@ def enviar_whatsapp_manual(cliente_id: int, request: Request, db: Session = Depe
         modo_teste=is_test
     )
     
-    # Historico
+    # Historico com Telemetria (no banco também)
+    debug_data = {
+        "insts": len(insts),
+        "days": max_overdue if insts else None,
+        "rule": matched_rule.id if 'matched_rule' in locals() and matched_rule else None,
+        "mode": "TEST" if is_test else "PROD"
+    }
+    
     hist = WhatsappHistorico(
         cliente_id=cliente.id,
         telefone=cliente.whatsapp,
         mensagem=mensagem,
         tipo="manual",
         status=resultado.get("modo", "").lower(),
-        resposta=str(resultado)
+        resposta=str(debug_data)
     )
     db.add(hist)
     db.commit()
+    log_debug("--- FIM DISPARO MANUAL ---")
     
     return resultado
 

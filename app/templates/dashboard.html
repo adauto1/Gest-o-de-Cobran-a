@@ -765,6 +765,52 @@
     display: inline-block;
   }
 
+  /* Pagination Controls */
+  .pagination-v2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .pagination-info {
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 600;
+  }
+
+  .btn-page {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-page:hover:not(:disabled) {
+    background: var(--bg);
+    border-color: #3b82f6;
+    color: #3b82f6;
+  }
+
+  .btn-page:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--bg);
+  }
+
   @keyframes spin {
     from {
       transform: rotate(0deg);
@@ -915,83 +961,164 @@
           </tr>
         </tbody>
       </table>
+
+      <!-- Pagination Controls -->
+      <div id="fila-pagination" class="pagination-v2" style="display: none;">
+        <button id="btn-fila-prev" class="btn-page" onclick="changeFilaPage(-1)">
+          <i data-lucide="chevron-left"></i> Anterior
+        </button>
+        <span id="fila-page-info" class="pagination-info">Página 1 de 1</span>
+        <button id="btn-fila-next" class="btn-page" onclick="changeFilaPage(1)">
+          Próximo <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
     </div>
 
     <script>
-      async function loadPriorityQueue() {
-        const body = document.getElementById('queue-body');
-        try {
-          const resp = await fetch('/api/fila/prioridade?limit=8');
-          const data = await resp.json();
+      let filaCurrentPage = 1;
+      let filaTotalPages = 1;
 
-          if (data.length === 0) {
+      async function loadPriorityQueue(page = 1) {
+        // Garantir que page seja um número (evita erros se um evento for passado)
+        if (typeof page !== 'number') page = 1;
+
+        console.log(`[Dashboard] Carregando fila página: ${page}`);
+        filaCurrentPage = page;
+        const body = document.getElementById('queue-body');
+        const paginDiv = document.getElementById('fila-pagination');
+
+        try {
+          const resp = await fetch(`/api/fila/prioridade?page=${page}&limit=30`);
+          if (!resp.ok) {
+            const errTxt = await resp.text();
+            throw new Error(`Servidor retornou erro ${resp.status}: ${errTxt}`);
+          }
+
+          const data = await resp.json();
+          console.log('[Dashboard] Dados recebidos:', data);
+
+          const isArray = Array.isArray(data);
+          const items = isArray ? data : (data.items || []);
+          filaTotalPages = isArray ? 1 : (data.total_pages || 1);
+
+          if (items.length === 0) {
             body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">Sem clientes em atraso.</td></tr>';
+            paginDiv.style.display = 'none';
             return;
           }
 
-          body.innerHTML = '';
-          data.forEach(item => {
-            const badgeClass = item.max_atraso > 60 ? 'critical' : (item.max_atraso > 30 ? 'moderate' : 'warning');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td data-label="Cliente">
-                <div class="q-client-name">${item.nome_cliente}</div>
-                <div class="q-client-meta">Último contato: ${item.ultimo_contato_str}</div>
-              </td>
-              <td data-label="Régua" style="text-align: center;">
-                <div class="regua-dot dot-${item.regua_nivel}" title="Régua: ${item.regua_nivel}"></div>
-              </td>
-              <td data-label="Em Aberto"><span class="q-amount">R$ ${item.valor_em_aberto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
-              <td data-label="Status">
-                <span class="q-badge ${badgeClass}">${item.status_label}</span>
-              </td>
-              <td data-label="Ações">
-                <div class="q-actions">
-                  <button class="q-action-btn edit" onclick="openEditModal(${item.cliente_id}, '${item.nome_cliente.replace(/'/g, "\\'")}')" title="Editar Cadastro">
-                    <i data-lucide="user-pen"></i>
-                  </button>
-                  
-                  <!-- WhatsApp Manual (Z-API) -->
-                  <button class="q-action-btn whatsapp-manual" onclick="enviarWhatsappManual(${item.cliente_id}, '${item.nome_cliente.replace(/'/g, "\\'")}')" title="Disparar Cobrança (Z-API)" style="background:rgba(37,211,102,0.1);color:#25d366;border-color:rgba(37,211,102,0.2)">
-                    <i data-lucide="send"></i>
-                  </button>
+          // Show/Update Pagination
+          const showPaging = !isArray && data.total_pages > 1;
+          paginDiv.style.display = showPaging ? 'flex' : 'none';
 
-                  ${item.phone
-                ? `<a class="q-action-btn whatsapp" href="https://wa.me/55${item.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${item.nome_cliente}! Aqui é da Portal Móveis. Identificamos que você tem parcelas em aberto no valor de R$ ${item.valor_em_aberto.toFixed(2)}. Podemos conversar sobre isso?`)}" target="_blank" title="Abrir Chat WhatsApp"><i data-lucide="message-circle"></i></a>`
-                : `<button class="q-action-btn" title="Sem telefone" onclick="alert('Sem telefone cadastrado.')"><i data-lucide="message-circle-off"></i></button>`
-              }
-                  <button class="q-action-btn register" onclick="openContactModal(${item.cliente_id}, '${item.nome_cliente.replace(/'/g, "\\'")}')" title="Registrar Contato">
-                    <i data-lucide="clipboard-check"></i>
-                  </button>
-                </div>
-              </td>`;
-            body.appendChild(tr);
+          if (showPaging) {
+            document.getElementById('fila-page-info').textContent = `Página ${data.current_page} de ${data.total_pages} (${data.total_items} clientes)`;
+            document.getElementById('btn-fila-prev').disabled = data.current_page <= 1;
+            document.getElementById('btn-fila-next').disabled = data.current_page >= data.total_pages;
+          }
+
+          body.innerHTML = '';
+          items.forEach(item => {
+            try {
+              const badgeClass = item.max_atraso >= 90 ? 'critical' : (item.max_atraso >= 30 ? 'moderate' : 'warning');
+
+              // Escape de nomes para evitar quebra de template literal e JS
+              const escNome = (item.nome_cliente || 'Cliente Sem Nome')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;')
+                .replace(/`/g, '\\`');
+
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                  <td data-label="Cliente">
+                    <div class="q-client-name">${item.nome_cliente}</div>
+                    <div class="q-client-meta">Último contato: ${item.ultimo_contato_str || 'Sem contato'}</div>
+                  </td>
+                  <td data-label="Régua" style="text-align: center;">
+                    <div class="regua-dot dot-${item.regua_nivel || 'LEVE'}" title="Régua: ${item.regua_nivel || 'LEVE'}"></div>
+                  </td>
+                  <td data-label="Em Aberto"><span class="q-amount">R$ ${Number(item.valor_em_aberto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
+                  <td data-label="Status">
+                    <span class="q-badge ${badgeClass}">${item.status_label || ''}</span>
+                  </td>
+                  <td data-label="Ações">
+                    <div class="q-actions">
+                      <button class="q-action-btn edit" onclick="openEditModal(${item.cliente_id}, '${escNome}')" title="Editar Cadastro">
+                        <i data-lucide="user-pen"></i>
+                      </button>
+                      
+                      <button class="q-action-btn whatsapp-manual" onclick="enviarWhatsappManual(${item.cliente_id}, '${escNome}')" title="Disparar Cobrança (Z-API)" style="background:rgba(37,211,102,0.1);color:#25d366;border-color:rgba(37,211,102,0.2)">
+                        <i data-lucide="send"></i>
+                      </button>
+
+                      ${item.phone
+                  ? `<a class="q-action-btn whatsapp" href="https://wa.me/55${item.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${item.nome_cliente}! Aqui é da Portal Móveis. Identificamos que você tem parcelas em aberto no valor de R$ ${Number(item.valor_em_aberto).toFixed(2)}. Podemos conversar sobre isso?`)}" target="_blank" title="Abrir Chat WhatsApp"><i data-lucide="message-circle"></i></a>`
+                  : `<button class="q-action-btn" title="Sem telefone" onclick="alert('Sem telefone cadastrado.')"><i data-lucide="message-circle-off"></i></button>`
+                }
+                      <button class="q-action-btn register" onclick="openContactModal(${item.cliente_id}, '${escNome}')" title="Registrar Contato">
+                        <i data-lucide="clipboard-check"></i>
+                      </button>
+                    </div>
+                  </td>`;
+              body.appendChild(tr);
+            } catch (errLoop) {
+              console.error("Erro ao renderizar item:", item, errLoop);
+            }
           });
 
-          lucide.createIcons();
+          if (typeof lucide !== 'undefined') lucide.createIcons();
         } catch (e) {
           console.error(e);
-          body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">Erro ao carregar fila.</td></tr>';
+          body.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">
+            Erro ao carregar fila.<br><small style="opacity:0.6">${e.message}</small>
+          </td></tr>`;
         }
       }
 
       async function enviarWhatsappManual(clienteId, nome) {
+        console.log(`[WhatsApp] Iniciando envio manual para ID: ${clienteId}, Nome: ${nome}`);
         if (!confirm(`Confirma o envio de mensagem de cobrança para ${nome}?`)) return;
 
         try {
-          const res = await fetch(`/api/whatsapp/enviar-manual/${clienteId}`, { method: 'POST' });
+          const res = await fetch(`/api/whatsapp/enviar-manual/${clienteId}`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+
+          console.log(`[WhatsApp] Status da resposta: ${res.status}`);
+
+          if (res.status === 401) {
+            alert('Sessão expirada. Por favor, faça login novamente.');
+            window.location.href = '/login';
+            return;
+          }
+
           const data = await res.json();
+          console.log('[WhatsApp] Dados recebidos:', data);
 
           if (data.success) {
             alert(`Mensagem enviada com sucesso! (${data.modo})`);
           } else {
-            alert(`Erro ao enviar: ${data.erro}`);
+            alert(`Erro ao enviar: ${data.erro || 'Erro desconhecido'}`);
           }
         } catch (e) {
-          alert('Erro de conexão ao enviar mensagem.');
+          console.error('[WhatsApp] Erro na requisição:', e);
+          alert('Erro de conexão ao enviar mensagem. Verifique se o servidor está rodando.');
         }
       }
-      document.addEventListener('DOMContentLoaded', loadPriorityQueue);
+      function changeFilaPage(delta) {
+        const next = filaCurrentPage + delta;
+        if (next >= 1 && next <= filaTotalPages) {
+          loadPriorityQueue(next);
+        }
+      }
+
+      window.changeFilaPage = changeFilaPage;
+      window.enviarWhatsappManual = enviarWhatsappManual;
+      document.addEventListener('DOMContentLoaded', () => loadPriorityQueue(1));
     </script>
 
     <!-- Right Column -->

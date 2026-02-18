@@ -1,0 +1,198 @@
+# Debug WhatsApp Logs
+---
+[2026-02-17T14:43:09.520693] --- INÍCIO DISPARO MANUAL (Cliente ID: 7) ---
+[2026-02-17T14:43:09.522250] Modo Teste: False
+[2026-02-17T14:43:09.529495] Parcelas encontradas: 1
+[2026-02-17T14:43:09.530495] Dias de atraso: 46 | Vencimento: 2026-01-02 | Total: 2367.00
+[2026-02-17T14:43:09.533495] Regra Selecionada: ID 5 (Nível: INTENSA)
+[2026-02-17T14:43:09.534510] Mensagem gerada: SECRETARIA DE EDUCACAO E CULTURA MUNICIPAL,
+
+COMUN...
+[2026-02-17T14:43:09.667091] --- FIM DISPARO MANUAL ---
+[2026-02-17T14:45:52.193776] --- INÍCIO DISPARO MANUAL (Cliente ID: 1) ---
+[2026-02-17T14:45:52.194838] Modo Teste: False
+[2026-02-17T14:45:52.200359] Parcelas encontradas: 4
+[2026-02-17T14:45:52.201361] Dias de atraso: 46 | Vencimento: 2026-01-02 | Total: 15311.79
+[2026-02-17T14:45:52.205359] Regra Selecionada: ID 5 (Nível: INTENSA)
+[2026-02-17T14:45:52.206361] Mensagem gerada: BIBIANO & LOVINSKI LTDA,
+
+COMUNICADO DE NEGATIVAÇÃ...
+[2026-02-17T14:45:52.362687] --- FIM DISPARO MANUAL ---
+[2026-02-17T21:59:45.701518] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T21:59:45.704072] Modo Teste: False
+[2026-02-17T21:59:45.707459] Parcelas encontradas: 2
+[2026-02-17T21:59:45.708144] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T21:59:45.710174] Regra Selecionada: ID 33 (Nível: INTENSA)
+[2026-02-17T21:59:45.711150] Mensagem gerada: IZMAEL GALBIATTI,
+
+NOTIFICAÇÃO FORMAL
+Portal Móvei...
+[2026-02-17T21:59:45.834597] --- FIM DISPARO MANUAL ---
+[2026-02-17T22:07:43.244391] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T22:07:43.245393] Modo Teste: False
+[2026-02-17T22:07:43.249325] Parcelas encontradas: 2
+[2026-02-17T22:07:43.250322] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T22:07:43.252987] Fallback: Nenhuma regra para 17 dias.
+[2026-02-17T22:07:43.394281] --- FIM DISPARO MANUAL ---
+[2026-02-17T22:19:01.047521] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T22:19:01.049765] Modo Teste: False
+[2026-02-17T22:19:01.055168] Parcelas encontradas: 2
+[2026-02-17T22:19:01.056183] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T22:19:01.060698] Regra Selecionada: ID 40 (Nível: LEVE)
+[2026-02-17T22:19:01.060698] Mensagem gerada: Olá IZMAEL GALBIATTI. Sua pendência completou 17 d...
+[2026-02-17T22:19:01.226801] --- FIM DISPARO MANUAL ---
+[2026-02-17T22:24:24.050546] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T22:24:24.052616] Modo Teste: False
+[2026-02-17T22:24:24.056623] Parcelas encontradas: 2
+[2026-02-17T22:24:24.056623] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T22:24:24.059289] Regra Selecionada: ID 47 (Nível: LEVE)
+[2026-02-17T22:24:24.060808] Mensagem gerada: IZMAEL GALBIATTI,
+
+Financeiro Portal Móveis
+
+*Parc...
+[2026-02-17T22:24:24.171466] --- FIM DISPARO MANUAL ---
+[2026-02-17T22:55:26.392268] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T22:55:26.394267] Modo Teste: False
+[2026-02-17T22:55:26.402669] Parcelas encontradas: 2
+[2026-02-17T22:55:26.403980] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T22:55:26.406980] Regra Selecionada: ID 52 (Nível: LEVE)
+[2026-02-17T22:55:26.407984] Mensagem gerada: Olá, *IZMAEL GALBIATTI*.
+
+Aqui é o *Noah*, do fina...
+[2026-02-17T22:55:26.549070] --- FIM DISPARO MANUAL ---
+[2026-02-17T22:59:15.803739] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T22:59:15.805849] Modo Teste: False
+[2026-02-17T22:59:15.808847] Parcelas encontradas: 2
+[2026-02-17T22:59:15.810122] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T22:59:15.811135] Regra Selecionada: ID 52 (Nível: LEVE)
+[2026-02-17T22:59:15.812134] Mensagem gerada: Olá, *IZMAEL GALBIATTI*.
+
+Aqui é o *Noah*, do fina...
+[2026-02-17T22:59:15.940462] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:00:42.948694] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T23:00:42.951344] Modo Teste: False
+[2026-02-17T23:00:42.954072] Parcelas encontradas: 2
+[2026-02-17T23:00:42.955093] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T23:00:42.957098] Regra Selecionada: ID 52 (Nível: LEVE)
+[2026-02-17T23:00:42.957098] Mensagem gerada: Olá, *IZMAEL GALBIATTI*! 
+
+Aqui é o *Noah*, do fin...
+[2026-02-17T23:00:43.103708] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:01:02.971295] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T23:01:02.972437] Modo Teste: False
+[2026-02-17T23:01:02.974427] Parcelas encontradas: 2
+[2026-02-17T23:01:02.974427] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T23:01:02.976406] Regra Selecionada: ID 52 (Nível: LEVE)
+[2026-02-17T23:01:02.976406] Mensagem gerada: Olá, *IZMAEL GALBIATTI*! 
+
+Aqui é o *Noah*, do fin...
+[2026-02-17T23:01:03.104124] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:02:22.710102] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T23:02:22.711099] Modo Teste: False
+[2026-02-17T23:02:22.714213] Parcelas encontradas: 2
+[2026-02-17T23:02:22.715723] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T23:02:22.715723] Regra Selecionada: ID 52 (Nível: LEVE)
+[2026-02-17T23:02:22.718902] Mensagem gerada: Olá, *IZMAEL GALBIATTI*! 
+
+Aqui é o *Noah*, do fin...
+[2026-02-17T23:02:22.852309] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:03:44.742380] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T23:03:44.744273] Modo Teste: False
+[2026-02-17T23:03:44.748477] Parcelas encontradas: 2
+[2026-02-17T23:03:44.748477] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T23:03:44.750486] Regra Selecionada: ID 52 (Nível: LEVE)
+[2026-02-17T23:03:44.751497] Mensagem gerada: Olá, *IZMAEL GALBIATTI*! 
+
+Aqui é o *Noah*, do fin...
+[2026-02-17T23:03:44.887042] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:04:20.411153] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T23:04:20.412155] Modo Teste: False
+[2026-02-17T23:04:20.415695] Parcelas encontradas: 2
+[2026-02-17T23:04:20.415695] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T23:04:20.417701] Regra Selecionada: ID 52 (Nível: LEVE)
+[2026-02-17T23:04:20.418699] Mensagem gerada: Olá, *IZMAEL GALBIATTI*! 
+
+Aqui é o *Noah*, do fin...
+[2026-02-17T23:04:20.545007] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:08:26.880608] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T23:08:26.883415] Modo Teste: False
+[2026-02-17T23:08:26.890256] Parcelas encontradas: 2
+[2026-02-17T23:08:26.891255] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T23:08:26.895619] Regra Selecionada: ID 56 (Nível: LEVE)
+[2026-02-17T23:08:26.897343] Mensagem gerada: Olá, *IZMAEL GALBIATTI*.
+
+Aqui é o *Noah*, do fina...
+[2026-02-17T23:08:27.025525] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:14:39.737770] --- INÍCIO DISPARO MANUAL (Cliente ID: 5) ---
+[2026-02-17T23:14:39.739180] Modo Teste: False
+[2026-02-17T23:14:39.746558] Parcelas encontradas: 2
+[2026-02-17T23:14:39.746558] Dias de atraso: 17 | Vencimento: 2026-02-01 | Total: 507.00
+[2026-02-17T23:14:39.750625] Regra Selecionada: ID 56 (Nível: LEVE)
+[2026-02-17T23:14:39.751628] Mensagem gerada: Olá, *IZMAEL GALBIATTI*.
+
+Aqui é o *Noah*, do fina...
+[2026-02-17T23:14:39.890807] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:18:51.031707] --- INÍCIO DISPARO MANUAL (Cliente ID: 3) ---
+[2026-02-17T23:18:51.033706] Modo Teste: False
+[2026-02-17T23:18:51.035706] Parcelas encontradas: 1
+[2026-02-17T23:18:51.036694] Dias de atraso: 48 | Vencimento: 2026-01-01 | Total: 295.00
+[2026-02-17T23:18:51.038717] Regra Selecionada: ID 48 (Nível: MODERADA)
+[2026-02-17T23:18:51.039708] Mensagem gerada: FERNANDA FERNANDES SPAK,
+
+COMUNICADO DE NEGATIVAÇÃ...
+[2026-02-17T23:18:51.165821] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:29:27.202853] --- INÍCIO DISPARO MANUAL (Cliente ID: 3) ---
+[2026-02-17T23:29:27.204816] Modo Teste: False
+[2026-02-17T23:29:27.207920] Parcelas encontradas: 1
+[2026-02-17T23:29:27.208901] Dias de atraso: 48 | Vencimento: 2026-01-01 | Total: 295.00
+[2026-02-17T23:29:27.209662] Regra Selecionada: ID 48 (Nível: MODERADA)
+[2026-02-17T23:29:27.209662] Mensagem gerada: FERNANDA FERNANDES SPAK,
+
+COMUNICADO DE NEGATIVAÇÃ...
+[2026-02-17T23:29:27.333910] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:30:06.745879] --- INÍCIO DISPARO MANUAL (Cliente ID: 3) ---
+[2026-02-17T23:30:06.747880] Modo Teste: False
+[2026-02-17T23:30:06.760776] Parcelas encontradas: 1
+[2026-02-17T23:30:06.763011] Dias de atraso: 48 | Vencimento: 2026-01-01 | Total: 295.00
+[2026-02-17T23:30:06.768623] Regra Selecionada: ID 64 (Nível: MODERADA)
+[2026-02-17T23:30:06.770355] Mensagem gerada: *FERNANDA FERNANDES SPAK*.
+
+*Noah* falando, do fin...
+[2026-02-17T23:30:06.901240] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:30:44.628603] --- INÍCIO DISPARO MANUAL (Cliente ID: 11) ---
+[2026-02-17T23:30:44.630464] Modo Teste: False
+[2026-02-17T23:30:44.634518] Parcelas encontradas: 1
+[2026-02-17T23:30:44.634518] Dias de atraso: 48 | Vencimento: 2026-01-01 | Total: 260.00
+[2026-02-17T23:30:44.637176] Regra Selecionada: ID 64 (Nível: MODERADA)
+[2026-02-17T23:30:44.638738] Mensagem gerada: *PATRICIA DUARTE RAMOS KREIN*.
+
+*Noah* falando, do...
+[2026-02-17T23:30:44.760844] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:32:21.873188] --- INÍCIO DISPARO MANUAL (Cliente ID: 11) ---
+[2026-02-17T23:32:21.876064] Modo Teste: False
+[2026-02-17T23:32:21.882104] Parcelas encontradas: 1
+[2026-02-17T23:32:21.883139] Dias de atraso: 48 | Vencimento: 2026-01-01 | Total: 260.00
+[2026-02-17T23:32:21.887287] Regra Selecionada: ID 64 (Nível: MODERADA)
+[2026-02-17T23:32:21.888447] Mensagem gerada: *PATRICIA DUARTE RAMOS KREIN*.
+
+*Noah* falando, do...
+[2026-02-17T23:32:22.022167] --- FIM DISPARO MANUAL ---
+[2026-02-17T23:55:34.259184] --- INÍCIO DISPARO MANUAL (Cliente ID: 16) ---
+[2026-02-17T23:55:34.259184] Modo Teste: False
+[2026-02-17T23:55:34.264466] Parcelas encontradas: 1
+[2026-02-17T23:55:34.265483] Dias de atraso: 109 | Vencimento: 2025-11-01 | Total: 269.90
+[2026-02-17T23:55:34.268741] Regra Selecionada: ID 72 (Nível: INTENSA)
+[2026-02-17T23:55:34.269741] Mensagem gerada: *CARMELINA PADILHA LOPES*.
+
+Financeiro Portal Móve...
+[2026-02-17T23:55:34.385443] --- FIM DISPARO MANUAL ---
+[2026-02-18T00:30:05.530164] --- INÍCIO DISPARO MANUAL (Cliente ID: 885) ---
+[2026-02-18T00:30:05.530164] Modo Teste: False
+[2026-02-18T00:30:05.530164] Parcelas encontradas: 4
+[2026-02-18T00:30:05.539467] Dias de atraso: 4302 | Vencimento: 2014-05-10 | Total: 135.60
+[2026-02-18T00:30:05.542632] Regra Selecionada: ID 72 (Nível: INTENSA)
+[2026-02-18T00:30:05.543518] Mensagem gerada: *SILVIA APARECIDA BARBOSA ( PERDIDO)*.
+
+Financeiro...
+[2026-02-18T00:30:05.670115] --- FIM DISPARO MANUAL ---
