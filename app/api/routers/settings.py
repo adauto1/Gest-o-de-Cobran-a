@@ -42,7 +42,7 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
     return render("settings.html", request=request, user=user, title="Configurações", config=config)
 
 # --- WhatsApp API Status ---
-@router.route("/api/whatsapp/status", methods=["GET", "POST"])
+@router.api_route("/api/whatsapp/status", methods=["GET", "POST"])
 async def get_whatsapp_status(request: Request, db: Session = Depends(get_db)):
     require_login(request, db)
     from app.services.whatsapp import verificar_conexao
