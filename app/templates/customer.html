@@ -89,24 +89,28 @@
     <h1>
       <div class="regua-dot dot-{{ regua_nivel }}" title="Régua: {{ regua_nivel }}" style="margin-right: 8px;"></div>
       {{ customer.name }}
-      <form method="post" action="/customers/{{ customer.id }}/change-profile"
-        style="display:inline-flex; align-items:center; gap:5px; vertical-align: middle; margin-left: 10px;">
-        {% set prof = customer.profile_cobranca or "AUTOMATICO" %}
-        <span class="badge"
-          style="background: var(--{{ 'success' if prof=='LEVE' else ('warning' if prof=='MODERADA' else ('danger' if prof=='INTENSA' else 'secondary')) }}); color: #fff; font-size: 0.5em;">
-          {{ prof }}
-        </span>
-        <select name="profile" onchange="this.form.submit()"
-          style="padding: 2px; font-size: 0.5em; border: 1px solid #ddd; border-radius: 4px; background: transparent; cursor: pointer;">
-          <option value="AUTOMATICO" {% if prof=='AUTOMATICO' %}selected{% endif %}>Auto</option>
-          <option value="LEVE" {% if prof=='LEVE' %}selected{% endif %}>Leve</option>
-          <option value="MODERADA" {% if prof=='MODERADA' %}selected{% endif %}>Moderada</option>
-          <option value="INTENSA" {% if prof=='INTENSA' %}selected{% endif %}>Intensa</option>
-        </select>
-      </form>
     </h1>
 
     <div class="editable-info">
+      <div class="info-row">
+        <span class="info-label">Régua:</span>
+        <form method="post" action="/customers/{{ customer.id }}/change-profile"
+          style="display:inline-flex; align-items:center; gap:5px; vertical-align: middle;">
+          {% set prof = customer.profile_cobranca or "AUTOMATICO" %}
+          <span class="badge"
+            style="background: var(--{{ 'success' if prof=='LEVE' else ('warning' if prof=='MODERADA' else ('danger' if prof=='INTENSA' else 'secondary')) }}); color: #fff; font-size: 0.8em; padding: 2px 6px; border-radius: 4px;">
+            {{ prof }}
+          </span>
+          <select name="profile" onchange="this.form.submit()"
+            style="padding: 4px; font-size: 0.9em; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; font-weight: 600;">
+            <option value="AUTOMATICO" {% if prof=='AUTOMATICO' %}selected{% endif %}>Auto</option>
+            <option value="LEVE" {% if prof=='LEVE' %}selected{% endif %}>Leve</option>
+            <option value="MODERADA" {% if prof=='MODERADA' %}selected{% endif %}>Moderada</option>
+            <option value="INTENSA" {% if prof=='INTENSA' %}selected{% endif %}>Intensa</option>
+          </select>
+        </form>
+      </div>
+
       <div class="info-row">
         <span class="info-label">Loja:</span>
         <span class="info-val">{{ customer.store or "-" }}</span>
