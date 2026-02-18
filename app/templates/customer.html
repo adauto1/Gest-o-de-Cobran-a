@@ -95,7 +95,7 @@
       <div class="info-row">
         <span class="info-label">Régua:</span>
         <form method="post" action="/customers/{{ customer.id }}/change-profile"
-          style="display:inline-flex; align-items:center; gap:5px; vertical-align: middle;">
+          style="display:inline-flex; align-items:center; gap:5px; vertical-align: middle; margin-left: -15px;">
           {% set prof = customer.profile_cobranca or "AUTOMATICO" %}
           <span class="badge"
             style="background: var(--{{ 'success' if prof=='LEVE' else ('warning' if prof=='MODERADA' else ('danger' if prof=='INTENSA' else 'secondary')) }}); color: #fff; font-size: 0.8em; padding: 2px 6px; border-radius: 4px;">
