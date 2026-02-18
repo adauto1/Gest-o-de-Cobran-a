@@ -35,6 +35,6 @@ fi
 
 # 4. Reiniciar serviço
 echo "🔄 Reiniciando serviço..."
-sudo systemctl restart gestao-cobranca
+sudo systemctl restart gestor-cobranca
 
 echo "✅ Deploy concluído com sucesso!"
