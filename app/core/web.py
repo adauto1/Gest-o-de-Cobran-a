@@ -12,6 +12,8 @@ env = Environment(
     autoescape=select_autoescape(["html", "xml"])
 )
 env.filters["brl"] = format_money
+env.globals["get_flashed_messages"] = lambda: []
+env.globals["APP_VERSION"] = "4.0"
 
 PAGE_MAP = {
     "dashboard.html": ("dashboard", "Dashboard"),

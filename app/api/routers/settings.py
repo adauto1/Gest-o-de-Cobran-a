@@ -15,7 +15,15 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
     user = require_login(request, db)
     if user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    
     config = db.query(Configuracoes).first()
+    if not config:
+        # Cria um objeto temporário padrão para evitar erro no template se não houver registro
+        config = Configuracoes(
+            whatsapp_ativo=False,
+            whatsapp_modo_teste=True
+        )
+    
     return render("settings.html", request=request, user=user, title="Configurações", config=config)
 
 # --- WhatsApp API Status ---

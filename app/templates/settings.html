@@ -28,15 +28,15 @@
         <form id="formGeneralConfig" onsubmit="saveGeneralConfig(event)">
             <div class="config-item" style="margin-bottom: 15px;">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" id="whatsapp_ativo" name="whatsapp_ativo" {% if config.whatsapp_ativo
-                        %}checked{% endif %}>
+                    <input type="checkbox" id="whatsapp_ativo" name="whatsapp_ativo" {% if config and
+                        config.whatsapp_ativo %}checked{% endif %}>
                     <span style="font-weight: 500;">Ativar envio de WhatsApp pela régua</span>
                 </label>
             </div>
 
             <div class="config-item" style="margin-bottom: 15px;">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" id="whatsapp_modo_teste" name="whatsapp_modo_teste" {% if
+                    <input type="checkbox" id="whatsapp_modo_teste" name="whatsapp_modo_teste" {% if config and
                         config.whatsapp_modo_teste %}checked{% endif %}>
                     <span style="font-weight: 500;">🧪 Modo Teste (simula envio, não envia de verdade)</span>
                 </label>
