@@ -13,20 +13,20 @@ from sqlalchemy.orm import Session
 log = logging.getLogger(__name__)
 
 
+from sqlalchemy.orm import Session
+from app.models import (
+    Customer, Installment, CollectionRule, SentMessage, MessageDispatchLog,
+    Configuracoes, WhatsappHistorico, today as get_today
+)
+from app.core.helpers import format_money
+from app.services.whatsapp import enviar_whatsapp
+
 def run_collection_check(session_factory) -> dict:
     """
     Verifica todos os clientes com parcelas vencidas/a vencer,
     aplica a régua de cobrança e registra mensagens SIMULADAS.
     Retorna estatísticas da execução.
     """
-    # Import models here to avoid circular imports
-    from app.main import (
-        Customer, Installment, CollectionRule, SentMessage, MessageDispatchLog,
-        Configuracoes, WhatsappHistorico,
-        format_money, today as get_today,
-    )
-    from app.services.whatsapp import enviar_whatsapp
-
     db: Session = session_factory()
     stats = {"checked": 0, "created": 0, "rescheduled": 0, "skipped_freq": 0, "skipped_no_phone": 0}
 

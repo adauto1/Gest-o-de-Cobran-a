@@ -25,7 +25,7 @@
             📱 WhatsApp - Cobrança Automática (Z-API)
         </h3>
 
-        <form method="post" action="/settings">
+        <form id="formGeneralConfig" onsubmit="saveGeneralConfig(event)">
             <div class="config-item" style="margin-bottom: 15px;">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                     <input type="checkbox" id="whatsapp_ativo" name="whatsapp_ativo" {% if config.whatsapp_ativo
@@ -52,7 +52,9 @@
                 <button type="button" onclick="testarConexaoZAPI()" class="btn small secondary">Testar Conexão</button>
             </div>
 
-            <button type="submit" class="btn primary">Salvar Configurações</button>
+            <div id="save-msg" style="margin-bottom: 10px; display: none;" class="alert alert-success">Configurações
+                salvas!</div>
+            <button type="submit" id="save-btn" class="btn primary">Salvar Configurações</button>
         </form>
     </div>
 
@@ -121,6 +123,41 @@
 </div>
 
 <script>
+    async function saveGeneralConfig(e) {
+        e.preventDefault();
+        const btn = document.getElementById('save-btn');
+        const msgEl = document.getElementById('save-msg');
+
+        const data = {
+            whatsapp_ativo: document.getElementById('whatsapp_ativo').checked,
+            whatsapp_modo_teste: document.getElementById('whatsapp_modo_teste').checked
+        };
+
+        btn.disabled = true;
+        btn.innerText = 'Salvando...';
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const resData = await res.json();
+            if (resData.success) {
+                msgEl.style.display = 'block';
+                setTimeout(() => msgEl.style.display = 'none', 3000);
+            } else {
+                alert('Erro ao salvar: ' + (resData.detail || 'Erro desconhecido'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro de conexão ao salvar.');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Salvar Configurações';
+        }
+    }
+
     async function loadDirectors() {
         const listEl = document.getElementById('directorsList');
         try {

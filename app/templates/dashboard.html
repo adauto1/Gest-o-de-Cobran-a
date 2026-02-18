@@ -278,7 +278,7 @@
   /* Content Grid */
   .content-grid {
     display: grid;
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: 1fr;
     gap: 24px;
   }
 
@@ -923,6 +923,90 @@
     </div>
   </div>
 
+  <!-- Meta de Recuperação (Detailed Excel Style) - Sem Fundo de Card -->
+  <div class="goals-detailed-section" style="margin-bottom: 30px;">
+    <div class="section-hdr"
+      style="background: transparent; border: none; color: var(--text); padding: 0 0 15px 0; margin-bottom: 0;">
+      <div class="section-ttl">
+        <div class="section-ttl-icon"
+          style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; font-size: 16px;">
+          🎯</div>
+        <span style="color: #000; font-weight: 700; font-size: 14px; letter-spacing: -0.2px;">METAS DE COBRANÇA</span>
+      </div>
+    </div>
+
+    <div class="detail-table-wrap"
+      style="border: 1px solid var(--border); border-radius: 0 0 8px 8px; overflow-x: auto; background: var(--surface);">
+      <table class="detail-table" style="margin-bottom: 0; font-size: 12px; border-collapse: collapse; width: 100%;">
+        <thead style="background: #f8fafc; border-bottom: 1px solid var(--border);">
+          <tr>
+            <th
+              style="padding: 12px 15px; color: #000; font-weight: 700; text-align: left; border-right: 1px solid var(--border);">
+              MÊS</th>
+            <th
+              style="padding: 12px 15px; color: #000; font-weight: 700; text-align: center; border-right: 1px solid var(--border);">
+              CARTEIRA</th>
+            <th
+              style="padding: 12px 15px; color: #000; font-weight: 700; text-align: right; border-right: 1px solid var(--border);">
+              TOTAL A RECEBER</th>
+            <th
+              style="padding: 12px 15px; color: #000; font-weight: 700; text-align: right; border-right: 1px solid var(--border);">
+              META REC. (70%)</th>
+            <th
+              style="padding: 12px 15px; color: #000; font-weight: 700; text-align: right; border-right: 1px solid var(--border);">
+              MAX Ñ REC</th>
+            <th
+              style="padding: 12px 15px; color: #000; font-weight: 700; text-align: right; background: #eff6ff; border-right: 1px solid var(--border);">
+              VALOR ATUAL</th>
+            <th
+              style="padding: 12px 15px; color: #000; font-weight: 700; text-align: center; border-right: 1px solid var(--border);">
+              %META</th>
+            <th
+              style="padding: 12px 15px; color: #000; font-weight: 700; text-align: center; border-right: 1px solid var(--border);">
+              %ATINGIDO</th>
+            <th style="padding: 12px 15px; color: #000; font-weight: 700; text-align: right; background: var(--bg);">
+              FALTANDO</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in recovery_goals %}
+          <tr style="border-bottom: 1px solid var(--border); {% if g.is_current %}background: #fdfdfd;{% endif %}">
+            <td
+              style="padding: 12px 15px; font-weight: 700; color: #000; background: #f8fafc; border-right: 1px solid var(--border);">
+              {{ g.month_name }}</td>
+            <td
+              style="padding: 12px 15px; text-align: center; font-weight: 700; color: #000; background: #fafafa; border-right: 1px solid var(--border);">
+              {{ g.carteira }}</td>
+            <td
+              style="padding: 12px 15px; text-align: right; font-weight: 700; color: #000; border-right: 1px solid var(--border);">
+              {{ g.total_rec_fmt }}</td>
+            <td
+              style="padding: 12px 15px; text-align: right; font-weight: 700; color: #000; border-right: 1px solid var(--border);">
+              {{ g.meta_rec_fmt }}</td>
+            <td
+              style="padding: 12px 15px; text-align: right; font-weight: 700; color: #000; border-right: 1px solid var(--border);">
+              {{ g.max_no_rec_fmt }}</td>
+            <td
+              style="padding: 12px 15px; text-align: right; font-weight: 700; color: #000; background: #f0f7ff; border-right: 1px solid var(--border);">
+              {{ g.valor_atual_fmt }}</td>
+            <td
+              style="padding: 12px 15px; text-align: center; font-weight: 700; color: #064e3b; border-right: 1px solid var(--border);">
+              {{ g.pct_meta }}</td>
+            <td style="padding: 12px 15px; text-align: center; border-right: 1px solid var(--border);">
+              <div style="font-weight: 700; color: #064e3b;">
+                {{ g.pct_atingido_fmt }}
+              </div>
+            </td>
+            <td
+              style="padding: 12px 15px; text-align: right; font-weight: 700; background: {% if g.is_reached %}var(--success-bg){% else %}#fff5f5{% endif %}; color: #ff0000;">
+              {{ g.missing_fmt }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Content Grid: Queue + Right Column -->
   <div class="content-grid">
 
@@ -934,14 +1018,11 @@
           <span>Fila de Prioridade</span>
         </div>
         <div style="display: flex; gap: 8px;">
-          {% if user.role == "ADMIN" %}
-          <button onclick="syncCustomers()" class="btn-outline" id="sync-btn"
-            style="color: var(--text-2); cursor: pointer; display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
-            Sincronizar Clientes ERP
+          <button onclick="openAgendaModal()" class="btn-outline"
+            style="background: rgba(30, 64, 175, 0.05); color: #1e40af;">
+            <i data-lucide="calendar" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+            Agenda do Dia ({{ promises | length }})
           </button>
-          {% endif %}
-          <a href="/queue" class="btn-outline">Ver Toda a Fila</a>
         </div>
       </div>
 
@@ -1029,6 +1110,12 @@
                 .replace(/"/g, '&quot;')
                 .replace(/`/g, '\\`');
 
+              let whatsappHtml = `<button class="q-action-btn" title="Sem telefone" onclick="alert('Sem telefone cadastrado.')"><i data-lucide="message-circle-off"></i></button>`;
+              if (item.phone) {
+                const waUrl = `https://wa.me/55${item.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${item.nome_cliente}! Aqui é da Portal Móveis. Identificamos que você tem parcelas em aberto no valor de R$ ${Number(item.valor_em_aberto).toFixed(2)}. Podemos conversar sobre isso?`)}`;
+                whatsappHtml = `<a class="q-action-btn whatsapp" href="${waUrl}" target="_blank" title="Abrir Chat WhatsApp"><i data-lucide="message-circle"></i></a>`;
+              }
+
               const tr = document.createElement('tr');
               tr.innerHTML = `
                   <td data-label="Cliente">
@@ -1048,14 +1135,12 @@
                         <i data-lucide="user-pen"></i>
                       </button>
                       
-                      <button class="q-action-btn whatsapp-manual" onclick="enviarWhatsappManual(${item.cliente_id}, '${escNome}')" title="Disparar Cobrança (Z-API)" style="background:rgba(37,211,102,0.1);color:#25d366;border-color:rgba(37,211,102,0.2)">
+                      <button class="q-action-btn whatsapp-manual" onclick="enviarWhatsappManual(${item.cliente_id}, '${escNome}')" title="Disparar Cobrança (Z-API)" style="background:rgba(37,211,102,0.1);color:#25d366;border-color:rgba(37,211,102,0.2);">
                         <i data-lucide="send"></i>
                       </button>
 
-                      ${item.phone
-                  ? `<a class="q-action-btn whatsapp" href="https://wa.me/55${item.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${item.nome_cliente}! Aqui é da Portal Móveis. Identificamos que você tem parcelas em aberto no valor de R$ ${Number(item.valor_em_aberto).toFixed(2)}. Podemos conversar sobre isso?`)}" target="_blank" title="Abrir Chat WhatsApp"><i data-lucide="message-circle"></i></a>`
-                  : `<button class="q-action-btn" title="Sem telefone" onclick="alert('Sem telefone cadastrado.')"><i data-lucide="message-circle-off"></i></button>`
-                }
+                      ${whatsappHtml}
+
                       <button class="q-action-btn register" onclick="openContactModal(${item.cliente_id}, '${escNome}')" title="Registrar Contato">
                         <i data-lucide="clipboard-check"></i>
                       </button>
@@ -1121,71 +1206,6 @@
       document.addEventListener('DOMContentLoaded', () => loadPriorityQueue(1));
     </script>
 
-    <!-- Right Column -->
-    <div class="right-col">
-      <!-- Agenda do Dia -->
-      <div class="sidebar-section">
-        <div class="section-hdr">
-          <div class="section-ttl">
-            <div class="section-ttl-icon">📅</div>
-            <span>Agenda do Dia</span>
-          </div>
-          <span class="agenda-count-badge">{{ promises | length }}</span>
-        </div>
-        <div class="agenda-items">
-          {% if promises | length == 0 %}
-          <div style="text-align:center; padding:20px; color:var(--text-3); font-size:13px;">
-            Nenhum compromisso para hoje.
-          </div>
-          {% else %}
-          {% for p in promises[:5] %}
-          <div class="agenda-row">
-            <div
-              class="agenda-row-icon {% if p.action_type == 'LIGACAO' %}call{% elif p.action_type == 'REUNIAO' %}meet{% else %}warn{% endif %}">
-              {% if p.action_type == 'LIGACAO' %}📞{% elif p.action_type == 'REUNIAO' %}🤝{% else %}📋{% endif %}
-            </div>
-            <div class="agenda-row-body">
-              <div class="agenda-row-title">{{ p.customer.name[:25] }}</div>
-              <div class="agenda-row-desc">{{ p.outcome[:30] if p.outcome else p.action_type }}</div>
-            </div>
-            <div class="agenda-row-time">{{ p.promised_date.strftime('%d/%m') if p.promised_date else '' }}</div>
-          </div>
-          {% endfor %}
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Meta de Recuperação -->
-      <!-- Meta de Recuperação (Detailed) -->
-      <div class="sidebar-section">
-        <div class="section-hdr">
-          <div class="section-ttl">
-            <div class="section-ttl-icon">🎯</div>
-            <span>Metas do Fiado 30/60/90</span>
-          </div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
-          <div
-            style="display: flex; font-size: 11px; color: var(--text-2); border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px;">
-            <div style="width: 30px;">DIAS</div>
-            <div style="flex: 1; text-align: right;">PAGO</div>
-            <div style="flex: 1; text-align: right;">FALTA</div>
-          </div>
-          {% for g in recovery_goals %}
-          <div
-            style="display: flex; align-items: center; font-size: 12px; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.03);">
-            <div style="width: 30px; font-weight: 700;">{{ g.label.replace(' DIAS', '') }}</div>
-            <div style="flex: 1; text-align: right; font-weight: 600;">{{ g.actual_fmt }}</div>
-            <div
-              style="flex: 1; text-align: right; font-weight: 600; color: {{ '#16a34a' if g.is_reached else '#ca8a04' }}">
-              {{ g.missing_fmt }}</div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-
-    </div>
   </div>
 
   <!-- Modal de Edição de Cadastro -->
@@ -1227,6 +1247,59 @@
     </div>
   </div>
 
+  <!-- Modal de Agenda do Dia -->
+  <div id="agendaModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3><i data-lucide="calendar"></i> Agenda do Dia</h3>
+        <button onclick="closeAgendaModal()" style="background:none; border:none; cursor:pointer; color:var(--text-3);">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="agenda-items">
+        {% if promises | length == 0 %}
+        <div style="text-align:center; padding:40px; color:var(--text-3);">
+          <div style="font-size: 32px; margin-bottom: 10px;">☕</div>
+          <p>Nenhum compromisso agendado para hoje.</p>
+        </div>
+        {% else %}
+        {% for p in promises %}
+        <div class="agenda-row" style="padding: 15px; border-bottom: 1px solid var(--border);">
+          <div
+            class="agenda-row-icon {% if p.action_type == 'LIGACAO' %}call{% elif p.action_type == 'REUNIAO' %}meet{% else %}warn{% endif %}"
+            style="width: 40px; height: 40px; font-size: 18px;">
+            {% if p.action_type == 'LIGACAO' %}📞{% elif p.action_type == 'REUNIAO' %}🤝{% else %}📋{% endif %}
+          </div>
+          <div class="agenda-row-body" style="margin-left: 15px;">
+            <div class="agenda-row-title" style="font-size: 14px; font-weight: 700; color: var(--text);">{{
+              p.customer.name }}</div>
+            <div class="agenda-row-desc" style="font-size: 12px; color: var(--text-2);">
+              <strong>{{ p.action_type }}</strong>: {{ p.outcome if p.outcome else 'Aguardando ação' }}
+            </div>
+            {% if p.notes %}
+            <div style="font-size: 11px; font-style: italic; color: var(--text-3); margin-top: 4px;">"{{ p.notes }}"
+            </div>
+            {% endif %}
+          </div>
+          <div class="agenda-row-time" style="text-align: right; min-width: 80px;">
+            <div style="font-weight: 600; color: var(--primary);">{{ p.promised_date.strftime('%d/%m/%Y') if
+              p.promised_date else '' }}</div>
+            <a href="/customers/{{ p.customer_id }}" class="btn-text"
+              style="font-size: 11px; color: var(--primary); text-decoration: underline; margin-top: 5px; display: block;">Ver
+              Perfil</a>
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button onclick="closeAgendaModal()" class="btn block">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de Registro de Contato -->
   <div id="contactModal" class="modal">
     <div class="modal-content">
@@ -1248,7 +1321,7 @@
         </select>
 
         <label>Resultado</label>
-        <select id="contact_outcome">
+        <select id="contact_outcome" onchange="togglePromessaFields()">
           <option value="PROMESSA">✅ Promessa de Pagamento</option>
           <option value="NAO_ATENDEU">📵 Não Atendeu</option>
           <option value="NUMERO_ERRADO">❌ Número Errado</option>
@@ -1257,8 +1330,21 @@
           <option value="PAGOU">💰 Confirmou Pagamento</option>
         </select>
 
-        <label>Data do Próximo Contato</label>
-        <input type="date" id="contact_next_date">
+        <!-- Campos extras para Promessa de Pagamento -->
+        <div id="promessa-fields" style="">
+          <label>Valor Prometido (R$) <span style="color:var(--danger);">*</span></label>
+          <input type="number" id="contact_promised_amount" step="0.01" min="0" placeholder="0,00"
+            style="width:100%; padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-card); color:var(--text);">
+
+          <label style="margin-top:12px;">Data da Promessa</label>
+          <input type="date" id="contact_next_date">
+        </div>
+
+        <!-- Data de próximo contato para outros resultados -->
+        <div id="next-contact-field" style="display:none;">
+          <label>Data do Próximo Contato</label>
+          <input type="date" id="contact_next_date_other">
+        </div>
 
         <label>Observações</label>
         <textarea id="contact_notes" rows="3" placeholder="Detalhes da conversa, acordos feitos, etc..."></textarea>
@@ -1339,17 +1425,30 @@
     });
 
     // Funções para Modal de Registro de Contato
+    function togglePromessaFields() {
+      const outcome = document.getElementById('contact_outcome').value;
+      const isPromessa = outcome === 'PROMESSA';
+      document.getElementById('promessa-fields').style.display = isPromessa ? '' : 'none';
+      document.getElementById('next-contact-field').style.display = isPromessa ? 'none' : '';
+      // Tornar valor obrigatório apenas para promessa
+      document.getElementById('contact_promised_amount').required = isPromessa;
+    }
+
     function openContactModal(customerId, customerName) {
       document.getElementById('contact_customer_id').value = customerId;
       document.getElementById('contact_customer_name').value = customerName;
       document.getElementById('contact_display_name').textContent = customerName;
       document.getElementById('contactModal').classList.add('active');
+      // Inicializa campos conforme seleção padrão
+      togglePromessaFields();
       if (window.lucide) lucide.createIcons();
     }
 
     function closeContactModal() {
       document.getElementById('contactModal').classList.remove('active');
       document.getElementById('contactForm').reset();
+      // Reseta visibilidade dos campos
+      togglePromessaFields();
     }
 
     document.getElementById('contactModal').addEventListener('click', (e) => {
@@ -1358,32 +1457,58 @@
 
     document.getElementById('contactForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const data = {
+      const outcome = document.getElementById('contact_outcome').value;
+      const isPromessa = outcome === 'PROMESSA';
+
+      // Pega a data correta conforme o tipo de resultado
+      const dateValue = isPromessa
+        ? document.getElementById('contact_next_date').value
+        : document.getElementById('contact_next_date_other').value;
+
+      // Monta o payload
+      const payload = {
         customer_id: parseInt(document.getElementById('contact_customer_id').value),
+        user_id: 0, // Preenchido pelo backend via sessão
         action_type: document.getElementById('contact_type').value,
-        outcome: document.getElementById('contact_outcome').value,
-        promised_date: document.getElementById('contact_next_date').value,
-        notes: document.getElementById('contact_notes').value
+        outcome: outcome,
+        promised_date: dateValue || null,
+        notes: document.getElementById('contact_notes').value || null
       };
+
+      // Adiciona valor prometido apenas para PROMESSA
+      if (isPromessa) {
+        const amtRaw = document.getElementById('contact_promised_amount').value;
+        if (!amtRaw || parseFloat(amtRaw) <= 0) {
+          alert('⚠️ Informe o valor prometido para registrar uma Promessa de Pagamento.');
+          return;
+        }
+        payload.promised_amount = parseFloat(amtRaw);
+      }
 
       try {
         const resp = await fetch('/api/collection-actions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
           credentials: 'same-origin'
         });
 
         if (resp.ok) {
           closeContactModal();
-          loadPriorityQueue(); // Recarrega a fila
+          loadPriorityQueue();
           alert('✅ Contato registrado com sucesso!');
         } else {
-          alert('❌ Erro ao registrar contato.');
+          // Exibe a mensagem real do servidor
+          let errMsg = 'Erro desconhecido';
+          try {
+            const errData = await resp.json();
+            errMsg = errData.detail || JSON.stringify(errData);
+          } catch (_) { }
+          alert('❌ Erro ao registrar contato:\n' + errMsg);
         }
       } catch (err) {
         console.error('Erro:', err);
-        alert('❌ Erro ao registrar contato.');
+        alert('❌ Erro de conexão ao registrar contato.');
       }
     });
 
@@ -1416,6 +1541,18 @@
         if (window.lucide) lucide.createIcons();
       }
     }
+
+    // Funções para Modal da Agenda
+    function openAgendaModal() {
+      document.getElementById('agendaModal').classList.add('active');
+      if (window.lucide) lucide.createIcons();
+    }
+    function closeAgendaModal() {
+      document.getElementById('agendaModal').classList.remove('active');
+    }
+    document.getElementById('agendaModal').addEventListener('click', (e) => {
+      if (e.target.id === 'agendaModal') closeAgendaModal();
+    });
   </script>
 
   {% endblock %}

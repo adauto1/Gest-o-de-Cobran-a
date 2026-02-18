@@ -1,1 +1,0 @@
-DEBUG: Total Active Rules in DB: 22
