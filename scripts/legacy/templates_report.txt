@@ -1,0 +1,129 @@
+--- INTENSA (90-9999 dias) ---
+{nome},
+
+COMUNICADO FINAL PRÉ-JUDICIAL
+Portal Móveis
+
+CPF: {cpf_mascarado}
+Tempo de inadimplência: {dias_atraso} dias
+
+🔴 ÚLTIMA COMUNICAÇÃO
+
+Esgotadas todas as tentativas de acordo amigável, informamos que o débito será encaminhado para:
+
+- PROTESTO EM CARTÓRIO (10 dias)
+- AJUIZAMENTO DE AÇÃO JUDICIAL (15 dias)
+
+O processo judicial acarretará em:
+- Honorários advocatícios (20% sobre o débito)
+- Custas processuais
+- Penhora de bens
+- Bloqueio de contas bancárias
+
+*Evite o processo - Regularize HOJE:*
+📱 Pix: {chave_pix}
+
+📞 ÚLTIMA CHANCE: (67) 99916-1881
+
+Este é o último contato antes do ajuizamento.
+
+Atenciosamente,
+Departamento Jurídico
+Portal Móveis
+
+--- LEVE (3-6 dias) ---
+Olá {nome},
+
+Financeiro Portal Móveis.
+
+Notamos mais uma parcela em atraso.
+
+*Situação atual:*
+- Parcelas pendentes: {quantidade_parcelas}
+
+Vamos colocar isso em dia? Podemos ajudar!
+
+*Formas de pagamento:*
+📱 Pix
+🏦 Boleto atualizado
+
+Fale conosco para negociar:
+(67) 99916-1881
+
+Atenciosamente,
+Financeiro Portal Móveis
+
+--- LEVE (7-14 dias) ---
+{nome},
+
+Financeiro Portal Móveis
+
+*Parcelas em aberto:* {quantidade_parcelas}
+
+Sua situação precisa de atenção.
+
+Importante regularizar para manter seu crédito em dia e evitar complicações futuras.
+
+*Como regularizar:*
+📱 Pix: {chave_pix}
+🏦 Boleto
+
+Vamos conversar? Ligue para:
+(67) 99916-1881
+
+Atenciosamente,
+Financeiro Portal Móveis
+
+--- LEVE (15-29 dias) ---
+{nome},
+
+Financeiro Portal Móveis
+
+*Parcelas vencidas:* {quantidade_parcelas}
+*Dias de atraso:* 15 dias
+
+Sua situação requer atenção urgente.
+
+Para evitar negativação e manter seu crédito ativo, é importante regularizar o quanto antes.
+
+*Regularize agora:*
+📱 Pix: {chave_pix}
+🏦 Boleto
+
+Podemos negociar as melhores condições:
+(67) 99916-1881
+
+Estamos à disposição para ajudar.
+
+Atenciosamente,
+Financeiro Portal Móveis
+
+--- MODERADA (30-89 dias) ---
+{nome},
+
+COMUNICADO DE NEGATIVAÇÃO
+Portal Móveis
+
+CPF: {cpf_mascarado}
+Tempo de inadimplência: {dias_atraso} dias
+
+🔴 SEU NOME SERÁ NEGATIVADO NOS PRÓXIMOS 5 DIAS ÚTEIS
+
+Órgãos: SPC/SERASA
+
+Consequências:
+- Restrição de crédito por até 5 anos
+- Impossibilidade de compras parceladas
+- Score de crédito comprometido
+
+*ÚLTIMA CHANCE - 48 HORAS:*
+📱 Pix: {chave_pix}
+
+📞 URGENTE: (67) 99916-1881
+
+Após a negativação, a dívida permanece.
+
+Atenciosamente,
+Departamento Jurídico
+Portal Móveis
+

@@ -1,0 +1,58 @@
+﻿python : Traceback 
+(most recent call 
+last):
+No linha:1 
+caractere:1
++ python -m app.main 
+2>&1 | Out-File 
+-FilePath 
+last_error.txt 
+-Encoding ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (Traceba   
+ ck (most recent     
+call last)::Stri    
+ng) [], RemoteEx    
+ception
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+  File "<frozen 
+runpy>", line 198, 
+in 
+_run_module_as_main
+  File "<frozen 
+runpy>", line 88, in 
+_run_code
+  File 
+"C:\Users\Adauto Pere
+ira\Desktop\GESTO DE 
+COBRANÃA\app\main.py"
+, line 19, in 
+<module>
+    from 
+app.api.routers 
+import (
+  File 
+"C:\Users\Adauto Pere
+ira\Desktop\GESTO DE 
+COBRANÃA\app\api\rout
+ers\rules.py", line 
+8, in <module>
+    from 
+app.core.helpers 
+import render, 
+require_login, 
+rule_for_overdue
+ImportError: cannot 
+import name 'render' 
+from 
+'app.core.helpers' 
+(C:\Users\Adauto Pere
+ira\Desktop\GESTO DE 
+COBRANÃA\app\core\hel
+pers.py)

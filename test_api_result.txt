@@ -1,0 +1,2 @@
+﻿Route: /api/fila/prioridade?page=1&limit=2 | Status: 200
+Route: /api/fila/prioridade?page=1&limit=2 | Error: Expecting value: line 1 column 1 (char 0)

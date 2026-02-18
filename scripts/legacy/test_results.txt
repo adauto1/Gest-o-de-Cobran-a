@@ -1,0 +1,17 @@
+--- Verificação ---
+✅ Cenário A: Regra Aplicada: LEVE (ID 10, Dias 3)
+   Conteúdo: Oi Cliente Teste A! 
+
+É o Noah da Portal Móveis.
+
+Notei que sua parcela de *R$ 100,00* (venceu dia 1...
+✅ Cenário B: Regra Aplicada: MODERADA (ID 15, Dias 3)
+   Conteúdo: Cliente Teste B,
+
+Noah - Portal Móveis.
+
+Mais uma parcela em atraso (R$ 100,00).
+
+*Total em aberto:*...
+✅ Cenário C: Regra Aplicada: INTENSA (ID 5, Dias 30)
+   Conteúdo: URGENTE: Cliente Teste C, seu contrato está na fase de cobrança intensa. Entre em contato urgente pa...

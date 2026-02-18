@@ -1,0 +1,5 @@
+﻿Route: / | Status: 307
+Route: /login | Status: 200
+Route: /dashboard | Status: 307
+Route: /customers | Status: 307
+Route: /queue | Status: 307

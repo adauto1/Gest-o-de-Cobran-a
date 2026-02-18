@@ -1,0 +1,31 @@
+﻿python : Traceback (most 
+recent call last):
+No linha:1 caractere:1
++ python -m app.main 2>&1 
+| Out-File -FilePath 
+traceback.txt -Encoding  
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (T  
+  raceback (most recent   
+  call last)::String)     
+[], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  File "<frozen runpy>", 
+line 198, in 
+_run_module_as_main
+  File "<frozen runpy>", 
+line 88, in _run_code
+  File "C:\Users\Adauto 
+Pereira\Desktop\GESTO DE 
+COBRANÃA\app\main.py", 
+line 19, in <module>
+    from app.api.routers 
+import (
+SyntaxError: source code 
+string cannot contain 
+null bytes
