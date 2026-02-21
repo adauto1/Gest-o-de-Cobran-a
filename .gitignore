@@ -26,3 +26,15 @@ diagnose_today.py
 check_feb.py
 relatorio.htm
 relatorio.html
+
+# Scripts de debug/manutenção local (não vão para VPS)
+audit_db.py
+check_users.py
+db_maint.py
+debug_*.py
+debug_*.log
+migrate_local.py
+reset_admin.py
+test_diag_*.py
+test_logic.py
+test_password.py
