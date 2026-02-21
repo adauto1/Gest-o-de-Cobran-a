@@ -114,8 +114,8 @@
                         <div class="client-cell">
                             <div class="regua-dot dot-{{ m.regua_nivel }}" title="Régua: {{ m.regua_nivel }}"
                                 style="margin-right: 8px;"></div>
-                            <a href="/customers/{{ m.m.customer_id }}" style="font-weight:600; color:var(--text);">
-                                {{ m.m.customer.name[:30] }}
+                            <a href="/customers/{{ m.customer_id }}" style="font-weight:600; color:var(--text);">
+                                {{ m.customer.name[:30] if m.customer else '—' }}
                             </a>
                         </div>
                     </td>

@@ -224,8 +224,28 @@ def run_collection_check(session_factory) -> dict:
             juros = Decimal("1.10") if max_overdue > 30 else Decimal("1.02")
             valor_com_juros = insts[0].open_amount * juros if insts else Decimal("0")
             
+            nome_fmt = customer.name.title()
+            venc_fmt = nearest_due.strftime("%d/%m/%Y") if nearest_due else ""
+
+            # --- Gerar lista de parcelas vencidas para {PARCELAS} ---
+            insts_sorted = sorted(insts, key=lambda i: i.due_date)
+            vencidas = [i for i in insts_sorted if (_today - i.due_date).days > 0]
+            futuras = [i for i in insts_sorted if (_today - i.due_date).days <= 0]
+
+            def _fmt_lista(items, limite=10):
+                if not items:
+                    return "(nenhuma)"
+                linhas = []
+                for i in items[:limite]:
+                    linhas.append(f"  - {format_money(i.open_amount)} — venc. {i.due_date.strftime('%d/%m/%Y')}")
+                if len(items) > limite:
+                    linhas.append(f"  ... e mais {len(items) - limite} parcela(s)")
+                return "\n".join(linhas)
+
+            parcelas_fmt = _fmt_lista(vencidas)
+            parcelas_futuras_fmt = _fmt_lista(futuras)
             replacements = {
-                "{nome}": customer.name, "{NOME}": customer.name,
+                "{nome}": nome_fmt, "{NOME}": nome_fmt,
                 "{valor}": format_money(insts[0].open_amount) if insts else "0,00",
                 "{VALOR}": format_money(insts[0].open_amount) if insts else "0,00",
                 "{valor_com_juros}": format_money(valor_com_juros),
@@ -233,12 +253,13 @@ def run_collection_check(session_factory) -> dict:
                 "{total_divida}": format_money(total_open),
                 "{dias_atraso}": str(max_overdue), "{DIAS}": str(max_overdue),
                 "{dias}": str(max_overdue),
-                "{vencimento}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
-                "{data_vencimento}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
-                "{data}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
-                "{DATA}": nearest_due.strftime("%d/%m/%Y") if nearest_due else "",
+                "{vencimento}": venc_fmt, "{VENCIMENTO}": venc_fmt,
+                "{data_vencimento}": venc_fmt,
+                "{data}": venc_fmt, "{DATA}": venc_fmt,
                 "{qtd}": str(len(insts)), "{QTD}": str(len(insts)),
                 "{quantidade_parcelas}": str(overdue_count),
+                "{parcelas}": parcelas_fmt, "{PARCELAS}": parcelas_fmt,
+                "{parcelas_futuras}": parcelas_futuras_fmt, "{PARCELAS_FUTURAS}": parcelas_futuras_fmt,
                 "{cpf}": cpf_masked,
                 "{cpf_mascarado}": cpf_masked,
                 "{telefone}": "(67) 99916-1881",

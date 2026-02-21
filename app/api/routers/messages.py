@@ -56,16 +56,32 @@ def get_outbox_api(
     if only_test:
         query = query.filter(MessageDispatchLog.mode == "TEST")
 
-    # KPIs (Consolidados em uma única query SQL para performance)
-    kpi_stmt = db.query(
+    # KPIs — reconstrói query separada com os mesmos filtros para evitar whereclause None
+    kpi_base = db.query(
         func.count(MessageDispatchLog.id).label("total"),
         func.sum(case((MessageDispatchLog.status == "SIMULADO", 1), else_=0)).label("simulated"),
         func.sum(case((MessageDispatchLog.status == "RESCHEDULED", 1), else_=0)).label("rescheduled"),
         func.sum(case((MessageDispatchLog.status == "ENVIADO", 1), else_=0)).label("sent"),
         func.sum(case((MessageDispatchLog.status == "FAILED", 1), else_=0)).label("failed")
-    ).filter(query.whereclause) # Reaproveita os filtros aplicados anteriormente
-    
-    kpi_res = kpi_stmt.first()
+    )
+    if date_from:
+        try:
+            kpi_base = kpi_base.filter(MessageDispatchLog.scheduled_for >= datetime.strptime(date_from, "%Y-%m-%d").date())
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            kpi_base = kpi_base.filter(MessageDispatchLog.scheduled_for <= datetime.strptime(date_to, "%Y-%m-%d").date())
+        except ValueError:
+            pass
+    if status:
+        kpi_base = kpi_base.filter(MessageDispatchLog.status == status)
+    if regua:
+        kpi_base = kpi_base.filter(MessageDispatchLog.regua == regua)
+    if only_test:
+        kpi_base = kpi_base.filter(MessageDispatchLog.mode == "TEST")
+
+    kpi_res = kpi_base.first()
     kpis = {
         "total": kpi_res.total or 0,
         "simulated": int(kpi_res.simulated or 0),
@@ -136,8 +152,59 @@ async def run_financial_now(request: Request, db: Session = Depends(get_db)):
 @router.get("/messages", response_class=HTMLResponse)
 def messages_list(request: Request, db: Session = Depends(get_db)):
     user = require_login(request, db)
-    msgs = db.query(SentMessage).order_by(SentMessage.created_at.desc()).limit(200).all()
-    return render("messages.html", request=request, user=user, title="Mensagens", messages=msgs)
+
+    # Filtros opcionais
+    selected_status = request.query_params.get("status", "")
+    selected_date_from = request.query_params.get("date_from", "")
+    selected_date_to = request.query_params.get("date_to", "")
+    selected_q = request.query_params.get("q", "")
+
+    query = db.query(SentMessage)
+    if selected_status:
+        query = query.filter(SentMessage.status == selected_status)
+    if selected_date_from:
+        try:
+            df = datetime.strptime(selected_date_from, "%Y-%m-%d")
+            query = query.filter(SentMessage.created_at >= df)
+        except ValueError:
+            pass
+    if selected_date_to:
+        try:
+            dt = datetime.strptime(selected_date_to, "%Y-%m-%d")
+            query = query.filter(SentMessage.created_at <= dt)
+        except ValueError:
+            pass
+    if selected_q:
+        from sqlalchemy.orm import joinedload
+        query = query.join(SentMessage.customer).filter(
+            SentMessage.customer.has(name=selected_q) |
+            SentMessage.phone.ilike(f"%{selected_q}%")
+        )
+
+    msgs = query.order_by(SentMessage.created_at.desc()).limit(200).all()
+
+    # KPIs em uma única query
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    kpi = db.query(
+        func.count(SentMessage.id).label("total_today"),
+        func.sum(case((SentMessage.status == "SIMULADO", 1), else_=0)).label("simulated"),
+        func.sum(case((SentMessage.status == "PENDENTE", 1), else_=0)).label("pending"),
+        func.sum(case((SentMessage.status == "ENVIADO", 1), else_=0)).label("sent"),
+    ).filter(SentMessage.created_at >= today_start).first()
+
+    return render(
+        "messages.html",
+        request=request, user=user, title="Mensagens",
+        messages=msgs,
+        total_today=kpi.total_today or 0,
+        total_simulated=int(kpi.simulated or 0),
+        total_pending=int(kpi.pending or 0),
+        total_sent=int(kpi.sent or 0),
+        selected_status=selected_status,
+        selected_date_from=selected_date_from,
+        selected_date_to=selected_date_to,
+        selected_q=selected_q,
+    )
 
 @router.get("/api/whatsapp/historico")
 def get_whatsapp_historico(request: Request, customer_id: int, db: Session = Depends(get_db)):

@@ -38,3 +38,15 @@ reset_admin.py
 test_diag_*.py
 test_logic.py
 test_password.py
+# Scripts temporários desta sessão
+fix_msg_format.py
+insert_rules.py
+list_rules.py
+rules_output.txt
+update_templates.py
+debug_clientes.py
+check_corruption.py
+repair_utils.py
+migrate_config*.py
+test_bot.py
+test_server.py

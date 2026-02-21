@@ -17,7 +17,7 @@ TIMEZONE = ZoneInfo(os.getenv("APP_TIMEZONE", "America/Campo_Grande"))
 
 # --- Janela comercial de envio de mensagens ---
 BUSINESS_HOUR_START = time(int(os.getenv("BUSINESS_HOUR_START", "9")), 0)
-BUSINESS_HOUR_END = time(int(os.getenv("BUSINESS_HOUR_END", "18")), 0)
+BUSINESS_HOUR_END = time(int(os.getenv("BUSINESS_HOUR_END", "20")), 0)
 
 # --- Metas de recuperação ---
 # Percentual mínimo de recuperação para atingir a meta (padrão: 70%)
