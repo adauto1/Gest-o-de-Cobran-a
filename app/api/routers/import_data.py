@@ -88,10 +88,12 @@ def parse_infocommerce_html(content: bytes) -> List[Dict]:
     parsed = []
     for top in sorted(rows_data.keys()):
         row = rows_data[top]
+        emissao = row.get(54)
         vencimento = row.get(588)
         pedido = row.get(132)
+        cliente = row.get(264)
         valor_raw = row.get(648)
-        
+
         if emissao and vencimento:
             if re.match(r'\d{2}/\d{2}/\d{4}', emissao) and re.match(r'\d{2}/\d{2}/\d{4}', vencimento):
                 if valor_raw:
