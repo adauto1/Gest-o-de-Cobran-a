@@ -1,12 +1,5 @@
 from datetime import datetime, time, timedelta, date
-try:
-    from zoneinfo import ZoneInfo
-except ImportError:
-    from backports.zoneinfo import ZoneInfo
-
-TZ = ZoneInfo("America/Campo_Grande")
-HORA_INICIO = time(9, 0)
-HORA_FIM = time(18, 0)
+from app.core.config import TIMEZONE as TZ, BUSINESS_HOUR_START as HORA_INICIO, BUSINESS_HOUR_END as HORA_FIM
 
 # Feriados Nacionais (Fixos e Móveis aproximados para 2024-2026)
 # Idealmente usar library 'holidays' ou tabela no banco.

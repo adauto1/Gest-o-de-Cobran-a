@@ -9,3 +9,4 @@ python-multipart
 passlib[bcrypt]
 python-dotenv
 cryptography
+apscheduler>=3.10.0

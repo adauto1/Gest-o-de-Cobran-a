@@ -39,6 +39,7 @@ class CustomerUpdate(BaseModel):
     address: Optional[str] = None
     notes: Optional[str] = None
     profile_cobranca: Optional[str] = None
+    email: Optional[str] = None
 
 class Customer(CustomerBase):
     id: int

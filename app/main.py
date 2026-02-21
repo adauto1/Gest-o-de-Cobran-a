@@ -1,20 +1,23 @@
 from __future__ import annotations
 import os
-import asyncio
 import logging
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.status import HTTP_302_FOUND
 from sqlalchemy.orm import Session
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 # --- Core & Models ---
-from app.core.database import Base, engine, get_db
-from app.models import User
+from app.core.database import Base, engine, get_db, run_migrations
+from app.models import User, Configuracoes
 from app.core.security import hash_password
 from app.core.web import render
-from app.services.notifications import director_notification_loop, financial_notification_loop
+from app.services.notifications import run_director_alerts, run_financial_alerts
+from app.scheduler import run_collection_check
 
 # --- Routers ---
 from app.api.routers import (
@@ -31,8 +34,32 @@ logger = logging.getLogger(__name__)
 
 # Initialize Database
 Base.metadata.create_all(bind=engine)
+run_migrations(engine)
+
+# APScheduler global (acessado pelo settings router para reagendar)
+scheduler = AsyncIOScheduler(timezone="America/Campo_Grande")
 
 app = FastAPI(title="Gestor de Cobrança — Portal Móveis")
+
+# --- Security Headers Middleware ---
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net unpkg.com; "
+            "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+            "img-src 'self' data: blob:; "
+            "font-src 'self' cdn.jsdelivr.net; "
+            "connect-src 'self';"
+        )
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Middleware
 SECRET_KEY = os.getenv("SESSION_SECRET", "CHANGE-ME-IN-PROD")
@@ -72,7 +99,7 @@ def root_redirect():
 
 @app.on_event("startup")
 async def startup_event():
-    # Admin Auto-creation (Simple check)
+    # Admin Auto-creation
     db = next(get_db())
     admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@portalmoveis.local")
     admin = db.query(User).filter(User.email == admin_email).first()
@@ -86,13 +113,43 @@ async def startup_event():
             active=True
         ))
         db.commit()
-        logger.info(f"[SISTEMA] Usuário admin criado: {admin_email}")
+        logger.info(f"[SISTEMA] Usuario admin criado: {admin_email}")
+
+    # Buscar hora configurada para a regua de cobranca
+    config = db.query(Configuracoes).first()
+    hora_disparo = getattr(config, 'scheduler_hora_disparo', 9) if config else 9
     db.close()
 
-    # Iniciar os serviços de background
-    asyncio.create_task(director_notification_loop())
-    asyncio.create_task(financial_notification_loop())
-    logger.info("[SISTEMA] Serviços de notificação em background iniciados.")
+    from app.core.database import SessionLocal as SL
+
+    # Job 1: Regua de cobranca — hora configuravel (padrao 9h)
+    scheduler.add_job(
+        lambda: run_collection_check(SL),
+        CronTrigger(hour=hora_disparo, minute=0),
+        id="collection_check",
+        replace_existing=True
+    )
+
+    # Job 2: Alertas de diretores — a cada 1h
+    scheduler.add_job(
+        run_director_alerts,
+        "interval",
+        hours=1,
+        id="director_alerts",
+        replace_existing=True
+    )
+
+    # Job 3: Alertas financeiros — a cada 45min
+    scheduler.add_job(
+        run_financial_alerts,
+        "interval",
+        minutes=45,
+        id="financial_alerts",
+        replace_existing=True
+    )
+
+    scheduler.start()
+    logger.info(f"[SCHEDULER] Jobs registrados. Regua dispara as {hora_disparo}h.")
 
 if __name__ == "__main__":
     import uvicorn

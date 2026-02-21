@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from typing import Optional, List
 from datetime import datetime
 from starlette.status import HTTP_302_FOUND
@@ -56,13 +56,22 @@ def get_outbox_api(
     if only_test:
         query = query.filter(MessageDispatchLog.mode == "TEST")
 
-    # KPIs
+    # KPIs (Consolidados em uma única query SQL para performance)
+    kpi_stmt = db.query(
+        func.count(MessageDispatchLog.id).label("total"),
+        func.sum(case((MessageDispatchLog.status == "SIMULADO", 1), else_=0)).label("simulated"),
+        func.sum(case((MessageDispatchLog.status == "RESCHEDULED", 1), else_=0)).label("rescheduled"),
+        func.sum(case((MessageDispatchLog.status == "ENVIADO", 1), else_=0)).label("sent"),
+        func.sum(case((MessageDispatchLog.status == "FAILED", 1), else_=0)).label("failed")
+    ).filter(query.whereclause) # Reaproveita os filtros aplicados anteriormente
+    
+    kpi_res = kpi_stmt.first()
     kpis = {
-        "total": query.count(),
-        "simulated": query.filter(MessageDispatchLog.status == "SIMULADO").count(),
-        "rescheduled": query.filter(MessageDispatchLog.status == "RESCHEDULED").count(),
-        "sent": query.filter(MessageDispatchLog.status == "ENVIADO").count(),
-        "failed": query.filter(MessageDispatchLog.status == "FAILED").count(),
+        "total": kpi_res.total or 0,
+        "simulated": int(kpi_res.simulated or 0),
+        "rescheduled": int(kpi_res.rescheduled or 0),
+        "sent": int(kpi_res.sent or 0),
+        "failed": int(kpi_res.failed or 0),
     }
 
     # Data
@@ -119,12 +128,10 @@ async def run_financial_now(request: Request, db: Session = Depends(get_db)):
     user = require_login(request, db)
     if user.role != "ADMIN":
         raise HTTPException(status_code=403)
-    
-    # Trigger financial report logic
-    # Potentially we need a specific one-shot function in notifications.py
-    # For now, let's call the loop's content logic if we can extract it or just mock success
-    # In a real scenario, we'd have a trigger_financial_report() function.
-    return {"success": True, "sent_count": 1}
+
+    from app.services.notifications import trigger_financial_report
+    result = trigger_financial_report(db)
+    return {"success": True, "sent_count": result["sent"], "skipped_count": result["skipped"]}
 
 @router.get("/messages", response_class=HTMLResponse)
 def messages_list(request: Request, db: Session = Depends(get_db)):
@@ -135,12 +142,12 @@ def messages_list(request: Request, db: Session = Depends(get_db)):
 @router.get("/api/whatsapp/historico")
 def get_whatsapp_historico(request: Request, customer_id: int, db: Session = Depends(get_db)):
     require_login(request, db)
-    msgs = db.query(WhatsappHistorico).filter(WhatsappHistorico.customer_id == customer_id).order_by(WhatsappHistorico.timestamp.desc()).limit(50).all()
+    msgs = db.query(WhatsappHistorico).filter(WhatsappHistorico.cliente_id == customer_id).order_by(WhatsappHistorico.created_at.desc()).limit(50).all()
     return [{
         "id": m.id,
-        "message_id": m.message_id,
-        "sender": m.sender,
-        "content": m.content,
-        "timestamp": m.timestamp.isoformat() if m.timestamp else None,
-        "is_from_me": m.is_from_me
+        "telefone": m.telefone,
+        "mensagem": m.mensagem,
+        "tipo": m.tipo,
+        "status": m.status,
+        "timestamp": m.created_at.isoformat() if m.created_at else None,
     } for m in msgs]

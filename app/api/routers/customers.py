@@ -2,16 +2,15 @@ import logging
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload, subqueryload
-from sqlalchemy import func
+from starlette.status import HTTP_302_FOUND
 from decimal import Decimal
 from datetime import datetime
-from typing import Optional, List
 
 from app.core.database import get_db
-from app.models import Customer, Installment, CollectionAction, User, days_overdue
+from app.models import Customer, CollectionAction, User, days_overdue
 from app.core.web import render, require_login
-from app.core.helpers import get_regua_nivel, bucket_priority, wa_link, stores_list, get_status_label, rule_for_overdue, format_money
-from app.schemas import PriorityQueueResponse, PriorityQueueItem, CustomerUpdate
+from app.core.helpers import get_regua_nivel, bucket_priority, wa_link, stores_list, get_status_label, rule_for_overdue, format_money, get_last_contacts_map
+from app.schemas import CustomerUpdate
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -35,6 +34,7 @@ def customers_page(request: Request, q: str = "", store: str = "", db: Session =
     )
 
     customers = query.order_by(Customer.name.asc()).limit(300).all()
+    last_contacts = get_last_contacts_map(db, [c.id for c in customers])
     rows = []
     for c in customers:
         insts = [i for i in c.installments if i.status == "ABERTA" and Decimal(i.open_amount) > 0]
@@ -44,25 +44,16 @@ def customers_page(request: Request, q: str = "", store: str = "", db: Session =
             count_open = len(insts)
         else:
             max_over, total_open, count_open = 0, Decimal("0"), 0
-        
-        last = db.query(CollectionAction).filter(CollectionAction.customer_id == c.id).order_by(CollectionAction.created_at.desc()).first()
-        ultimo_contato_str = last.created_at.strftime("%d/%m/%Y") if last else "Sem contato"
-        regua_nivel = get_regua_nivel(c.profile_cobranca, max_over)
-        
-        if max_over > 60: status_label = get_status_label(max_over)
-        elif max_over > 30: status_label = get_status_label(max_over)
-        elif max_over > 0: status_label = get_status_label(max_over)
-        else: status_label = "Em dia"
 
         rows.append({
-            "c": c, 
-            "max_over": max_over, 
-            "total_open": total_open, 
+            "c": c,
+            "max_over": max_over,
+            "total_open": total_open,
             "count_open": count_open,
-            "prio": bucket_priority(max_over), 
-            "regua_nivel": regua_nivel,
-            "ultimo_contato_str": ultimo_contato_str,
-            "status_label": status_label
+            "prio": bucket_priority(max_over),
+            "regua_nivel": get_regua_nivel(c.profile_cobranca, max_over),
+            "ultimo_contato_str": last_contacts.get(c.id, "Sem contato"),
+            "status_label": get_status_label(max_over),
         })
 
     users = db.query(User).filter(User.active == True).order_by(User.name.asc()).all() if user.role == "ADMIN" else []
@@ -153,6 +144,18 @@ def change_profile(request: Request, customer_id: int, profile: str = Form(...),
     db.commit()
     referer = request.headers.get("referer")
     return RedirectResponse(referer or f"/customers/{customer_id}", status_code=HTTP_302_FOUND)
+
+@router.post("/customers/{customer_id}/toggle-msgs")
+def toggle_msgs(request: Request, customer_id: int, db: Session = Depends(get_db)):
+    user = require_login(request, db)
+    if user.role not in ["ADMIN", "COBRANCA"]:
+        raise HTTPException(status_code=403, detail="Sem permissao")
+    c = db.get(Customer, customer_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Cliente nao encontrado")
+    c.msgs_ativo = not getattr(c, 'msgs_ativo', True)
+    db.commit()
+    return {"success": True, "msgs_ativo": c.msgs_ativo}
 
 @router.patch("/api/customers/{customer_id}")
 def update_customer_api(customer_id: int, dados: CustomerUpdate, request: Request, db: Session = Depends(get_db)):

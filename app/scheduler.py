@@ -4,16 +4,14 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta
+import json
+from datetime import datetime
 from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
 log = logging.getLogger(__name__)
 
-
-from sqlalchemy.orm import Session
 from app.models import (
     Customer, Installment, CollectionRule, SentMessage, MessageDispatchLog,
     Configuracoes, WhatsappHistorico, today as get_today
@@ -21,14 +19,64 @@ from app.models import (
 from app.core.helpers import format_money
 from app.services.whatsapp import enviar_whatsapp
 
+def _retry_rescheduled(db: Session, config, is_time_allowed: bool) -> int:
+    """
+    Reenvia mensagens RESCHEDULED do dia atual quando o horário de compliance permite.
+    Retorna a quantidade de mensagens reenviadas com sucesso.
+    """
+    if not is_time_allowed:
+        return 0
+
+    _today = get_today()
+    pending = (
+        db.query(MessageDispatchLog)
+        .filter(
+            MessageDispatchLog.status == "RESCHEDULED",
+            MessageDispatchLog.scheduled_for == _today,
+        )
+        .all()
+    )
+
+    retried = 0
+    for entry in pending:
+        phone = entry.destination_phone
+        msg_body = entry.message_rendered
+        if not phone or not msg_body:
+            continue
+
+        res = enviar_whatsapp(phone, msg_body, modo_teste=config.whatsapp_modo_teste)
+        new_status = res.get("modo", "FAILED")
+        entry.status = new_status
+        entry.compliance_block_reason = "OK"
+        entry.error_message = res.get("erro")
+        entry.executed_at = datetime.utcnow()
+
+        if new_status in ("SIMULADO", "ENVIADO"):
+            retried += 1
+            hist = WhatsappHistorico(
+                cliente_id=entry.customer_id,
+                telefone=phone,
+                mensagem=msg_body,
+                tipo="regua_retry",
+                status=new_status.lower(),
+                resposta=str(res),
+            )
+            db.add(hist)
+
+    if retried:
+        db.commit()
+        log.info(f"[RETRY] {retried} mensagens RESCHEDULED reenviadas.")
+    return retried
+
+
 def run_collection_check(session_factory) -> dict:
     """
     Verifica todos os clientes com parcelas vencidas/a vencer,
-    aplica a régua de cobrança e registra mensagens SIMULADAS.
+    aplica a régua de cobrança e registra mensagens.
     Retorna estatísticas da execução.
     """
     db: Session = session_factory()
-    stats = {"checked": 0, "created": 0, "rescheduled": 0, "skipped_freq": 0, "skipped_no_phone": 0}
+    stats = {"checked": 0, "created": 0, "rescheduled": 0, "retried": 0, "skipped_freq": 0, "skipped_no_phone": 0}
 
     try:
         _today = get_today()
@@ -49,11 +97,16 @@ def run_collection_check(session_factory) -> dict:
             db.add(config)
             db.commit()
         
-        # Se WhatsApp desativado, aborta (conforme regra do usuário) ou apenas simula?
-        # User prompt suggests: if not config.whatsapp_ativo: return
         if not config.whatsapp_ativo:
             log.info("Régua de cobrança ignorada (WhatsApp desativado nas configurações).")
             return stats
+
+        # 1.6) Verificar compliance de horário UMA VEZ (válido para todo o ciclo)
+        from app.services.compliance import calcular_data_disparo, check_msg_allowed_now, TZ
+        is_time_allowed, block_reason = check_msg_allowed_now(return_reason=True)
+
+        # 1.7) Reenviar mensagens RESCHEDULED do dia que ainda estão pendentes
+        stats["retried"] = _retry_rescheduled(db, config, is_time_allowed)
 
         # 2) Buscar todas as parcelas abertas
         open_insts = (
@@ -79,6 +132,10 @@ def run_collection_check(session_factory) -> dict:
             customer = data["customer"]
             insts = data["installments"]
             stats["checked"] += 1
+
+            # Pular clientes com mensagens desativadas
+            if not getattr(customer, 'msgs_ativo', True):
+                continue
 
             # Calcular atraso máximo e totais
             max_overdue = 0
@@ -117,15 +174,6 @@ def run_collection_check(session_factory) -> dict:
             
             # Filtrar regras baseadas no perfil efetivo
             applicable_rules = [r for r in rules if r.level == effective_profile]
-            
-            # --- NOVA LÓGICA DE MATCHING COM COMPLIANCE ---
-            # Para cada regra aplicável, verificar se HOJE é o dia do disparo ajustado (Compliance)
-            # OU se estamos dentro do range (para regras de faixa).
-            
-            from app.services.compliance import calcular_data_disparo, check_msg_allowed_now, TZ
-            import json
-            
-            is_time_allowed, block_reason = check_msg_allowed_now(return_reason=True)
             
             matched_rule = None
             

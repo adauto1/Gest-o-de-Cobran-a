@@ -1,16 +1,16 @@
 import logging
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from decimal import Decimal
-from datetime import timedelta, date
-from typing import Optional, List
+from datetime import timedelta
+from typing import Optional
 
 from app.core.database import get_db
-from app.models import Customer, Installment, CollectionAction, today
+from app.models import Customer, Installment, today
 from app.core.web import render, require_login
-from app.core.helpers import get_regua_nivel, bucket_priority, stores_list, get_status_label
+from app.core.helpers import get_regua_nivel, bucket_priority, stores_list, get_status_label, get_last_contacts_map
 from app.schemas import PriorityQueueResponse, PriorityQueueItem
 
 router = APIRouter()
@@ -38,29 +38,6 @@ def _apply_user_filters(query, stmt, user, db: Session):
             query = query.filter(Customer.assigned_to_user_id == user.id)
     return query
 
-
-def _get_last_contacts_map(db: Session, customer_ids: list) -> dict:
-    """
-    Busca o último contato de todos os clientes de uma vez (evita N+1 queries).
-    Retorna um dict {customer_id: data_formatada}.
-    """
-    if not customer_ids:
-        return {}
-
-    # Subquery: max created_at por customer_id
-    subq = db.query(
-        CollectionAction.customer_id,
-        func.max(CollectionAction.created_at).label("last_contact")
-    ).filter(
-        CollectionAction.customer_id.in_(customer_ids)
-    ).group_by(CollectionAction.customer_id).subquery()
-
-    rows = db.query(subq.c.customer_id, subq.c.last_contact).all()
-    return {
-        row.customer_id: row.last_contact.strftime("%d/%m/%Y")
-        for row in rows
-        if row.last_contact
-    }
 
 
 @router.get("/api/fila/prioridade", response_model=PriorityQueueResponse)
@@ -98,7 +75,7 @@ def get_priority_queue_api(
 
     # Busca todos os últimos contatos de uma vez (sem N+1)
     customer_ids = [row[0].id for row in results]
-    last_contacts = _get_last_contacts_map(db, customer_ids)
+    last_contacts = get_last_contacts_map(db, customer_ids)
 
     items = []
     for row in results:
@@ -196,7 +173,7 @@ def queue_page(
 
     # Busca todos os últimos contatos de uma vez (sem N+1)
     customer_ids = [row[0].id for row in results]
-    last_contacts = _get_last_contacts_map(db, customer_ids)
+    last_contacts = get_last_contacts_map(db, customer_ids)
 
     items = []
     for row in results:

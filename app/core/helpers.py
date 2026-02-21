@@ -1,9 +1,10 @@
 from decimal import Decimal
-from datetime import date, datetime
+from datetime import date
 import logging
 import re
-from typing import Optional, List
+from typing import List
 from urllib.parse import quote
+from app.core.config import PRIORITY_CRITICAL_DAYS, PRIORITY_ALERT_DAYS, PRIORITY_MODERATE_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ def format_money(v) -> str:
 def parse_decimal(v: str) -> Decimal:
     if not v: return Decimal("0")
     s = str(v).strip().replace("R$", "").strip()
+    # Padrão BR: "1.250,50" (ambos) ou "1250,50" (só vírgula) ou "1250.50" (só ponto)
     if "," in s and "." in s:
         s = s.replace(".", "").replace(",", ".")
     else:
@@ -41,9 +43,9 @@ def parse_date_br(v: str) -> date:
     raise ValueError(f"Invalid date: {v}")
 
 def bucket_priority(max_overdue: int) -> int:
-    if max_overdue >= 90: return 5
-    if max_overdue >= 30: return 4
-    if max_overdue >= 5:  return 2
+    if max_overdue >= PRIORITY_CRITICAL_DAYS:  return 5
+    if max_overdue >= PRIORITY_ALERT_DAYS:     return 4
+    if max_overdue >= PRIORITY_MODERATE_DAYS:  return 2
     return 1
 
 def get_regua_nivel(customer_profile: str, max_overdue: int) -> str:
@@ -86,3 +88,25 @@ def rule_for_overdue(db, overdue_days: int, level: str = "LEVE"):
         return None
     matched.sort(key=lambda r: (r.priority, r.start_days), reverse=True)
     return matched[0]
+
+def get_last_contacts_map(db, customer_ids: List[int]) -> dict:
+    """Busca o último contato de todos os clientes em uma única query (evita N+1).
+    Retorna {customer_id: data_formatada_str}.
+    """
+    if not customer_ids:
+        return {}
+    from sqlalchemy import func
+    from app.models import CollectionAction
+    subq = db.query(
+        CollectionAction.customer_id,
+        func.max(CollectionAction.created_at).label("last_contact")
+    ).filter(
+        CollectionAction.customer_id.in_(customer_ids)
+    ).group_by(CollectionAction.customer_id).subquery()
+
+    rows = db.query(subq.c.customer_id, subq.c.last_contact).all()
+    return {
+        row.customer_id: row.last_contact.strftime("%d/%m/%Y")
+        for row in rows
+        if row.last_contact
+    }

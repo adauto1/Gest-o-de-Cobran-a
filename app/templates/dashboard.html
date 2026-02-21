@@ -1206,353 +1206,411 @@
       document.addEventListener('DOMContentLoaded', () => loadPriorityQueue(1));
     </script>
 
-  </div>
 
-  <!-- Modal de Edição de Cadastro -->
-  <div id="editModal" class="modal">
-    <div class="modal-content">
-      <h3><i data-lucide="user-pen"></i> Editar Cadastro</h3>
-      <form id="editForm">
-        <input type="hidden" id="edit_customer_id">
-        <input type="hidden" id="edit_customer_name">
+    <!-- Modal de Edição de Cadastro -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <h3><i data-lucide="user-pen"></i> Editar Cadastro</h3>
+        <form id="editForm">
+          <input type="hidden" id="edit_customer_id">
+          <input type="hidden" id="edit_customer_name">
 
-        <label>Telefone/WhatsApp</label>
-        <input type="tel" id="edit_phone" placeholder="(00) 00000-0000">
+          <label>Telefone/WhatsApp</label>
+          <input type="tel" id="edit_phone" placeholder="(00) 00000-0000">
 
-        <label>Endereço</label>
-        <input type="text" id="edit_address" placeholder="Rua, número, bairro">
+          <label>Endereço</label>
+          <input type="text" id="edit_address" placeholder="Rua, número, bairro">
 
-        <label>Email</label>
-        <input type="email" id="edit_email" placeholder="cliente@email.com">
+          <label>Email</label>
+          <input type="email" id="edit_email" placeholder="cliente@email.com">
 
-        <label>Observações</label>
-        <textarea id="edit_notes" rows="3" placeholder="Informações adicionais sobre o cliente..."></textarea>
+          <label>Observações</label>
+          <textarea id="edit_notes" rows="3" placeholder="Informações adicionais sobre o cliente..."></textarea>
 
-        <label>Perfil de Cobrança</label>
-        <select id="edit_profile">
-          <option value="AUTOMATICO">⚙️ Automático (Padrão)</option>
-          <option value="LEVE">🟢 Leve</option>
-          <option value="MODERADA">🟡 Moderada</option>
-          <option value="INTENSA">🔴 Intensa</option>
-        </select>
-        <small style="color:var(--text-3); display:block; margin-bottom:16px;">
-          * Força o uso de uma régua específica independente do atraso.
-        </small>
+          <label>Perfil de Cobrança</label>
+          <select id="edit_profile">
+            <option value="AUTOMATICO">⚙️ Automático (Padrão)</option>
+            <option value="LEVE">🟢 Leve</option>
+            <option value="MODERADA">🟡 Moderada</option>
+            <option value="INTENSA">🔴 Intensa</option>
+          </select>
+          <small style="color:var(--text-3); display:block; margin-bottom:16px;">
+            * Força o uso de uma régua específica independente do atraso.
+          </small>
 
-        <div class="modal-actions">
-          <button type="button" onclick="closeEditModal()">Cancelar</button>
-          <button type="submit" class="btn primary">Salvar Alterações</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal de Agenda do Dia -->
-  <div id="agendaModal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3><i data-lucide="calendar"></i> Agenda do Dia</h3>
-        <button onclick="closeAgendaModal()" style="background:none; border:none; cursor:pointer; color:var(--text-3);">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-
-      <div class="agenda-items">
-        {% if promises | length == 0 %}
-        <div style="text-align:center; padding:40px; color:var(--text-3);">
-          <div style="font-size: 32px; margin-bottom: 10px;">☕</div>
-          <p>Nenhum compromisso agendado para hoje.</p>
-        </div>
-        {% else %}
-        {% for p in promises %}
-        <div class="agenda-row" style="padding: 15px; border-bottom: 1px solid var(--border);">
-          <div
-            class="agenda-row-icon {% if p.action_type == 'LIGACAO' %}call{% elif p.action_type == 'REUNIAO' %}meet{% else %}warn{% endif %}"
-            style="width: 40px; height: 40px; font-size: 18px;">
-            {% if p.action_type == 'LIGACAO' %}📞{% elif p.action_type == 'REUNIAO' %}🤝{% else %}📋{% endif %}
+          <div class="modal-actions">
+            <button type="button" onclick="closeEditModal()">Cancelar</button>
+            <button type="submit" class="btn primary">Salvar Alterações</button>
           </div>
-          <div class="agenda-row-body" style="margin-left: 15px;">
-            <div class="agenda-row-title" style="font-size: 14px; font-weight: 700; color: var(--text);">{{
-              p.customer.name }}</div>
-            <div class="agenda-row-desc" style="font-size: 12px; color: var(--text-2);">
-              <strong>{{ p.action_type }}</strong>: {{ p.outcome if p.outcome else 'Aguardando ação' }}
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Agenda do Dia -->
+    <div id="agendaModal" class="modal">
+      <div class="modal-content" style="max-width: 600px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3><i data-lucide="calendar"></i> Agenda do Dia</h3>
+          <button onclick="closeAgendaModal()"
+            style="background:none; border:none; cursor:pointer; color:var(--text-3);">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div class="agenda-items">
+          {% if promises | length == 0 %}
+          <div style="text-align:center; padding:40px; color:var(--text-3);">
+            <div style="font-size: 32px; margin-bottom: 10px;">☕</div>
+            <p>Nenhum compromisso agendado para hoje.</p>
+          </div>
+          {% else %}
+          {% for p in promises %}
+          <div class="agenda-row" style="padding: 15px; border-bottom: 1px solid var(--border);">
+            <div
+              class="agenda-row-icon {% if p.action_type == 'LIGACAO' %}call{% elif p.action_type == 'REUNIAO' %}meet{% else %}warn{% endif %}"
+              style="width: 40px; height: 40px; font-size: 18px;">
+              {% if p.action_type == 'LIGACAO' %}📞{% elif p.action_type == 'REUNIAO' %}🤝{% else %}📋{% endif %}
             </div>
-            {% if p.notes %}
-            <div style="font-size: 11px; font-style: italic; color: var(--text-3); margin-top: 4px;">"{{ p.notes }}"
+            <div class="agenda-row-body" style="margin-left: 15px;">
+              <div class="agenda-row-title" style="font-size: 14px; font-weight: 700; color: var(--text);">{{
+                p.customer.name }}</div>
+              <div class="agenda-row-desc" style="font-size: 12px; color: var(--text-2);">
+                <strong>{{ p.action_type }}</strong>: {{ p.outcome if p.outcome else 'Aguardando ação' }}
+              </div>
+              {% if p.notes %}
+              <div style="font-size: 11px; font-style: italic; color: var(--text-3); margin-top: 4px;">"{{ p.notes }}"
+              </div>
+              {% endif %}
             </div>
-            {% endif %}
+            <div class="agenda-row-time" style="text-align: right; min-width: 80px;">
+              <div style="font-weight: 600; color: var(--primary);">{{ p.promised_date.strftime('%d/%m/%Y') if
+                p.promised_date else '' }}</div>
+              <a href="/customers/{{ p.customer_id }}" class="btn-text"
+                style="font-size: 11px; color: var(--primary); text-decoration: underline; margin-top: 5px; display: block;">Ver
+                Perfil</a>
+            </div>
           </div>
-          <div class="agenda-row-time" style="text-align: right; min-width: 80px;">
-            <div style="font-weight: 600; color: var(--primary);">{{ p.promised_date.strftime('%d/%m/%Y') if
-              p.promised_date else '' }}</div>
-            <a href="/customers/{{ p.customer_id }}" class="btn-text"
-              style="font-size: 11px; color: var(--primary); text-decoration: underline; margin-top: 5px; display: block;">Ver
-              Perfil</a>
-          </div>
+          {% endfor %}
+          {% endif %}
         </div>
-        {% endfor %}
-        {% endif %}
-      </div>
 
-      <div class="modal-actions" style="margin-top: 20px;">
-        <button onclick="closeAgendaModal()" class="btn block">Fechar</button>
+        <div class="modal-actions" style="margin-top: 20px;">
+          <button onclick="closeAgendaModal()" class="btn block">Fechar</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Modal de Registro de Contato -->
-  <div id="contactModal" class="modal">
-    <div class="modal-content">
-      <h3><i data-lucide="clipboard-check"></i> Registrar Contato</h3>
-      <form id="contactForm">
-        <input type="hidden" id="contact_customer_id">
-        <input type="hidden" id="contact_customer_name">
+    <!-- Modal de Registro de Contato -->
+    <div id="contactModal" class="modal">
+      <div class="modal-content">
+        <h3><i data-lucide="clipboard-check"></i> Registrar Contato</h3>
+        <form id="contactForm">
+          <input type="hidden" id="contact_customer_id">
+          <input type="hidden" id="contact_customer_name">
 
-        <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
-          <strong id="contact_display_name" style="color: var(--text);"></strong>
-        </div>
+          <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+            <strong id="contact_display_name" style="color: var(--text);"></strong>
+          </div>
 
-        <label>Tipo de Contato</label>
-        <select id="contact_type">
-          <option value="LIGACAO">📞 Ligação Telefônica</option>
-          <option value="WHATSAPP">💬 WhatsApp</option>
-          <option value="VISITA">🏠 Visita Presencial</option>
-          <option value="EMAIL">📧 Email</option>
-        </select>
+          <label>Tipo de Contato</label>
+          <select id="contact_type">
+            <option value="LIGACAO">📞 Ligação Telefônica</option>
+            <option value="WHATSAPP">💬 WhatsApp</option>
+            <option value="VISITA">🏠 Visita Presencial</option>
+            <option value="EMAIL">📧 Email</option>
+          </select>
 
-        <label>Resultado</label>
-        <select id="contact_outcome" onchange="togglePromessaFields()">
-          <option value="PROMESSA">✅ Promessa de Pagamento</option>
-          <option value="NAO_ATENDEU">📵 Não Atendeu</option>
-          <option value="NUMERO_ERRADO">❌ Número Errado</option>
-          <option value="NEGOCIACAO">🤝 Em Negociação</option>
-          <option value="RECUSA">⛔ Recusa de Pagamento</option>
-          <option value="PAGOU">💰 Confirmou Pagamento</option>
-        </select>
+          <label>Resultado</label>
+          <select id="contact_outcome" onchange="togglePromessaFields()">
+            <option value="PROMESSA">✅ Promessa de Pagamento</option>
+            <option value="NAO_ATENDEU">📵 Não Atendeu</option>
+            <option value="NUMERO_ERRADO">❌ Número Errado</option>
+            <option value="NEGOCIACAO">🤝 Em Negociação</option>
+            <option value="RECUSA">⛔ Recusa de Pagamento</option>
+            <option value="PAGOU">💰 Confirmou Pagamento</option>
+          </select>
 
-        <!-- Campos extras para Promessa de Pagamento -->
-        <div id="promessa-fields" style="">
-          <label>Valor Prometido (R$) <span style="color:var(--danger);">*</span></label>
-          <input type="number" id="contact_promised_amount" step="0.01" min="0" placeholder="0,00"
-            style="width:100%; padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-card); color:var(--text);">
+          <!-- Campos extras para Promessa de Pagamento -->
+          <div id="promessa-fields" style="">
+            <label>Valor Prometido (R$) <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="contact_promised_amount" step="0.01" min="0" placeholder="0,00"
+              style="width:100%; padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-card); color:var(--text);">
 
-          <label style="margin-top:12px;">Data da Promessa</label>
-          <input type="date" id="contact_next_date">
-        </div>
+            <label style="margin-top:12px;">Data da Promessa</label>
+            <input type="date" id="contact_next_date">
+          </div>
 
-        <!-- Data de próximo contato para outros resultados -->
-        <div id="next-contact-field" style="display:none;">
-          <label>Data do Próximo Contato</label>
-          <input type="date" id="contact_next_date_other">
-        </div>
+          <!-- Data de próximo contato para outros resultados -->
+          <div id="next-contact-field" style="display:none;">
+            <label>Data do Próximo Contato</label>
+            <input type="date" id="contact_next_date_other">
+          </div>
 
-        <label>Observações</label>
-        <textarea id="contact_notes" rows="3" placeholder="Detalhes da conversa, acordos feitos, etc..."></textarea>
+          <label>Observações</label>
+          <textarea id="contact_notes" rows="3" placeholder="Detalhes da conversa, acordos feitos, etc..."></textarea>
 
-        <div class="modal-actions">
-          <button type="button" onclick="closeContactModal()">Cancelar</button>
-          <button type="submit" class="btn primary">Salvar Registro</button>
-        </div>
-      </form>
+          <div class="modal-actions">
+            <button type="button" onclick="closeContactModal()">Cancelar</button>
+            <button type="submit" class="btn primary">Salvar Registro</button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
 
-  <script>
-    // Funções para Modal de Edição
-    function openEditModal(customerId, customerName) {
-      fetch(`/api/customers/${customerId}`, {
-        credentials: 'same-origin'
-      })
-        .then(r => r.json())
-        .then(data => {
-          document.getElementById('edit_customer_id').value = customerId;
-          document.getElementById('edit_customer_name').value = customerName;
-          document.getElementById('edit_phone').value = data.whatsapp || '';
-          document.getElementById('edit_address').value = data.address || '';
-          document.getElementById('edit_email').value = data.email || '';
-          document.getElementById('edit_email').value = data.email || '';
-          document.getElementById('edit_notes').value = data.notes || '';
-          document.getElementById('edit_profile').value = data.profile_cobranca || 'AUTOMATICO';
-          document.getElementById('editModal').classList.add('active');
-          if (window.lucide) lucide.createIcons();
-        })
-        .catch(err => {
-          console.error('Erro ao carregar dados:', err);
-          alert('Erro ao carregar dados do cliente.');
-        });
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').classList.remove('active');
-      document.getElementById('editForm').reset();
-    }
-
-    document.getElementById('editModal').addEventListener('click', (e) => {
-      if (e.target.id === 'editModal') closeEditModal();
-    });
-
-    document.getElementById('editForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const customerId = document.getElementById('edit_customer_id').value;
-      const data = {
-        whatsapp: document.getElementById('edit_phone').value,
-        address: document.getElementById('edit_address').value,
-        email: document.getElementById('edit_email').value,
-        email: document.getElementById('edit_email').value,
-        notes: document.getElementById('edit_notes').value,
-        profile_cobranca: document.getElementById('edit_profile').value
-      };
-
-      try {
-        const resp = await fetch(`/api/customers/${customerId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
+    <script>
+      // Funções para Modal de Edição
+      function openEditModal(customerId, customerName) {
+        fetch(`/api/customers/${customerId}`, {
           credentials: 'same-origin'
-        });
+        })
+          .then(r => r.json())
+          .then(data => {
+            document.getElementById('edit_customer_id').value = customerId;
+            document.getElementById('edit_customer_name').value = customerName;
+            document.getElementById('edit_phone').value = data.whatsapp || '';
+            document.getElementById('edit_address').value = data.address || '';
+            document.getElementById('edit_email').value = data.email || '';
+            document.getElementById('edit_email').value = data.email || '';
+            document.getElementById('edit_notes').value = data.notes || '';
+            document.getElementById('edit_profile').value = data.profile_cobranca || 'AUTOMATICO';
+            document.getElementById('editModal').classList.add('active');
+            if (window.lucide) lucide.createIcons();
+          })
+          .catch(err => {
+            console.error('Erro ao carregar dados:', err);
+            alert('Erro ao carregar dados do cliente.');
+          });
+      }
 
-        if (resp.ok) {
-          closeEditModal();
-          loadPriorityQueue(); // Recarrega a fila
-          alert('✅ Cadastro atualizado com sucesso!');
-        } else {
+      function closeEditModal() {
+        document.getElementById('editModal').classList.remove('active');
+        document.getElementById('editForm').reset();
+      }
+
+      document.getElementById('editModal').addEventListener('click', (e) => {
+        if (e.target.id === 'editModal') closeEditModal();
+      });
+
+      document.getElementById('editForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const customerId = document.getElementById('edit_customer_id').value;
+        const data = {
+          whatsapp: document.getElementById('edit_phone').value,
+          address: document.getElementById('edit_address').value,
+          email: document.getElementById('edit_email').value,
+          email: document.getElementById('edit_email').value,
+          notes: document.getElementById('edit_notes').value,
+          profile_cobranca: document.getElementById('edit_profile').value
+        };
+
+        try {
+          const resp = await fetch(`/api/customers/${customerId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            credentials: 'same-origin'
+          });
+
+          if (resp.ok) {
+            closeEditModal();
+            loadPriorityQueue(); // Recarrega a fila
+            alert('✅ Cadastro atualizado com sucesso!');
+          } else {
+            alert('❌ Erro ao atualizar cadastro.');
+          }
+        } catch (err) {
+          console.error('Erro:', err);
           alert('❌ Erro ao atualizar cadastro.');
         }
-      } catch (err) {
-        console.error('Erro:', err);
-        alert('❌ Erro ao atualizar cadastro.');
-      }
-    });
+      });
 
-    // Funções para Modal de Registro de Contato
-    function togglePromessaFields() {
-      const outcome = document.getElementById('contact_outcome').value;
-      const isPromessa = outcome === 'PROMESSA';
-      document.getElementById('promessa-fields').style.display = isPromessa ? '' : 'none';
-      document.getElementById('next-contact-field').style.display = isPromessa ? 'none' : '';
-      // Tornar valor obrigatório apenas para promessa
-      document.getElementById('contact_promised_amount').required = isPromessa;
-    }
-
-    function openContactModal(customerId, customerName) {
-      document.getElementById('contact_customer_id').value = customerId;
-      document.getElementById('contact_customer_name').value = customerName;
-      document.getElementById('contact_display_name').textContent = customerName;
-      document.getElementById('contactModal').classList.add('active');
-      // Inicializa campos conforme seleção padrão
-      togglePromessaFields();
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function closeContactModal() {
-      document.getElementById('contactModal').classList.remove('active');
-      document.getElementById('contactForm').reset();
-      // Reseta visibilidade dos campos
-      togglePromessaFields();
-    }
-
-    document.getElementById('contactModal').addEventListener('click', (e) => {
-      if (e.target.id === 'contactModal') closeContactModal();
-    });
-
-    document.getElementById('contactForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const outcome = document.getElementById('contact_outcome').value;
-      const isPromessa = outcome === 'PROMESSA';
-
-      // Pega a data correta conforme o tipo de resultado
-      const dateValue = isPromessa
-        ? document.getElementById('contact_next_date').value
-        : document.getElementById('contact_next_date_other').value;
-
-      // Monta o payload
-      const payload = {
-        customer_id: parseInt(document.getElementById('contact_customer_id').value),
-        user_id: 0, // Preenchido pelo backend via sessão
-        action_type: document.getElementById('contact_type').value,
-        outcome: outcome,
-        promised_date: dateValue || null,
-        notes: document.getElementById('contact_notes').value || null
-      };
-
-      // Adiciona valor prometido apenas para PROMESSA
-      if (isPromessa) {
-        const amtRaw = document.getElementById('contact_promised_amount').value;
-        if (!amtRaw || parseFloat(amtRaw) <= 0) {
-          alert('⚠️ Informe o valor prometido para registrar uma Promessa de Pagamento.');
-          return;
-        }
-        payload.promised_amount = parseFloat(amtRaw);
+      // Funções para Modal de Registro de Contato
+      function togglePromessaFields() {
+        const outcome = document.getElementById('contact_outcome').value;
+        const isPromessa = outcome === 'PROMESSA';
+        document.getElementById('promessa-fields').style.display = isPromessa ? '' : 'none';
+        document.getElementById('next-contact-field').style.display = isPromessa ? 'none' : '';
+        // Tornar valor obrigatório apenas para promessa
+        document.getElementById('contact_promised_amount').required = isPromessa;
       }
 
-      try {
-        const resp = await fetch('/api/collection-actions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          credentials: 'same-origin'
-        });
-
-        if (resp.ok) {
-          closeContactModal();
-          loadPriorityQueue();
-          alert('✅ Contato registrado com sucesso!');
-        } else {
-          // Exibe a mensagem real do servidor
-          let errMsg = 'Erro desconhecido';
-          try {
-            const errData = await resp.json();
-            errMsg = errData.detail || JSON.stringify(errData);
-          } catch (_) { }
-          alert('❌ Erro ao registrar contato:\n' + errMsg);
-        }
-      } catch (err) {
-        console.error('Erro:', err);
-        alert('❌ Erro de conexão ao registrar contato.');
-      }
-    });
-
-    // Função para Sincronizar Clientes ERP
-    async function syncCustomers() {
-      const btn = document.getElementById('sync-btn');
-      const originalText = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="spin" data-lucide="loader-2"></i> Sincronizando...';
-      if (window.lucide) lucide.createIcons();
-
-      try {
-        const resp = await fetch('/api/sync/customers', {
-          method: 'POST',
-          credentials: 'same-origin'
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-          alert(`✅ Sincronização concluída!\n\nTotal processado: ${data.total}\nClientes novos: ${data.created}\nDados atualizados: ${data.updated}`);
-          loadPriorityQueue();
-        } else {
-          alert('❌ Erro na sincronização: ' + (data.detail || 'Erro desconhecido'));
-        }
-      } catch (err) {
-        console.error('Erro:', err);
-        alert('❌ Erro de conexão ao sincronizar.');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+      function openContactModal(customerId, customerName) {
+        document.getElementById('contact_customer_id').value = customerId;
+        document.getElementById('contact_customer_name').value = customerName;
+        document.getElementById('contact_display_name').textContent = customerName;
+        document.getElementById('contactModal').classList.add('active');
+        // Inicializa campos conforme seleção padrão
+        togglePromessaFields();
         if (window.lucide) lucide.createIcons();
       }
-    }
 
-    // Funções para Modal da Agenda
-    function openAgendaModal() {
-      document.getElementById('agendaModal').classList.add('active');
-      if (window.lucide) lucide.createIcons();
-    }
-    function closeAgendaModal() {
-      document.getElementById('agendaModal').classList.remove('active');
-    }
-    document.getElementById('agendaModal').addEventListener('click', (e) => {
-      if (e.target.id === 'agendaModal') closeAgendaModal();
-    });
-  </script>
+      function closeContactModal() {
+        document.getElementById('contactModal').classList.remove('active');
+        document.getElementById('contactForm').reset();
+        // Reseta visibilidade dos campos
+        togglePromessaFields();
+      }
 
-  {% endblock %}
+      document.getElementById('contactModal').addEventListener('click', (e) => {
+        if (e.target.id === 'contactModal') closeContactModal();
+      });
+
+      document.getElementById('contactForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const outcome = document.getElementById('contact_outcome').value;
+        const isPromessa = outcome === 'PROMESSA';
+
+        // Pega a data correta conforme o tipo de resultado
+        const dateValue = isPromessa
+          ? document.getElementById('contact_next_date').value
+          : document.getElementById('contact_next_date_other').value;
+
+        // Monta o payload
+        const payload = {
+          customer_id: parseInt(document.getElementById('contact_customer_id').value),
+          user_id: 0, // Preenchido pelo backend via sessão
+          action_type: document.getElementById('contact_type').value,
+          outcome: outcome,
+          promised_date: dateValue || null,
+          notes: document.getElementById('contact_notes').value || null
+        };
+
+        // Adiciona valor prometido apenas para PROMESSA
+        if (isPromessa) {
+          const amtRaw = document.getElementById('contact_promised_amount').value;
+          if (!amtRaw || parseFloat(amtRaw) <= 0) {
+            alert('⚠️ Informe o valor prometido para registrar uma Promessa de Pagamento.');
+            return;
+          }
+          payload.promised_amount = parseFloat(amtRaw);
+        }
+
+        try {
+          const resp = await fetch('/api/collection-actions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            credentials: 'same-origin'
+          });
+
+          if (resp.ok) {
+            closeContactModal();
+            loadPriorityQueue();
+            alert('✅ Contato registrado com sucesso!');
+          } else {
+            // Exibe a mensagem real do servidor
+            let errMsg = 'Erro desconhecido';
+            try {
+              const errData = await resp.json();
+              errMsg = errData.detail || JSON.stringify(errData);
+            } catch (_) { }
+            alert('❌ Erro ao registrar contato:\n' + errMsg);
+          }
+        } catch (err) {
+          console.error('Erro:', err);
+          alert('❌ Erro de conexão ao registrar contato.');
+        }
+      });
+
+      // Função para Sincronizar Clientes ERP
+      async function syncCustomers() {
+        const btn = document.getElementById('sync-btn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="spin" data-lucide="loader-2"></i> Sincronizando...';
+        if (window.lucide) lucide.createIcons();
+
+        try {
+          const resp = await fetch('/api/sync/customers', {
+            method: 'POST',
+            credentials: 'same-origin'
+          });
+          const data = await resp.json();
+          if (resp.ok) {
+            alert(`✅ Sincronização concluída!\n\nTotal processado: ${data.total}\nClientes novos: ${data.created}\nDados atualizados: ${data.updated}`);
+            loadPriorityQueue();
+          } else {
+            alert('❌ Erro na sincronização: ' + (data.detail || 'Erro desconhecido'));
+          }
+        } catch (err) {
+          console.error('Erro:', err);
+          alert('❌ Erro de conexão ao sincronizar.');
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          if (window.lucide) lucide.createIcons();
+        }
+      }
+
+      // Funções para Modal da Agenda
+      function openAgendaModal() {
+        document.getElementById('agendaModal').classList.add('active');
+        if (window.lucide) lucide.createIcons();
+      }
+      function closeAgendaModal() {
+        document.getElementById('agendaModal').classList.remove('active');
+      }
+      document.getElementById('agendaModal').addEventListener('click', (e) => {
+        if (e.target.id === 'agendaModal') closeAgendaModal();
+      });
+
+      // Funções para Modal de Reconcliação
+      function openReconModal() {
+        document.getElementById('reconModal').classList.add('active');
+        if (window.lucide) lucide.createIcons();
+      }
+      function closeReconModal() {
+        document.getElementById('reconModal').classList.remove('active');
+      }
+      document.getElementById('reconModal').addEventListener('click', (e) => {
+        if (e.target.id === 'reconModal') closeReconModal();
+      });
+    </script>
+
+    <!-- Modal de Detalhes da Reconcliação (Cancelados) -->
+    <div id="reconModal" class="modal">
+      <div class="modal-content" style="max-width: 600px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3><i data-lucide="alert-triangle"></i> Títulos Excluídos/Cancelados</h3>
+          <button onclick="closeReconModal()"
+            style="background:none; border:none; cursor:pointer; color:var(--text-3);">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div
+          style="font-size: 13px; color: var(--text-2); margin-bottom: 15px; border-left: 3px solid var(--danger); padding-left: 10px;">
+          Os títulos abaixo constam como QUITADOS no relatório do ERP, mas NÃO foram encontrados no banco do sistema.
+          Isso
+          indica que podem ter sido cancelados ou removidos do sistema.
+        </div>
+        <div class="table-responsive">
+          <table class="q-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>N.Doc</th>
+                <th>Vencimento</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if recon_data and recon_data.details %}
+              {% for d in recon_data.details %}
+              <tr>
+                <td>
+                  <div style="font-weight:600">{{ d.cliente }}</div>
+                </td>
+                <td><code style="background:var(--bg); padding:2px 4px; border-radius:4px">{{ d.doc }}</code></td>
+                <td>{{ d.venc }}</td>
+              </tr>
+              {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-actions" style="margin-top: 20px;">
+          <button onclick="closeReconModal()" class="btn block">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    {% endblock %}

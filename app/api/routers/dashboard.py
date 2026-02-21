@@ -1,15 +1,18 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func, case
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Dict
 
 from app.core.database import get_db
-from app.models import Installment, Customer, CollectionAction, User, today, days_overdue
+from app.models import Installment, Customer, CollectionAction, User, today, ConferenciaTitulos
 from app.core.web import render, require_login
 from app.core.helpers import format_money
+from app.core.config import RECOVERY_TARGET_PCT
 from app.api.routers.commissions import calculate_collector_commission
+import json
 
 router = APIRouter()
 
@@ -47,33 +50,31 @@ def calculate_recovery_goals(db: Session, user: User) -> List[Dict]:
         else:
             m_end = datetime(target_year, target_month + 1, 1).date() - timedelta(days=1)
             
-        # Total a receber (Aberto HOJE + Pago NESSE MÊS de parcelas que venceram naquele mês)
+        # Total a receber (Otimizado via SQL)
         # Filtro: due_date no mês alvo
-        q = db.query(Installment).filter(
+        q_base = db.query(Installment).filter(
             Installment.due_date >= m_start,
             Installment.due_date <= m_end
         )
         if user.role == "COBRANCA" and user.store:
-            q = q.join(Customer).filter(Customer.store == user.store)
+            q_base = q_base.join(Customer).filter(Customer.store == user.store)
         
-        all_month_insts = q.all()
+        # Total Aberto HOJE + Pago NESSE MÊS (de parcelas que venceram naquele mês)
+        total_a_receber = q_base.filter(
+            case(
+                (Installment.status == "ABERTA", True),
+                ((Installment.status == "PAGA") & (Installment.paid_at >= start_of_this_month), True),
+                else_=False
+            ) == True
+        ).with_entities(func.sum(Installment.amount)).scalar() or Decimal(0)
+
+        valor_atual = q_base.filter(
+            Installment.status == "PAGA",
+            Installment.paid_at >= start_of_this_month
+        ).with_entities(func.sum(Installment.amount)).scalar() or Decimal(0)
         
-        total_a_receber = Decimal(0)
-        valor_atual = Decimal(0)
-        
-        for i in all_month_insts:
-            # Se está aberta, conta no "A Receber"
-            if i.status == "ABERTA":
-                total_a_receber += i.open_amount
-            # Se foi paga, verificamos se foi paga NESSE MÊS
-            elif i.status == "PAGA" and i.paid_at:
-                if i.paid_at.date() >= start_of_this_month:
-                    total_a_receber += i.amount
-                    valor_atual += i.amount
-        
-        target_pct = Decimal("0.70")
-        meta_rec = total_a_receber * target_pct
-        max_no_rec = total_a_receber * (Decimal(1) - target_pct)
+        meta_rec = total_a_receber * RECOVERY_TARGET_PCT
+        max_no_rec = total_a_receber * (Decimal(1) - RECOVERY_TARGET_PCT)
         missing = meta_rec - valor_atual
         atingido_pct = (valor_atual / total_a_receber * 100) if total_a_receber > 0 else Decimal(0)
 
@@ -85,7 +86,7 @@ def calculate_recovery_goals(db: Session, user: User) -> List[Dict]:
             "meta_rec_fmt": format_money(meta_rec),
             "max_no_rec_fmt": format_money(max_no_rec),
             "valor_atual_fmt": format_money(valor_atual),
-            "pct_meta": "70%",
+            "pct_meta": f"{RECOVERY_TARGET_PCT * 100:.0f}%",
             "pct_atingido_fmt": f"{atingido_pct:,.2f}%",
             "missing_fmt": format_money(missing) if missing > 0 else "R$ 0,00",
             "is_reached": missing <= 0
@@ -98,29 +99,68 @@ def calculate_recovery_goals(db: Session, user: User) -> List[Dict]:
 def dashboard(request: Request, db: Session = Depends(get_db)):
     user = require_login(request, db)
 
-    q = db.query(Installment).join(Customer).filter(Installment.status == "ABERTA")
+    # --- Estatísticas Globais (Otimizadas via SQL) ---
+    total_open = db.query(func.sum(Installment.open_amount)).filter(Installment.status == "ABERTA")
     if user.role == "COBRANCA" and user.store:
-        q = q.filter(Customer.store == user.store)
-
-    insts = q.all()
-    total_open = sum([Decimal(i.open_amount) for i in insts], Decimal("0"))
+        total_open = total_open.join(Customer).filter(Customer.store == user.store)
+    total_open = total_open.scalar() or Decimal("0")
     
-    paid_last_30 = db.query(Installment).filter(Installment.status == "PAGA", Installment.paid_at >= datetime.utcnow() - timedelta(days=30)).all()
-    total_paid_30 = sum([Decimal(i.amount) for i in paid_last_30], Decimal("0"))
+    # Recebimentos últimos 30 dias
+    last_30 = datetime.utcnow() - timedelta(days=30)
+    total_paid_30 = db.query(func.sum(Installment.amount)).filter(
+        Installment.status == "PAGA", 
+        Installment.paid_at >= last_30
+    ).scalar() or Decimal("0")
     
     recovery_rate = (total_paid_30 / (total_paid_30 + total_open)) * 100 if (total_paid_30 + total_open) > 0 else Decimal(0)
 
-    overdue = [i for i in insts if days_overdue(i.due_date) > 0 and Decimal(i.open_amount) > 0]
-    total_overdue = sum([Decimal(i.open_amount) for i in overdue], Decimal("0"))
+    # Vencidos e Hoje
+    dt_today = today()
+    total_overdue = db.query(func.sum(Installment.open_amount)).filter(
+        Installment.status == "ABERTA",
+        Installment.due_date < dt_today
+    )
+    if user.role == "COBRANCA" and user.store:
+        total_overdue = total_overdue.join(Customer).filter(Customer.store == user.store)
+    total_overdue = total_overdue.scalar() or Decimal("0")
 
     fiado_percentage = (total_overdue / total_open) * 100 if total_open > 0 else Decimal(0)
     
-    due_today_insts = [i for i in insts if days_overdue(i.due_date) == 0 and Decimal(i.open_amount) > 0]
-    due_today_total = sum([Decimal(i.open_amount) for i in due_today_insts], Decimal("0"))
+    due_today_total = db.query(func.sum(Installment.open_amount)).filter(
+        Installment.status == "ABERTA",
+        Installment.due_date == dt_today
+    )
+    if user.role == "COBRANCA" and user.store:
+        due_today_total = due_today_total.join(Customer).filter(Customer.store == user.store)
+    due_today_total = due_today_total.scalar() or Decimal("0")
     
-    upcoming = [i for i in insts if -7 <= days_overdue(i.due_date) < 0 and Decimal(i.open_amount) > 0]
-    total_upcoming = sum([Decimal(i.open_amount) for i in upcoming], Decimal("0"))
+    next_7 = dt_today + timedelta(days=7)
+    total_upcoming = db.query(func.sum(Installment.open_amount)).filter(
+        Installment.status == "ABERTA",
+        Installment.due_date > dt_today,
+        Installment.due_date <= next_7
+    )
+    if user.role == "COBRANCA" and user.store:
+        total_upcoming = total_upcoming.join(Customer).filter(Customer.store == user.store)
+    total_upcoming = total_upcoming.scalar() or Decimal("0")
 
+    # Aging (Otimizado com Case/When)
+    aging_query = db.query(
+        func.count(Installment.id).label("count"),
+        func.sum(Installment.open_amount).label("value"),
+        case(
+            (Installment.due_date >= dt_today - timedelta(days=30), "1_30"),
+            (Installment.due_date >= dt_today - timedelta(days=60), "31_60"),
+            (Installment.due_date >= dt_today - timedelta(days=90), "61_90"),
+            else_="90_plus"
+        ).label("range")
+    ).filter(Installment.status == "ABERTA", Installment.due_date < dt_today)
+    
+    if user.role == "COBRANCA" and user.store:
+        aging_query = aging_query.join(Customer).filter(Customer.store == user.store)
+        
+    aging_results = aging_query.group_by("range").all()
+    
     aging = {
         "1_30":  {"count": 0, "value": Decimal("0")},
         "31_60": {"count": 0, "value": Decimal("0")},
@@ -128,19 +168,11 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         "90_plus": {"count": 0, "value": Decimal("0")},
     }
     urgent_count = 0
-    for i in overdue:
-        d = days_overdue(i.due_date)
-        amt = Decimal(str(i.open_amount))
-        if 1 <= d <= 30:
-            aging["1_30"]["count"] += 1; aging["1_30"]["value"] += amt
-        elif 31 <= d <= 60:
-            aging["31_60"]["count"] += 1; aging["31_60"]["value"] += amt
-        elif 61 <= d <= 90:
-            aging["61_90"]["count"] += 1; aging["61_90"]["value"] += amt
-        else:
-            aging["90_plus"]["count"] += 1; aging["90_plus"]["value"] += amt
-        if d > 60:
-            urgent_count += 1
+    for r in aging_results:
+        aging[r.range]["count"] = r.count
+        aging[r.range]["value"] = r.value or Decimal("0")
+        if r.range in ["61_90", "90_plus"]:
+            urgent_count += r.count
 
     for k in aging:
         aging[k]["value_fmt"] = format_money(aging[k]["value"])
@@ -158,8 +190,16 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             "customers": db.query(Customer).count(),
             "total_installments": db.query(Installment).count(),
             "open_installments": db.query(Installment).filter(Installment.status == "ABERTA").count(),
-            "overdue_installments": len(overdue)
+            "overdue_installments": db.query(Installment).filter(Installment.status == "ABERTA", Installment.due_date < dt_today).count()
         }
+
+
+    # Smart Reconciliation Data
+    smart_recon = db.query(ConferenciaTitulos).order_by(ConferenciaTitulos.data_processamento.desc()).first()
+    smart_data = None
+    if smart_recon:
+        smart_data = json.loads(smart_recon.resumo_json)
+        smart_data["data"] = smart_recon.data_processamento.strftime("%d/%m/%Y %H:%M")
 
     return render("dashboard.html", request=request, user=user, title="Dashboard",
                   total_open=format_money(total_open),
@@ -172,4 +212,5 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                   fiado_percentage=fiado_percentage,
                   recovery_goals=calculate_recovery_goals(db, user),
                   current_commission=current_commission,
-                  admin_stats=admin_stats)
+                  admin_stats=admin_stats,
+                  smart_data=smart_data)

@@ -10,13 +10,12 @@ def parse_date_str(s):
     except:
         return None
 
-def parse_money_str(s):
+def parse_valor_br(texto):
     try:
-        # Formato 319,80 ou 1.234,56
-        clean = s.replace(".", "").replace(",", ".").strip()
-        return float(clean)
+        v = texto.strip().replace('.', '').replace(',', '.')
+        return float(v)
     except:
-        return None
+        return 0.0
 
 def parse_rdprint_50(content: bytes):
     """
@@ -94,7 +93,7 @@ def parse_rdprint_50(content: bytes):
             elif l == 588: item["vencimento"] = txt
             elif l == 648: 
                 item["valor_str"] = txt
-                item["valor"] = parse_money_str(txt)
+                item["valor"] = parse_valor_br(txt)
             elif l == 762: item["status"] = txt
 
         # Chave de identificação: N.Doc + Vencimento

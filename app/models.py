@@ -36,6 +36,7 @@ class Customer(Base):
     email = Column(String(120), nullable=True)
     notes = Column(Text, nullable=True)
     profile_cobranca = Column(String(20), nullable=False, default="AUTOMATICO")
+    msgs_ativo = Column(Boolean, default=True, server_default="1")
     assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
@@ -138,6 +139,8 @@ class Configuracoes(Base):
     whatsapp_instancia = Column(String(100), nullable=True)
     whatsapp_token = Column(String(100), nullable=True)
     whatsapp_client_token = Column(String(100), nullable=True)
+    scheduler_hora_disparo = Column(Integer, default=9, server_default="9")
+    director_alert_min_installments = Column(Integer, default=3, server_default="3")
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 class WhatsappHistorico(Base):
@@ -225,3 +228,22 @@ class FinancialAlertLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     financial_user = relationship("FinancialUser")
+
+class ReconciliationStats(Base):
+    __tablename__ = "reconciliation_stats"
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, default=today, unique=True)
+    total_paid_erp = Column(Integer, default=0)
+    normally_paid = Column(Integer, default=0)
+    cancelled_or_deleted = Column(Integer, default=0)
+    details_json = Column(Text, nullable=True)  # Lista de Docs cancelados/divergentes
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class ConferenciaTitulos(Base):
+    __tablename__ = "conferencia_titulos"
+    id = Column(Integer, primary_key=True)
+    data_processamento = Column(DateTime, default=datetime.utcnow)
+    resumo_json = Column(Text, nullable=False) # Totais de cada tipo
+    detalhes_json = Column(Text, nullable=False) # Lista completa de títulos e situações
+    created_at = Column(DateTime, default=datetime.utcnow)

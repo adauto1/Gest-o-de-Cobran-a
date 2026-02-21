@@ -1,129 +1,269 @@
 {% extends "layout.html" %}
-<!-- v1.0.1 - fix accept extensions -->
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Conferência de Títulos</h1>
-        <p class="page-subtitle">Compare o banco do app com relatórios do ERP (RDPrint 5.0)</p>
+        <h1 class="page-title">Conferência Inteligente ERP</h1>
+        <p class="page-subtitle">Sincronização completa entre RDPrint 5.0 e banco de dados</p>
     </div>
 </div>
 
+<style>
+    .smart-recon-card {
+        background: var(--surface);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border);
+        margin-bottom: 30px;
+    }
+
+    .recon-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .recon-item {
+        padding: 15px;
+        border-radius: 12px;
+        background: var(--bg);
+        text-align: center;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .recon-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .recon-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-top: 8px;
+    }
+
+    .recon-value {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text);
+    }
+
+    .recon-money {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-2);
+        margin-top: 4px;
+    }
+
+    .recon-success {
+        border-color: #dcfce7;
+        background: #f0fdf4;
+    }
+
+    .recon-success .recon-value {
+        color: #16a34a;
+    }
+
+    .recon-danger {
+        border-color: #fee2e2;
+        background: #fef2f2;
+    }
+
+    .recon-danger .recon-value {
+        color: #dc2626;
+    }
+
+    .recon-warning {
+        border-color: #fef3c7;
+        background: #fffbeb;
+    }
+
+    .recon-warning .recon-value {
+        color: #d97706;
+    }
+
+    .recon-muted {
+        border-color: var(--border);
+        background: var(--surface);
+    }
+
+    /* Ajuste solicitado:
+       1. Alinhar títulos e conteúdos à esquerda por padrão.
+       2. Alinhar a coluna Situação (última) totalmente ao extremo direito da página.
+    */
+    #tableConferencia {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    #tableConferencia th,
+    #tableConferencia td {
+        text-align: left;
+        padding: 12px 15px;
+    }
+
+    #tableConferencia th:last-child,
+    #tableConferencia td:last-child {
+        text-align: right !important;
+        /* Alinha o texto à direita */
+        padding-right: 0px !important;
+        /* Remove o recuo para encostar na borda lateral */
+        white-space: nowrap;
+        /* Evita quebra de linha na situação */
+    }
+</style>
+
+<div class="smart-recon-card">
+    <div class="section-hdr"
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <div class="section-ttl"
+            style="font-size: 15px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 10px;">
+            <div class="section-ttl-icon"
+                style="width: 32px; height: 32px; background: var(--primary); color: white; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 15px;">
+                🔄</div>
+            <span>Última Sincronização Realizada</span>
+        </div>
+        {% if resumo %}
+        <div style="font-size: 11px; color: var(--text-3); font-weight: 600;">Processado em: {{ resumo.data }}</div>
+        {% else %}
+        <div style="font-size: 11px; color: var(--text-3); font-weight: 600;">Nenhum processamento recente</div>
+        {% endif %}
+    </div>
+
+    <div class="recon-grid">
+        <div class="recon-item recon-success">
+            <div class="recon-value">{{ resumo.confirmados_qtd | default(0) if resumo else 0 }}</div>
+            <div class="recon-label">✅ Confirmados</div>
+            <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.confirmados_valor | default(0) if resumo else
+                0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+        </div>
+
+        <div class="recon-item recon-danger">
+            <div class="recon-value">{{ resumo.suspeitos_qtd | default(0) if resumo else 0 }}</div>
+            <div class="recon-label">⚠️ Suspeitos</div>
+            <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.suspeitos_valor | default(0) if resumo else
+                0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+        </div>
+
+        <div class="recon-item recon-info">
+            <div class="recon-value">{{ resumo.extras_qtd | default(0) if resumo else 0 }}</div>
+            <div class="recon-label">ℹ️ Extras</div>
+            <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.extras_valor | default(0) if resumo else
+                0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+        </div>
+
+        <div class="recon-item recon-muted">
+            <div class="recon-value">{{ ((resumo.confirmados_qtd | default(0)) + (resumo.suspeitos_qtd | default(0)) +
+                (resumo.extras_qtd | default(0))) if resumo else 0 }}</div>
+            <div class="recon-label">📊 Itens Processados</div>
+            <div class="recon-money">Total do Relatório</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .recon-info {
+        border-color: #dbeafe;
+        background: #eff6ff;
+    }
+
+    .recon-info .recon-value {
+        color: #2563eb;
+    }
+</style>
+
 <div class="card" style="margin-bottom: 2rem;">
     <div class="card-header">
-        <h2 class="card-title">Upload de Relatórios ERP</h2>
+        <h2 class="card-title">Upload de Relatório ERP (LIQUIDADOS)</h2>
     </div>
     <div class="card-body">
         <form id="formConferencia" style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    <label class="form-label">Títulos a Receber (Abertos/Vencidos)</label>
-                    <input type="file" id="file_receber" class="form-control" accept=".html,.htm,.HTML,.HTM">
-                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Relatório de parcelas em
-                        aberto no ERP.</p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Títulos Recebidos (Liquidados)</label>
-                    <input type="file" id="file_recebidos" class="form-control" accept=".html,.htm,.HTML,.HTM">
-                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Relatório de parcelas
-                        quitadas no ERP.</p>
-                </div>
+            <div class="form-group">
+                <label class="form-label">Relatório de Títulos Liquidados (HTML do RDPrint 5.0)</label>
+                <input type="file" id="file_recebido" class="form-control" accept=".html,.htm">
             </div>
 
             <div style="display: flex; justify-content: flex-end;">
                 <button type="button" class="btn btn-primary" onclick="processarConferencia()">
                     <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 8px;"></i>
-                    Processar Conferência
+                    Iniciar Conferência Inteligente
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="resultsArea" style="display: none;">
+
+<div id="resultsArea" {% if not detalhes %}style="display: none;" {% endif %}>
     <div class="card">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 class="card-title">Resultado da Comparação</h2>
-            <div class="tabs" id="filterTabs">
-                <button class="tab-btn active" onclick="filterResults('TODOS')">Todos <span class="badge"
-                        id="count-TODOS">0</span></button>
-                <button class="tab-btn" onclick="filterResults('QUITADA_NO_ERP')">Para Quitar <span class="badge"
-                        id="count-QUITADA">0</span></button>
-                <button class="tab-btn" onclick="filterResults('CANCELADA_OU_EXCLUIDA')">Cancelados <span class="badge"
-                        id="count-CANCELADA">0</span></button>
-                <button class="tab-btn" onclick="filterResults('DIVERGENCIA_VALOR')">Divergências <span class="badge"
-                        id="count-DIVERGENCIA">0</span></button>
+        <div class="card-header"
+            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <h2 class="card-title">Listagem de Conferência</h2>
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div class="tabs" id="filterTabs">
+                    <button class="tab-btn active" onclick="filterResults('TODOS')">Todos</button>
+                    <button class="tab-btn" onclick="filterResults('CONFIRMADOS')">Confirmados</button>
+                    <button class="tab-btn" onclick="filterResults('SUSPEITOS')">Suspeitos</button>
+                    <button class="tab-btn" onclick="filterResults('EXTRAS')">Extras</button>
+                </div>
+                <button class="btn" onclick="zerarRelatorio()"
+                    style="background: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid #dc2626; padding: 6px 12px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; border-radius: var(--radius-sm); cursor: pointer;">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                    Zerar Relatório
+                </button>
             </div>
         </div>
         <div class="table-responsive">
             <table class="table" id="tableConferencia">
                 <thead>
                     <tr>
-                        <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
                         <th>Cliente</th>
-                        <th>N.Doc</th>
+                        <th>N. Pedido</th>
                         <th>Vencimento</th>
-                        <th>Valor App</th>
                         <th>Valor ERP</th>
-                        <th>Situação</th>
+                        <th>Status ERP</th>
+                        <th style="text-align: right !important;">Situação</th>
                     </tr>
                 </thead>
                 <tbody id="resultsBody">
-                    <!-- Gerado via JS -->
+                    {% if detalhes %}
+                    {% for item in detalhes %}
+                    <tr class="recon-row" data-grupo="{{ item.grupo | default('EXTRAS') }}">
+                        <td>
+                            <div style="font-weight:600">{{ item.cliente | default('N/A') }}</div>
+                        </td>
+                        <td><code>{{ item.doc | default('N/A') }}</code></td>
+                        <td>{{ item.venc | default('N/A') }}</td>
+                        <td>R$ {{ "{:,.2f}".format(item.valor | default(0)).replace(',', 'X').replace('.',
+                            ',').replace('X', '.') }}
+                        </td>
+                        <td>
+                            <span class="badge"
+                                style="font-size: 10px; background: var(--bg); color: var(--text-2); border: 1px solid var(--border);">
+                                {{ item.status_erp | default('N/A') }}
+                            </span>
+                        </td>
+                        <td class="{{ item.classe | default('') }}" style="text-align: right !important;">
+                            {% if item.grupo == 'CONFIRMADOS' %}✅ CONFIRMADO
+                            {% elif item.grupo == 'SUSPEITOS' %}⚠️ SUSPEITO
+                            {% elif item.grupo == 'EXTRAS' %}ℹ️ EXTRA
+                            {% else %}{{ item.situacao | default('PROCESSADO') }}{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
                 </tbody>
             </table>
-        </div>
-        <div class="card-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
-            <span id="selectedCount"
-                style="align-self: center; margin-right: 15px; font-weight: 600; font-size: 14px; color: var(--primary);">0
-                selecionados</span>
-            <button class="btn btn-success" id="btnAplicar" onclick="aplicarAtualizacoes()" disabled>
-                <i data-lucide="check-circle" style="width: 16px; height: 16px; margin-right: 8px;"></i>
-                Aplicar Atualizações (Quitar)
-            </button>
         </div>
     </div>
 </div>
 
 <style>
-    .badge {
-        background: var(--border);
-        color: var(--text);
-        padding: 2px 6px;
-        border-radius: 10px;
-        font-size: 11px;
-        margin-left: 5px;
-    }
-
-    .active .badge {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-    }
-
-    .situacao-quitada {
-        color: var(--success);
-        font-weight: 600;
-    }
-
-    .situacao-cancelada {
-        color: var(--danger);
-        font-weight: 600;
-    }
-
-    .situacao-divergente {
-        color: #f59e0b;
-        font-weight: 600;
-    }
-
-    .situacao-ok {
-        color: var(--text-muted);
-    }
-
-    .tabs {
-        display: flex;
-        gap: 10px;
-    }
-
     .tab-btn {
         padding: 8px 16px;
         border: 1px solid var(--border);
@@ -132,152 +272,80 @@
         cursor: pointer;
         font-size: 13px;
         font-weight: 500;
-        transition: all 0.2s;
     }
 
     .tab-btn.active {
         background: var(--primary);
         color: white;
-        border-color: var(--primary);
+    }
+
+    .situacao-success {
+        color: var(--success);
+        font-weight: 700;
+    }
+
+    .situacao-danger {
+        color: var(--danger);
+        font-weight: 700;
+    }
+
+    .situacao-warning {
+        color: #f59e0b;
+        font-weight: 700;
+    }
+
+    .situacao-info {
+        color: #3b82f6;
+        font-weight: 700;
+    }
+
+    .situacao-muted {
+        color: var(--text-3);
+        font-weight: 500;
+        font-style: italic;
     }
 </style>
 
 <script>
-    let rawResults = [];
-
     async function processarConferencia() {
-        const file1 = document.getElementById('file_receber').files[0];
-        const file2 = document.getElementById('file_recebidos').files[0];
+        const fr = document.getElementById('file_recebido').files[0];
+        if (!fr) return alert("Selecione o arquivo de Títulos Recebidos.");
 
-        if (!file1 && !file2) {
-            alert("Selecione pelo menos um dos arquivos HTML do ERP.");
-            return;
-        }
+        const fd = new FormData();
+        fd.append('file_recebido', fr);
 
-        const formData = new FormData();
-        if (file1) formData.append('file_receber', file1);
-        if (file2) formData.append('file_recebidos', file2);
-
-        // Loading state
         const btn = event.target.closest('button');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Processando...';
-        btn.disabled = true;
+        btn.disabled = true; btn.innerText = "Processando...";
 
         try {
-            const response = await fetch('/api/conferencia/processar', {
-                method: 'POST',
-                body: formData
-            });
-            rawResults = await response.json();
-
-            renderResults('TODOS');
-            updateBadges();
-            document.getElementById('resultsArea').style.display = 'block';
-            lucide.createIcons();
-        } catch (error) {
-            alert("Erro ao processar arquivos: " + error);
-        } finally {
+            const res = await fetch('/api/conferencia/processar', { method: 'POST', body: fd });
+            if (res.ok) window.location.reload();
+            else alert("Erro no processamento.");
+        } catch (e) { alert(e); }
+        finally {
+            btn.disabled = false;
             btn.innerHTML = originalText;
-            btn.disabled = false;
-            lucide.createIcons();
         }
     }
 
-    function updateBadges() {
-        document.getElementById('count-TODOS').innerText = rawResults.length;
-        document.getElementById('count-QUITADA').innerText = rawResults.filter(r => r.situacao === 'QUITADA_NO_ERP').length;
-        document.getElementById('count-CANCELADA').innerText = rawResults.filter(r => r.situacao === 'CANCELADA_OU_EXCLUIDA').length;
-        document.getElementById('count-DIVERGENCIA').innerText = rawResults.filter(r => r.situacao === 'DIVERGENCIA_VALOR').length;
-    }
-
-    function renderResults(filter) {
-        // Update active tab
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        const activeTab = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.innerText.includes(filter === 'TODOS' ? 'Todos' : filter === 'QUITADA_NO_ERP' ? 'Para Quitar' : filter === 'CANCELADA_OU_EXCLUIDA' ? 'Cancelados' : 'Divergências'));
-        if (activeTab) activeTab.classList.add('active');
-
-        const tbody = document.getElementById('resultsBody');
-        tbody.innerHTML = '';
-
-        const filtered = filter === 'TODOS' ? rawResults : rawResults.filter(r => r.situacao === filter);
-
-        filtered.forEach(item => {
-            const tr = document.createElement('tr');
-
-            const situacaoLabels = {
-                'QUITADA_NO_ERP': 'Quitada no ERP',
-                'CANCELADA_OU_EXCLUIDA': 'Sumiu do ERP',
-                'DIVERGENCIA_VALOR': 'Divergência de Valor',
-                'SOLIDO': 'OK (Em Aberto)',
-                'SEM_ALTERACAO': 'Sem Alteração'
-            };
-
-            const canSelect = item.situacao === 'QUITADA_NO_ERP';
-
-            tr.innerHTML = `
-                <td><input type="checkbox" class="row-check" value="${item.id}" ${canSelect ? '' : 'disabled'} onclick="updateSelection()"></td>
-                <td><div style="font-weight:600">${item.cliente}</div></td>
-                <td><code style="background:var(--border); padding:2px 4px; border-radius:4px">${item.doc}</code></td>
-                <td>${item.vencimento}</td>
-                <td style="font-weight:500">R$ ${item.valor_app.toFixed(2).replace('.', ',')}</td>
-                <td style="font-weight:500">${item.valor_erp ? 'R$ ' + item.valor_erp.toFixed(2).replace('.', ',') : '-'}</td>
-                <td class="${item.classe}">${situacaoLabels[item.situacao] || item.situacao}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-        updateSelection();
-    }
-
-    function filterResults(filter) {
-        renderResults(filter);
-    }
-
-    function toggleSelectAll() {
-        const checked = document.getElementById('selectAll').checked;
-        document.querySelectorAll('.row-check:not(:disabled)').forEach(cb => {
-            cb.checked = checked;
-        });
-        updateSelection();
-    }
-
-    function updateSelection() {
-        const selected = document.querySelectorAll('.row-check:checked').length;
-        document.getElementById('selectedCount').innerText = selected + ' selecionados';
-        document.getElementById('btnAplicar').disabled = selected === 0;
-    }
-
-    async function aplicarAtualizacoes() {
-        const ids = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => parseInt(cb.value));
-
-        if (!confirm(`Deseja marcar ${ids.length} parcelas como QUITADAS no banco do app?`)) {
-            return;
-        }
-
-        const btn = document.getElementById('btnAplicar');
-        btn.disabled = true;
-        btn.innerText = 'Aplicando...';
+    async function zerarRelatorio() {
+        if (!confirm("Isso apagará todo o histórico de conferência atual. Tem certeza?")) return;
 
         try {
-            const response = await fetch('/api/conferencia/aplicar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(ids)
-            });
-            const data = await response.json();
+            const res = await fetch('/api/conferencia/zerar', { method: 'POST' });
+            if (res.ok) window.location.reload();
+            else alert("Erro ao zerar relatório.");
+        } catch (e) { alert(e); }
+    }
 
-            if (data.success) {
-                alert(`${data.updated} parcelas foram atualizadas com sucesso!`);
-                // Limpar resultados e colapsar
-                document.getElementById('resultsArea').style.display = 'none';
-                document.getElementById('formConferencia').reset();
-                rawResults = [];
-            }
-        } catch (error) {
-            alert("Erro ao aplicar atualizações: " + error);
-            btn.disabled = false;
-            btn.innerHTML = 'Aplicar Atualizações (Quitar)';
-        }
+    function filterResults(grupo) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        document.querySelectorAll('.recon-row').forEach(row => {
+            row.style.display = (grupo === 'TODOS' || row.dataset.grupo === grupo) ? '' : 'none';
+        });
     }
 </script>
 {% endblock %}

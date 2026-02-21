@@ -112,6 +112,16 @@
       </div>
 
       <div class="info-row">
+        <span class="info-label">Mensagens:</span>
+        {% set msgs_on = customer.msgs_ativo | default(true) %}
+        <button id="btnToggleMsgs"
+          onclick="toggleMsgs({{ customer.id }}, {{ 'true' if msgs_on else 'false' }})"
+          style="padding: 3px 12px; font-size: 12px; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid {{ '#16a34a' if msgs_on else '#dc2626' }}; background: {{ '#dcfce7' if msgs_on else '#fee2e2' }}; color: {{ '#16a34a' if msgs_on else '#dc2626' }};">
+          {{ 'Ativo' if msgs_on else 'Bloqueado' }}
+        </button>
+      </div>
+
+      <div class="info-row">
         <span class="info-label">Loja:</span>
         <span class="info-val">{{ customer.store or "-" }}</span>
       </div>
@@ -275,6 +285,18 @@
 </div>
 
 <script>
+  async function toggleMsgs(customerId, atualAtivo) {
+    const btn = document.getElementById('btnToggleMsgs');
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/customers/${customerId}/toggle-msgs`, { method: 'POST' });
+      if (res.ok) window.location.reload();
+      else btn.disabled = false;
+    } catch (e) {
+      btn.disabled = false;
+    }
+  }
+
   async function startEdit(container) {
     const field = container.dataset.field;
     let currentVal = container.dataset.val;

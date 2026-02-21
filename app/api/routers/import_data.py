@@ -54,6 +54,13 @@ def read_csv_upload(file: UploadFile) -> List[Dict[str, str]]:
     f = io.StringIO(text)
     return [dict(r) for r in csv.DictReader(f)]
 
+def parse_valor_br(texto):
+    try:
+        v = texto.strip().replace('.', '').replace(',', '.')
+        return float(v)
+    except:
+        return 0.0
+
 def parse_infocommerce_html(content: bytes) -> List[Dict]:
     """Parse HTML do InfoCommerce extraindo títulos por posicionamento CSS."""
     try:
@@ -81,24 +88,21 @@ def parse_infocommerce_html(content: bytes) -> List[Dict]:
     parsed = []
     for top in sorted(rows_data.keys()):
         row = rows_data[top]
-        emissao = row.get(54)
-        cliente = row.get(264)
         vencimento = row.get(588)
+        pedido = row.get(132)
         valor_raw = row.get(648)
         
         if emissao and vencimento:
             if re.match(r'\d{2}/\d{2}/\d{4}', emissao) and re.match(r'\d{2}/\d{2}/\d{4}', vencimento):
                 if valor_raw:
-                    try:
-                        v_str = valor_raw.replace('.', '').replace(',', '.')
-                        valor = float(v_str)
+                    valor = parse_valor_br(valor_raw)
+                    if valor > 0:
                         parsed.append({
                             'vencimento': vencimento,
                             'cliente': (cliente or "DESCONHECIDO").strip().upper(),
-                            'valor': valor
+                            'valor': valor,
+                            'pedido': (pedido or "").strip()
                         })
-                    except:
-                        continue
     return parsed
 
 @router.get("/import", response_class=HTMLResponse)
@@ -234,9 +238,10 @@ def import_erp_upload(request: Request, file: UploadFile = File(...), db: Sessio
                 ).first()
                 
                 if not inst:
+                    pedido_id = item.get('pedido') or f"ERP-{cliente_name[:10]}-{due_date.strftime('%Y%m%d')}"
                     inst = Installment(
                         customer_id=customers_cache[cliente_name],
-                        contract_id=f"ERP-{cliente_name[:10]}-{due_date.strftime('%Y%m%d')}",
+                        contract_id=pedido_id,
                         installment_number=1,
                         due_date=due_date,
                         amount=valor,

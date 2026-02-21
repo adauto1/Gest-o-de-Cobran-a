@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -21,3 +21,19 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def run_migrations(engine):
+    """Adiciona colunas novas sem quebrar o banco existente (SQLite sem Alembic)."""
+    migrations = [
+        "ALTER TABLE customers ADD COLUMN msgs_ativo BOOLEAN DEFAULT 1",
+        "ALTER TABLE configuracoes ADD COLUMN scheduler_hora_disparo INTEGER DEFAULT 9",
+        "ALTER TABLE configuracoes ADD COLUMN director_alert_min_installments INTEGER DEFAULT 3",
+    ]
+    with engine.connect() as conn:
+        for sql in migrations:
+            try:
+                conn.execute(text(sql))
+                conn.commit()
+            except Exception:
+                pass  # Coluna já existe — ignorar

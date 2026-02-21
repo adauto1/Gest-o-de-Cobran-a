@@ -177,10 +177,6 @@
             </table>
         </div>
     </div>
-    <div id="pagination" style="padding:10px; display:flex; justify-content:center; gap:10px;">
-        <!-- Pagination Controls -->
-    </div>
-</div>
 </div>
 
 <!-- Modal Message Preview -->
@@ -233,12 +229,12 @@
             status: document.getElementById('filter-status').value,
             regua: document.getElementById('filter-regua').value,
             cliente: document.getElementById('filter-cliente').value,
-            only_test: document.getElementById('filter-only-test').checked,
-            only_rescheduled: false
+            only_test: document.getElementById('filter-only-test').checked
         });
 
         try {
             const res = await fetch(`/api/mensagens/outbox?${params}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
 
             // Store logs for modal access
@@ -268,13 +264,13 @@
                 if (item.status === 'RESCHEDULED') statusBadge = `<span class="badge" style="background:#E0E7FF; color:#4338CA;">Reagendado</span>`;
                 if (item.status === 'FAILED') statusBadge = `<span class="badge red">Falha</span>`;
 
-                // Info Column (Compliance reason or error)
+                // Info Column
                 let info = item.compliance_reason !== 'OK' ? `<span style="color:#C2410C; font-size:11px;">⚠️ ${item.compliance_reason}</span>` : '';
                 if (item.error) info += `<div style="color:var(--danger); font-size:10px;">${item.error}</div>`;
 
                 tr.innerHTML = `
                     <td style="font-size:12px;">${new Date(item.created_at).toLocaleString('pt-BR')}</td>
-                    <td style="font-size:12px;">${item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td style="font-size:12px;">${item.scheduled_for ? new Date(item.scheduled_for + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
                     <td>${statusBadge}</td>
                     <td style="font-size:12px;">${item.regua_display}</td>
                     <td><a href="/customers/${item.cliente_id}" style="font-weight:600;">${item.cliente_nome ? item.cliente_nome.substring(0, 30) : '-'}</a></td>
@@ -282,7 +278,7 @@
                     <td>${item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                     <td>${info}</td>
                     <td>
-                        <button class="btn secondary small" onclick="openModal(${item.id})"><i data-lucide="eye"></i></button>
+                        <button class="btn secondary small" onclick="openModal(${item.id})" title="Ver mensagem"><i data-lucide="eye"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -302,9 +298,26 @@
 
         } catch (e) {
             console.error(e);
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:red;">Erro ao carregar dados.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red; padding:20px;">Erro ao carregar dados: ${e.message}</td></tr>`;
         }
     }
+
+    function openModal(id) {
+        const log = window.lastLogs ? window.lastLogs.find(l => l.id === id) : null;
+        if (!log) return;
+        document.getElementById('modal-msg-content').textContent = log.message_rendered || '(sem conteúdo)';
+        document.getElementById('modal-msg-error').textContent = log.error || log.compliance_reason || '';
+        document.getElementById('modal-message').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('modal-message').style.display = 'none';
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('modal-message').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
 
     function switchOutboxView(view) {
         const viewGeneral = document.getElementById('view-general');
@@ -350,9 +363,9 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="font-size:12px;">${new Date(log.created_at).toLocaleString('pt-BR')}</td>
-                    <td style="font-size:12px;">${new Date(log.date).toLocaleDateString('pt-BR')}</td>
+                    <td style="font-size:12px;">${log.date ? new Date(log.date + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
                     <td style="font-weight:600;">${log.user_name}</td>
-                    <td>${log.item_count} promoções</td>
+                    <td>${log.item_count} agendamentos</td>
                     <td><span class="badge green">Enviado</span></td>
                 `;
                 tbody.appendChild(tr);
@@ -364,7 +377,7 @@
 
     async function runFinancialNow() {
         const btn = document.getElementById('btn-run-fin');
-        const originalText = btn.innerHTML;
+        const originalHTML = btn.innerHTML;
         btn.disabled = true;
         btn.innerText = 'Disparando...';
 
@@ -382,21 +395,9 @@
             alert('❌ Erro na requisição');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = originalText;
+            btn.innerHTML = originalHTML;
+            lucide.createIcons();
         }
     }
-
-    function closeModal() {
-        document.getElementById('modal-message').style.display = 'none';
-    }
 </script>
-function openModal(id) {
-const log = window.lastLogs.find(l => l.id === id);
-if(log) {
-document.getElementById('modal-msg-content').textContent = log.message_rendered;
-document.getElementById('modal-msg-error').textContent = log.error || log.compliance_reason;
-document.getElementById('modal-message').style.display = 'flex';
-}
-}
-<!-- Applying fix to the content above before writing -->
 {% endblock %}

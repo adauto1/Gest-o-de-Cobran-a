@@ -23,7 +23,6 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
         config = None
 
     if not config:
-        # Cria um objeto temporário padrão (ou mock) para o template
         class MockConfig:
             def __init__(self):
                 self.whatsapp_ativo = False
@@ -31,13 +30,20 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
                 self.whatsapp_instancia = ""
                 self.whatsapp_token = ""
                 self.whatsapp_client_token = ""
+                self.scheduler_hora_disparo = 9
+                self.director_alert_min_installments = 3
         config = MockConfig()
     else:
-        # Garante que atributos novos existam no objeto (mesmo que nulos) 
-        # para evitar AttributeError se a migração falhar
-        for attr in ['whatsapp_instancia', 'whatsapp_token', 'whatsapp_client_token', 'whatsapp_modo_teste']:
+        for attr, default in [
+            ('whatsapp_instancia', ""),
+            ('whatsapp_token', ""),
+            ('whatsapp_client_token', ""),
+            ('whatsapp_modo_teste', True),
+            ('scheduler_hora_disparo', 9),
+            ('director_alert_min_installments', 3),
+        ]:
             if not hasattr(config, attr):
-                setattr(config, attr, "")
+                setattr(config, attr, default)
     
     return render("settings.html", request=request, user=user, title="Configurações", config=config)
 
@@ -100,7 +106,27 @@ async def update_settings_api(request: Request, db: Session = Depends(get_db)):
     if "whatsapp_instancia" in dados: config.whatsapp_instancia = str(dados["whatsapp_instancia"]).strip()
     if "whatsapp_token" in dados: config.whatsapp_token = str(dados["whatsapp_token"]).strip()
     if "whatsapp_client_token" in dados: config.whatsapp_client_token = str(dados["whatsapp_client_token"]).strip()
-    
+
+    if "director_alert_min_installments" in dados:
+        config.director_alert_min_installments = int(dados["director_alert_min_installments"])
+
+    if "scheduler_hora_disparo" in dados:
+        nova_hora = int(dados["scheduler_hora_disparo"])
+        config.scheduler_hora_disparo = nova_hora
+        # Reagendar o job da regua com a nova hora
+        try:
+            from app.main import scheduler
+            from apscheduler.triggers.cron import CronTrigger
+            from app.scheduler import run_collection_check
+            from app.core.database import SessionLocal
+            scheduler.reschedule_job(
+                "collection_check",
+                trigger=CronTrigger(hour=nova_hora, minute=0)
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"[Settings] Reagendamento falhou: {e}")
+
     db.commit()
     return {"success": True}
 

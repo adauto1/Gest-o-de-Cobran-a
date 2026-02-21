@@ -54,13 +54,19 @@
                 </div>
                 <div>
                     <label class="small muted">Token da Instância</label>
-                    <input type="password" id="whatsapp_token" value="{{ config.whatsapp_token or '' }}" class="input"
-                        style="width: 100%;">
+                    <div style="display: flex; gap: 4px;">
+                        <input type="password" id="whatsapp_token" value="{{ config.whatsapp_token or '' }}" class="input"
+                            style="width: 100%;" autocomplete="off">
+                        <button type="button" onclick="toggleVis('whatsapp_token', this)" class="btn small secondary" title="Mostrar/ocultar" style="white-space:nowrap;">👁</button>
+                    </div>
                 </div>
                 <div>
                     <label class="small muted">Client Token</label>
-                    <input type="password" id="whatsapp_client_token" value="{{ config.whatsapp_client_token or '' }}"
-                        class="input" style="width: 100%;">
+                    <div style="display: flex; gap: 4px;">
+                        <input type="password" id="whatsapp_client_token" value="{{ config.whatsapp_client_token or '' }}"
+                            class="input" style="width: 100%;" autocomplete="off">
+                        <button type="button" onclick="toggleVis('whatsapp_client_token', this)" class="btn small secondary" title="Mostrar/ocultar" style="white-space:nowrap;">👁</button>
+                    </div>
                 </div>
             </div>
 
@@ -69,6 +75,30 @@
                 <strong>Status Z-API:</strong>
                 <span id="zapi-status" style="font-family: monospace;">Verificando...</span>
                 <button type="button" onclick="testarConexaoZAPI()" class="btn small secondary">Testar Conexão</button>
+            </div>
+
+            <!-- Agendamento Automatico -->
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <h4 style="font-size: 14px; margin-bottom: 12px;">Agendamento Automatico da Regua</h4>
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div>
+                        <label class="small muted">Horario de Disparo (todo dia util)</label>
+                        <select id="scheduler_hora_disparo" class="input" style="width: 130px; margin-top: 4px;">
+                            {% for h in range(7, 19) %}
+                            <option value="{{ h }}" {% if config.scheduler_hora_disparo == h %}selected{% endif %}>{{ '%02d:00'|format(h) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="small muted">Min. Parcelas Vencidas para Alertar Diretores</label>
+                        <input type="number" id="director_alert_min_installments" class="input"
+                            min="1" max="20" style="width: 90px; margin-top: 4px;"
+                            value="{{ config.director_alert_min_installments or 3 }}">
+                    </div>
+                </div>
+                <p class="muted small" style="margin-top: 8px;">
+                    A regua de cobranca roda automaticamente neste horario. Diretores recebem alerta 1x/semana por cliente.
+                </p>
             </div>
 
             <div id="save-msg" style="margin-bottom: 10px; display: none;" class="alert alert-success">Configurações
@@ -142,6 +172,17 @@
 </div>
 
 <script>
+    function toggleVis(fieldId, btn) {
+        const input = document.getElementById(fieldId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            btn.textContent = '👁';
+        }
+    }
+
     async function saveGeneralConfig(e) {
         e.preventDefault();
         const btn = document.getElementById('save-btn');
@@ -152,7 +193,9 @@
             whatsapp_modo_teste: document.getElementById('whatsapp_modo_teste').checked,
             whatsapp_instancia: document.getElementById('whatsapp_instancia').value,
             whatsapp_token: document.getElementById('whatsapp_token').value,
-            whatsapp_client_token: document.getElementById('whatsapp_client_token').value
+            whatsapp_client_token: document.getElementById('whatsapp_client_token').value,
+            scheduler_hora_disparo: parseInt(document.getElementById('scheduler_hora_disparo').value),
+            director_alert_min_installments: parseInt(document.getElementById('director_alert_min_installments').value)
         };
 
         btn.disabled = true;
