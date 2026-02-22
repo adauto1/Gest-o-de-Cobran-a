@@ -8,6 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.status import HTTP_302_FOUND
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -130,22 +131,24 @@ async def startup_event():
         replace_existing=True
     )
 
-    # Job 2: Alertas de diretores — a cada 1h
+    # Job 2: Alertas de diretores — a cada 1h (primeira execução em 1h, não no startup)
     scheduler.add_job(
         run_director_alerts,
         "interval",
         hours=1,
         id="director_alerts",
-        replace_existing=True
+        replace_existing=True,
+        next_run_time=datetime.now(scheduler.timezone) + timedelta(hours=1)
     )
 
-    # Job 3: Alertas financeiros — a cada 45min
+    # Job 3: Alertas financeiros — a cada 45min (primeira execução em 45min, não no startup)
     scheduler.add_job(
         run_financial_alerts,
         "interval",
         minutes=45,
         id="financial_alerts",
-        replace_existing=True
+        replace_existing=True,
+        next_run_time=datetime.now(scheduler.timezone) + timedelta(minutes=45)
     )
 
     scheduler.start()

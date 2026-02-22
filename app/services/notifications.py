@@ -49,17 +49,25 @@ def run_director_alerts():
 
         for row in critical_stmt:
             cid, qtd, total, old_date = row
+            try:
+                last_alert = db.query(DirectorAlertLog).filter(
+                    DirectorAlertLog.customer_id == cid,
+                    DirectorAlertLog.alert_date >= semana_atras
+                ).first()
 
-            last_alert = db.query(DirectorAlertLog).filter(
-                DirectorAlertLog.customer_id == cid,
-                DirectorAlertLog.alert_date >= semana_atras
-            ).first()
+                if last_alert:
+                    continue
 
-            if not last_alert:
                 cust = db.get(Customer, cid)
                 dias_atraso = (today() - old_date).days
                 valor_fmt = format_money(total)
 
+                # Gravar log ANTES de enviar — evita re-envio em caso de falha parcial
+                for direc in directors:
+                    db.add(DirectorAlertLog(director_id=direc.id, customer_id=cid, alert_date=today()))
+                db.commit()
+
+                # Enviar mensagens
                 for direc in directors:
                     msg = (
                         f"ALERTA DE INADIMPLENCIA\n\n"
@@ -70,11 +78,13 @@ def run_director_alerts():
                         f"Acesse o sistema para verificar."
                     )
                     enviar_whatsapp(direc.phone, msg, modo_teste=config.whatsapp_modo_teste)
-                    db.add(DirectorAlertLog(director_id=direc.id, customer_id=cid, alert_date=today()))
 
-        db.commit()
+            except Exception as e:
+                logger.error(f"[DirectorBot] Erro no cliente {cid}: {e}", exc_info=True)
+                db.rollback()
+
     except Exception as e:
-        logger.error(f"[DirectorBot] Erro: {e}", exc_info=True)
+        logger.error(f"[DirectorBot] Erro geral: {e}", exc_info=True)
         db.rollback()
     finally:
         db.close()
