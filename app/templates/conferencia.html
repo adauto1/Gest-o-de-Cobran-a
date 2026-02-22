@@ -3,221 +3,165 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Conferência Inteligente ERP</h1>
-        <p class="page-subtitle">Sincronização completa entre RDPrint 5.0 e banco de dados</p>
+        <h1 class="page-title">Conferência de Títulos</h1>
+        <p class="page-subtitle">Detecte pagamentos suspeitos comparando o ERP com o banco do app</p>
     </div>
 </div>
 
 <style>
-    .smart-recon-card {
-        background: var(--surface);
-        border-radius: var(--radius-md);
-        padding: 24px;
-        box-shadow: var(--shadow-card);
-        border: 1px solid var(--border);
-        margin-bottom: 30px;
-    }
-
     .recon-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 15px;
         margin-top: 20px;
     }
-
     .recon-item {
-        padding: 15px;
+        padding: 16px;
         border-radius: 12px;
-        background: var(--bg);
         text-align: center;
         border: 1px solid transparent;
-        transition: all 0.2s;
     }
+    .recon-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-3); margin-top: 8px; }
+    .recon-value { font-size: 24px; font-weight: 800; }
+    .recon-money { font-size: 11px; font-weight: 600; color: var(--text-2); margin-top: 4px; }
 
-    .recon-item:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
+    .recon-success { border-color: #bbf7d0; background: #f0fdf4; }
+    .recon-success .recon-value { color: #16a34a; }
 
-    .recon-label {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: var(--text-3);
-        margin-top: 8px;
-    }
+    .recon-warning { border-color: #fde68a; background: #fffbeb; }
+    .recon-warning .recon-value { color: #d97706; }
 
-    .recon-value {
-        font-size: 22px;
-        font-weight: 800;
-        color: var(--text);
-    }
+    .recon-danger  { border-color: #fecaca; background: #fef2f2; }
+    .recon-danger  .recon-value { color: #dc2626; }
 
-    .recon-money {
+    .recon-muted   { border-color: var(--border); background: var(--surface); }
+    .recon-muted   .recon-value { color: var(--text); }
+
+    /* Tabela */
+    #tableConferencia { width: 100%; border-collapse: collapse; }
+    #tableConferencia th, #tableConferencia td { text-align: left; padding: 11px 14px; }
+    #tableConferencia th { font-size: 11px; text-transform: uppercase; color: var(--text-3); font-weight: 700; }
+    #tableConferencia tr:hover td { background: var(--bg); }
+
+    .badge-situacao {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
         font-size: 11px;
-        font-weight: 600;
-        color: var(--text-2);
-        margin-top: 4px;
-    }
-
-    .recon-success {
-        border-color: #dcfce7;
-        background: #f0fdf4;
-    }
-
-    .recon-success .recon-value {
-        color: #16a34a;
-    }
-
-    .recon-danger {
-        border-color: #fee2e2;
-        background: #fef2f2;
-    }
-
-    .recon-danger .recon-value {
-        color: #dc2626;
-    }
-
-    .recon-warning {
-        border-color: #fef3c7;
-        background: #fffbeb;
-    }
-
-    .recon-warning .recon-value {
-        color: #d97706;
-    }
-
-    .recon-muted {
-        border-color: var(--border);
-        background: var(--surface);
-    }
-
-    /* Ajuste solicitado:
-       1. Alinhar títulos e conteúdos à esquerda por padrão.
-       2. Alinhar a coluna Situação (última) totalmente ao extremo direito da página.
-    */
-    #tableConferencia {
-        width: 100% !important;
-        border-collapse: collapse !important;
-    }
-
-    #tableConferencia th,
-    #tableConferencia td {
-        text-align: left;
-        padding: 12px 15px;
-    }
-
-    #tableConferencia th:last-child,
-    #tableConferencia td:last-child {
-        text-align: right !important;
-        /* Alinha o texto à direita */
-        padding-right: 0px !important;
-        /* Remove o recuo para encostar na borda lateral */
+        font-weight: 700;
         white-space: nowrap;
-        /* Evita quebra de linha na situação */
     }
+    .badge-normal    { background: #dcfce7; color: #15803d; }
+    .badge-diverge   { background: #fef3c7; color: #b45309; }
+    .badge-suspeita  { background: #fee2e2; color: #b91c1c; }
+
+    .tab-btn {
+        padding: 7px 16px;
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 </style>
 
-<div class="smart-recon-card">
-    <div class="section-hdr"
-        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
-        <div class="section-ttl"
-            style="font-size: 15px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 10px;">
-            <div class="section-ttl-icon"
-                style="width: 32px; height: 32px; background: var(--primary); color: white; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 15px;">
-                🔄</div>
-            <span>Última Sincronização Realizada</span>
-        </div>
+<!-- Cards de resumo -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 class="card-title">Resumo do Último Processamento</h2>
         {% if resumo %}
-        <div style="font-size: 11px; color: var(--text-3); font-weight: 600;">Processado em: {{ resumo.data }}</div>
+        <span style="font-size:11px; color:var(--text-3); font-weight:600;">Processado em: {{ resumo.data }}</span>
         {% else %}
-        <div style="font-size: 11px; color: var(--text-3); font-weight: 600;">Nenhum processamento recente</div>
+        <span style="font-size:11px; color:var(--text-3);">Nenhum processamento realizado ainda</span>
         {% endif %}
     </div>
-
-    <div class="recon-grid">
-        <div class="recon-item recon-success">
-            <div class="recon-value">{{ resumo.confirmados_qtd | default(0) if resumo else 0 }}</div>
-            <div class="recon-label">✅ Confirmados</div>
-            <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.confirmados_valor | default(0) if resumo else
-                0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
-        </div>
-
-        <div class="recon-item recon-danger">
-            <div class="recon-value">{{ resumo.suspeitos_qtd | default(0) if resumo else 0 }}</div>
-            <div class="recon-label">⚠️ Suspeitos</div>
-            <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.suspeitos_valor | default(0) if resumo else
-                0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
-        </div>
-
-        <div class="recon-item recon-info">
-            <div class="recon-value">{{ resumo.extras_qtd | default(0) if resumo else 0 }}</div>
-            <div class="recon-label">ℹ️ Extras</div>
-            <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.extras_valor | default(0) if resumo else
-                0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
-        </div>
-
-        <div class="recon-item recon-muted">
-            <div class="recon-value">{{ ((resumo.confirmados_qtd | default(0)) + (resumo.suspeitos_qtd | default(0)) +
-                (resumo.extras_qtd | default(0))) if resumo else 0 }}</div>
-            <div class="recon-label">📊 Itens Processados</div>
-            <div class="recon-money">Total do Relatório</div>
+    <div class="card-body">
+        <div class="recon-grid">
+            <div class="recon-item recon-success">
+                <div class="recon-value">{{ resumo.normal_qtd if resumo else 0 }}</div>
+                <div class="recon-label">✅ Quitadas Normalmente</div>
+                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.normal_valor if resumo else 0).replace(',','X').replace('.',',').replace('X','.') }}</div>
+            </div>
+            <div class="recon-item recon-warning">
+                <div class="recon-value">{{ resumo.divergencia_qtd if resumo else 0 }}</div>
+                <div class="recon-label">⚠️ Divergência de Valor</div>
+                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.divergencia_valor if resumo else 0).replace(',','X').replace('.',',').replace('X','.') }}</div>
+            </div>
+            <div class="recon-item recon-danger">
+                <div class="recon-value">{{ resumo.suspeita_qtd if resumo else 0 }}</div>
+                <div class="recon-label">🔴 Suspeitas de Exclusão</div>
+                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.suspeita_valor if resumo else 0).replace(',','X').replace('.',',').replace('X','.') }}</div>
+            </div>
+            <div class="recon-item recon-muted">
+                {% set total = ((resumo.normal_qtd|default(0)) + (resumo.divergencia_qtd|default(0)) + (resumo.suspeita_qtd|default(0))) if resumo else 0 %}
+                <div class="recon-value">{{ total }}</div>
+                <div class="recon-label">📊 Total Processado</div>
+                <div class="recon-money">Parcelas do relatório ERP</div>
+            </div>
         </div>
     </div>
 </div>
 
-<style>
-    .recon-info {
-        border-color: #dbeafe;
-        background: #eff6ff;
-    }
-
-    .recon-info .recon-value {
-        color: #2563eb;
-    }
-</style>
-
-<div class="card" style="margin-bottom: 2rem;">
+<!-- Upload -->
+<div class="card" style="margin-bottom: 24px;">
     <div class="card-header">
-        <h2 class="card-title">Upload de Relatório ERP (LIQUIDADOS)</h2>
+        <h2 class="card-title">Upload — Relatório de Títulos Recebidos (RDPrint 5.0)</h2>
     </div>
     <div class="card-body">
-        <form id="formConferencia" style="display: flex; flex-direction: column; gap: 20px;">
-            <div class="form-group">
-                <label class="form-label">Relatório de Títulos Liquidados (HTML do RDPrint 5.0)</label>
+        <p style="font-size:13px; color:var(--text-2); margin-bottom:16px;">
+            Faça upload do arquivo <strong>RELATORIO DE TITULOS RECEBIDOS</strong> gerado pelo ERP.
+            O sistema irá comparar cada título (chave: <strong>Pedido + Vencimento</strong>) com o banco do app.
+        </p>
+        <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+            <div class="form-group" style="flex:1; min-width:260px; margin:0;">
+                <label class="form-label">Arquivo HTML do ERP (TITULOS RECEBIDOS)</label>
                 <input type="file" id="file_recebido" class="form-control" accept=".html,.htm">
             </div>
-
-            <div style="display: flex; justify-content: flex-end;">
-                <button type="button" class="btn btn-primary" onclick="processarConferencia()">
-                    <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 8px;"></i>
-                    Iniciar Conferência Inteligente
-                </button>
-            </div>
-        </form>
+            <button type="button" class="btn btn-primary" onclick="processarConferencia()" style="white-space:nowrap;">
+                Iniciar Conferência
+            </button>
+        </div>
+        <div id="loadingMsg" style="display:none; margin-top:12px; color:var(--text-2); font-size:13px;">
+            ⏳ Processando... aguarde.
+        </div>
     </div>
 </div>
 
-
-<div id="resultsArea" {% if not detalhes %}style="display: none;" {% endif %}>
+<!-- Resultados -->
+<div id="resultsArea" {% if not detalhes %}style="display:none;"{% endif %}>
     <div class="card">
-        <div class="card-header"
-            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <h2 class="card-title">Listagem de Conferência</h2>
-            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                <div class="tabs" id="filterTabs">
-                    <button class="tab-btn active" onclick="filterResults('TODOS')">Todos</button>
-                    <button class="tab-btn" onclick="filterResults('CONFIRMADOS')">Confirmados</button>
-                    <button class="tab-btn" onclick="filterResults('SUSPEITOS')">Suspeitos</button>
-                    <button class="tab-btn" onclick="filterResults('EXTRAS')">Extras</button>
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <h2 class="card-title">Detalhamento da Conferência</h2>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <!-- Busca por cliente -->
+                <input type="text" id="searchCliente" placeholder="Buscar cliente..."
+                       class="form-control" style="max-width:200px; font-size:12px; padding:6px 10px;"
+                       oninput="aplicarFiltros()">
+
+                <!-- Filtros por situação -->
+                <div style="display:flex; gap:6px;">
+                    <button class="tab-btn active" onclick="setGrupo('TODOS', this)">Todos</button>
+                    <button class="tab-btn" onclick="setGrupo('NORMAL', this)">✅ Normal</button>
+                    <button class="tab-btn" onclick="setGrupo('DIVERGENCIA', this)">⚠️ Divergência</button>
+                    <button class="tab-btn" onclick="setGrupo('SUSPEITA', this)">🔴 Suspeita</button>
                 </div>
-                <button class="btn" onclick="zerarRelatorio()"
-                    style="background: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid #dc2626; padding: 6px 12px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; border-radius: var(--radius-sm); cursor: pointer;">
-                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
-                    Zerar Relatório
+
+                <!-- Exportar Excel -->
+                <a href="/api/conferencia/exportar-excel" class="btn"
+                   style="background:#16a34a; color:white; font-size:12px; padding:7px 14px; font-weight:600; text-decoration:none; border-radius:var(--radius-sm);">
+                    ⬇ Exportar Excel
+                </a>
+
+                <!-- Zerar -->
+                <button onclick="zerarRelatorio()"
+                    style="background:rgba(220,38,38,0.1); color:#dc2626; border:1px solid #dc2626; padding:6px 12px; font-size:12px; font-weight:600; border-radius:var(--radius-sm); cursor:pointer;">
+                    Zerar
                 </button>
             </div>
         </div>
+
         <div class="table-responsive">
             <table class="table" id="tableConferencia">
                 <thead>
@@ -226,126 +170,109 @@
                         <th>N. Pedido</th>
                         <th>Vencimento</th>
                         <th>Valor ERP</th>
+                        <th>Valor App</th>
                         <th>Status ERP</th>
-                        <th style="text-align: right !important;">Situação</th>
+                        <th>Situação</th>
                     </tr>
                 </thead>
                 <tbody id="resultsBody">
                     {% if detalhes %}
                     {% for item in detalhes %}
-                    <tr class="recon-row" data-grupo="{{ item.grupo | default('EXTRAS') }}">
-                        <td>
-                            <div style="font-weight:600">{{ item.cliente | default('N/A') }}</div>
-                        </td>
+                    <tr class="recon-row" data-grupo="{{ item.grupo | default('SUSPEITA') }}"
+                        data-cliente="{{ item.cliente | default('') | lower }}">
+                        <td style="font-weight:600;">{{ item.cliente | default('N/A') }}</td>
                         <td><code>{{ item.doc | default('N/A') }}</code></td>
                         <td>{{ item.venc | default('N/A') }}</td>
-                        <td>R$ {{ "{:,.2f}".format(item.valor | default(0)).replace(',', 'X').replace('.',
-                            ',').replace('X', '.') }}
+                        <td>R$ {{ "{:,.2f}".format(item.valor_erp | default(0)).replace(',','X').replace('.',',').replace('X','.') }}</td>
+                        <td>
+                            {% if item.valor_app is not none and item.valor_app is not none %}
+                                R$ {{ "{:,.2f}".format(item.valor_app).replace(',','X').replace('.',',').replace('X','.') }}
+                            {% else %}
+                                <span style="color:var(--text-3); font-style:italic;">não encontrado</span>
+                            {% endif %}
                         </td>
                         <td>
-                            <span class="badge"
-                                style="font-size: 10px; background: var(--bg); color: var(--text-2); border: 1px solid var(--border);">
+                            <span style="font-size:11px; background:var(--bg); border:1px solid var(--border); padding:2px 8px; border-radius:4px;">
                                 {{ item.status_erp | default('N/A') }}
                             </span>
                         </td>
-                        <td class="{{ item.classe | default('') }}" style="text-align: right !important;">
-                            {% if item.grupo == 'CONFIRMADOS' %}✅ CONFIRMADO
-                            {% elif item.grupo == 'SUSPEITOS' %}⚠️ SUSPEITO
-                            {% elif item.grupo == 'EXTRAS' %}ℹ️ EXTRA
-                            {% else %}{{ item.situacao | default('PROCESSADO') }}{% endif %}
+                        <td>
+                            {% if item.grupo == 'NORMAL' %}
+                                <span class="badge-situacao badge-normal">✅ Quitada normalmente</span>
+                            {% elif item.grupo == 'DIVERGENCIA' %}
+                                <span class="badge-situacao badge-diverge">⚠️ Divergência de valor</span>
+                            {% else %}
+                                <span class="badge-situacao badge-suspeita">🔴 Suspeita de exclusão</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                     {% endif %}
                 </tbody>
             </table>
+            <div id="emptyMsg" style="display:none; text-align:center; padding:30px; color:var(--text-3); font-size:13px;">
+                Nenhum registro encontrado para os filtros selecionados.
+            </div>
         </div>
     </div>
 </div>
 
-<style>
-    .tab-btn {
-        padding: 8px 16px;
-        border: 1px solid var(--border);
-        background: var(--card-bg);
-        border-radius: 20px;
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    .tab-btn.active {
-        background: var(--primary);
-        color: white;
-    }
-
-    .situacao-success {
-        color: var(--success);
-        font-weight: 700;
-    }
-
-    .situacao-danger {
-        color: var(--danger);
-        font-weight: 700;
-    }
-
-    .situacao-warning {
-        color: #f59e0b;
-        font-weight: 700;
-    }
-
-    .situacao-info {
-        color: #3b82f6;
-        font-weight: 700;
-    }
-
-    .situacao-muted {
-        color: var(--text-3);
-        font-weight: 500;
-        font-style: italic;
-    }
-</style>
-
 <script>
+    let grupoAtivo = 'TODOS';
+
+    function setGrupo(grupo, btn) {
+        grupoAtivo = grupo;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        aplicarFiltros();
+    }
+
+    function aplicarFiltros() {
+        const busca = document.getElementById('searchCliente').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('.recon-row');
+        let visiveis = 0;
+        rows.forEach(row => {
+            const grupoOk = (grupoAtivo === 'TODOS' || row.dataset.grupo === grupoAtivo);
+            const clienteOk = (!busca || row.dataset.cliente.includes(busca));
+            const visivel = grupoOk && clienteOk;
+            row.style.display = visivel ? '' : 'none';
+            if (visivel) visiveis++;
+        });
+        document.getElementById('emptyMsg').style.display = (visiveis === 0) ? '' : 'none';
+    }
+
     async function processarConferencia() {
         const fr = document.getElementById('file_recebido').files[0];
-        if (!fr) return alert("Selecione o arquivo de Títulos Recebidos.");
+        if (!fr) { alert('Selecione o arquivo de Títulos Recebidos.'); return; }
 
         const fd = new FormData();
         fd.append('file_recebido', fr);
 
-        const btn = event.target.closest('button');
-        const originalText = btn.innerHTML;
-        btn.disabled = true; btn.innerText = "Processando...";
+        document.getElementById('loadingMsg').style.display = '';
+        const btn = event.target;
+        btn.disabled = true;
 
         try {
             const res = await fetch('/api/conferencia/processar', { method: 'POST', body: fd });
-            if (res.ok) window.location.reload();
-            else alert("Erro no processamento.");
-        } catch (e) { alert(e); }
-        finally {
+            if (!res.ok) {
+                const err = await res.text();
+                alert('Erro no processamento: ' + err);
+                return;
+            }
+            window.location.reload();
+        } catch (e) {
+            alert('Erro: ' + e);
+        } finally {
             btn.disabled = false;
-            btn.innerHTML = originalText;
+            document.getElementById('loadingMsg').style.display = 'none';
         }
     }
 
     async function zerarRelatorio() {
-        if (!confirm("Isso apagará todo o histórico de conferência atual. Tem certeza?")) return;
-
-        try {
-            const res = await fetch('/api/conferencia/zerar', { method: 'POST' });
-            if (res.ok) window.location.reload();
-            else alert("Erro ao zerar relatório.");
-        } catch (e) { alert(e); }
-    }
-
-    function filterResults(grupo) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
-
-        document.querySelectorAll('.recon-row').forEach(row => {
-            row.style.display = (grupo === 'TODOS' || row.dataset.grupo === grupo) ? '' : 'none';
-        });
+        if (!confirm('Isso apagará todo o histórico de conferência. Tem certeza?')) return;
+        const res = await fetch('/api/conferencia/zerar', { method: 'POST' });
+        if (res.ok) window.location.reload();
+        else alert('Erro ao zerar relatório.');
     }
 </script>
 {% endblock %}

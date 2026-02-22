@@ -78,7 +78,7 @@ def parse_rdprint_html(content: bytes):
 
         item = {
             "cliente": "", "doc": "", "pedido": "",
-            "venc": "", "valor": 0.0, "status": "QUITADA"
+            "venc": "", "valor": 0.0, "status": ""
         }
 
         for el in row:
@@ -103,106 +103,103 @@ def parse_rdprint_html(content: bytes):
     return data
 
 
-def _nome_clean(nome: str) -> str:
-    return " ".join(nome.strip().upper().split())
-
-
 def process_smart_reconciliation(db: Session, html_recebido: bytes = None):
     """
-    Confere as parcelas QUITADAS do ERP contra o banco do app.
+    Confere as parcelas QUITADAS/PARCIAL do ERP contra o banco do app.
 
-    Lógica (ERP é a base de verdade para o período):
-    - CONFIRMADO: ERP quitada + App PAGA → tudo certo
-    - SUSPEITO:   ERP quitada + App ABERTA → precisa baixar no app
-    - NÃO ENCONTRADA: ERP quitada + não existe no App → cancelada/excluída no ERP
+    Chave de identificação: Pedido (left:132) + Vencimento (left:588)
+
+    Classificação:
+    - NORMAL      (verde):   Existe no app + valores coincidem (quitada normalmente)
+    - DIVERGENCIA (amarelo): Existe no app + valores divergem
+    - SUSPEITA    (vermelho): NÃO existe no app — nunca apareceu nas importações
     """
-    # 1. Parsear relatório ERP (LIQUIDADOS do período)
-    erp_items = parse_rdprint_html(html_recebido) if html_recebido else []
+    import logging
+    logger = logging.getLogger(__name__)
 
-    # 2. Carregar TODAS as parcelas do app (sem filtro de data)
+    # 1. Parsear relatório ERP e filtrar apenas QUITADA e PARCIAL
+    all_erp = parse_rdprint_html(html_recebido) if html_recebido else []
+    erp_items = [i for i in all_erp if i["status"] in ("QUITADA", "PARCIAL")]
+    logger.info(f"[Conferencia] {len(erp_items)} itens QUITADA/PARCIAL de {len(all_erp)} no relatório")
+
+    # 2. Construir índice do app por (contract_id = pedido) + vencimento
     all_insts = db.query(Installment).join(Customer).all()
-
-    # Índices para lookup rápido
-    # Chave primária: nome_limpo + vencimento + valor
-    app_by_nome_venc_valor = {}
-    # Chave secundária: contract_id + vencimento (fallback)
-    app_by_doc_venc = {}
-
+    app_by_key = {}
     for inst in all_insts:
         venc_str = inst.due_date.strftime("%d/%m/%Y")
-        v_float = float(inst.amount)
-        key_nome = f"{_nome_clean(inst.customer.name)}_{venc_str}_{v_float:.2f}"
-        key_doc = f"{inst.contract_id}_{venc_str}"
-        app_by_nome_venc_valor[key_nome] = inst
-        app_by_doc_venc[key_doc] = inst
+        key = f"{inst.contract_id}_{venc_str}"
+        app_by_key[key] = inst
 
     detailed_results = []
     resumo = {
-        "confirmados_qtd": 0, "confirmados_valor": 0.0,
-        "suspeitos_qtd": 0, "suspeitos_valor": 0.0,
-        "extras_qtd": 0, "extras_valor": 0.0,
+        "normal_qtd": 0, "normal_valor": 0.0,
+        "divergencia_qtd": 0, "divergencia_valor": 0.0,
+        "suspeita_qtd": 0, "suspeita_valor": 0.0,
     }
 
-    # 3. Para cada item do ERP, buscar correspondente no app
+    # 3. Classificar cada item do ERP
     for erp in erp_items:
-        nome_c = _nome_clean(erp['cliente'])
-        venc = erp['venc']
-        valor = erp['valor']
+        pedido = erp.get("pedido", "").strip()
+        venc = erp["venc"]
+        erp_valor = erp["valor"]
+        display_id = pedido or erp.get("doc", "N/A")
 
-        key_nome = f"{nome_c}_{venc}_{valor:.2f}"
-        key_doc = f"{erp['doc']}_{venc}"
-
-        inst = app_by_nome_venc_valor.get(key_nome) or app_by_doc_venc.get(key_doc)
-
-        # ID para exibição: pedido do ERP se existir, senão doc, senão contract_id do app
-        display_id = (
-            erp["pedido"] if erp.get("pedido")
-            else erp["doc"] if erp.get("doc")
-            else (inst.contract_id if inst else "N/A")
-        )
-        cliente_nome = inst.customer.name if inst else erp['cliente']
+        key = f"{pedido}_{venc}"
+        inst = app_by_key.get(key)
+        cliente_nome = inst.customer.name if inst else erp["cliente"]
 
         if inst:
-            if inst.status == "PAGA":
-                # ✅ ERP quitada e App registrou como paga
+            # Comparar com open_amount (valor em aberto no app)
+            app_valor = float(inst.open_amount) if inst.open_amount and float(inst.open_amount) > 0 else float(inst.amount)
+            valores_ok = abs(erp_valor - app_valor) <= 0.01
+
+            if valores_ok:
+                # ✅ Quitada normalmente
                 detailed_results.append({
-                    "cliente": cliente_nome, "doc": display_id,
-                    "venc": venc, "valor": valor,
+                    "cliente": cliente_nome,
+                    "doc": display_id,
+                    "venc": venc,
+                    "valor_erp": erp_valor,
+                    "valor_app": app_valor,
                     "status_erp": erp["status"],
-                    "situacao": "CONFIRMADO",
+                    "situacao": "QUITADA NORMALMENTE",
                     "classe": "situacao-success",
-                    "grupo": "CONFIRMADOS",
+                    "grupo": "NORMAL",
                 })
-                resumo["confirmados_qtd"] += 1
-                resumo["confirmados_valor"] += valor
-
+                resumo["normal_qtd"] += 1
+                resumo["normal_valor"] += erp_valor
             else:
-                # ⚠️ ERP quitada mas App ainda não baixou
+                # ⚠️ Divergência de valor
                 detailed_results.append({
-                    "cliente": cliente_nome, "doc": display_id,
-                    "venc": venc, "valor": valor,
+                    "cliente": cliente_nome,
+                    "doc": display_id,
+                    "venc": venc,
+                    "valor_erp": erp_valor,
+                    "valor_app": app_valor,
                     "status_erp": erp["status"],
-                    "situacao": f"ABERTA NO APP ({inst.status})",
-                    "classe": "situacao-danger",
-                    "grupo": "SUSPEITOS",
+                    "situacao": "DIVERGÊNCIA DE VALOR",
+                    "classe": "situacao-warning",
+                    "grupo": "DIVERGENCIA",
                 })
-                resumo["suspeitos_qtd"] += 1
-                resumo["suspeitos_valor"] += valor
-
+                resumo["divergencia_qtd"] += 1
+                resumo["divergencia_valor"] += erp_valor
         else:
-            # ℹ️ ERP quitada mas não encontrada no App (cancelada/excluída no ERP)
+            # 🔴 Suspeita de exclusão
             detailed_results.append({
-                "cliente": erp['cliente'], "doc": display_id,
-                "venc": venc, "valor": valor,
+                "cliente": erp["cliente"],
+                "doc": display_id,
+                "venc": venc,
+                "valor_erp": erp_valor,
+                "valor_app": None,
                 "status_erp": erp["status"],
-                "situacao": "NÃO ENCONTRADA NO APP",
-                "classe": "situacao-warning",
-                "grupo": "EXTRAS",
+                "situacao": "SUSPEITA DE EXCLUSÃO",
+                "classe": "situacao-danger",
+                "grupo": "SUSPEITA",
             })
-            resumo["extras_qtd"] += 1
-            resumo["extras_valor"] += valor
+            resumo["suspeita_qtd"] += 1
+            resumo["suspeita_valor"] += erp_valor
 
-    # 4. Salvar histórico
+    # 4. Salvar histórico no banco
     conferencia = ConferenciaTitulos(
         resumo_json=json.dumps(resumo),
         detalhes_json=json.dumps(detailed_results),
