@@ -15,33 +15,92 @@
         gap: 15px;
         margin-top: 20px;
     }
+
     .recon-item {
         padding: 16px;
         border-radius: 12px;
         text-align: center;
         border: 1px solid transparent;
     }
-    .recon-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-3); margin-top: 8px; }
-    .recon-value { font-size: 24px; font-weight: 800; }
-    .recon-money { font-size: 11px; font-weight: 600; color: var(--text-2); margin-top: 4px; }
 
-    .recon-success { border-color: #bbf7d0; background: #f0fdf4; }
-    .recon-success .recon-value { color: #16a34a; }
+    .recon-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-top: 8px;
+    }
 
-    .recon-warning { border-color: #fde68a; background: #fffbeb; }
-    .recon-warning .recon-value { color: #d97706; }
+    .recon-value {
+        font-size: 24px;
+        font-weight: 800;
+    }
 
-    .recon-danger  { border-color: #fecaca; background: #fef2f2; }
-    .recon-danger  .recon-value { color: #dc2626; }
+    .recon-money {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-2);
+        margin-top: 4px;
+    }
 
-    .recon-muted   { border-color: var(--border); background: var(--surface); }
-    .recon-muted   .recon-value { color: var(--text); }
+    .recon-success {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+    }
+
+    .recon-success .recon-value {
+        color: #16a34a;
+    }
+
+    .recon-warning {
+        border-color: #fde68a;
+        background: #fffbeb;
+    }
+
+    .recon-warning .recon-value {
+        color: #d97706;
+    }
+
+    .recon-danger {
+        border-color: #fecaca;
+        background: #fef2f2;
+    }
+
+    .recon-danger .recon-value {
+        color: #dc2626;
+    }
+
+    .recon-muted {
+        border-color: var(--border);
+        background: var(--surface);
+    }
+
+    .recon-muted .recon-value {
+        color: var(--text);
+    }
 
     /* Tabela */
-    #tableConferencia { width: 100%; border-collapse: collapse; }
-    #tableConferencia th, #tableConferencia td { text-align: left; padding: 11px 14px; }
-    #tableConferencia th { font-size: 11px; text-transform: uppercase; color: var(--text-3); font-weight: 700; }
-    #tableConferencia tr:hover td { background: var(--bg); }
+    #tableConferencia {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    #tableConferencia th,
+    #tableConferencia td {
+        text-align: left;
+        padding: 11px 14px;
+    }
+
+    #tableConferencia th {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--text-3);
+        font-weight: 700;
+    }
+
+    #tableConferencia tr:hover td {
+        background: var(--bg);
+    }
 
     .badge-situacao {
         display: inline-block;
@@ -51,9 +110,21 @@
         font-weight: 700;
         white-space: nowrap;
     }
-    .badge-normal    { background: #dcfce7; color: #15803d; }
-    .badge-diverge   { background: #fef3c7; color: #b45309; }
-    .badge-suspeita  { background: #fee2e2; color: #b91c1c; }
+
+    .badge-normal {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .badge-diverge {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .badge-suspeita {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
 
     .tab-btn {
         padding: 7px 16px;
@@ -64,10 +135,16 @@
         font-size: 12px;
         font-weight: 600;
     }
-    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .tab-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
 </style>
 
 <!-- Cards de resumo -->
+{% if resumo %}
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
         <h2 class="card-title">Resumo do Último Processamento</h2>
@@ -82,77 +159,115 @@
             <div class="recon-item recon-success">
                 <div class="recon-value">{{ resumo.normal_qtd if resumo else 0 }}</div>
                 <div class="recon-label">✅ Quitadas Normalmente</div>
-                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.normal_valor if resumo else 0).replace(',','X').replace('.',',').replace('X','.') }}</div>
+                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.normal_valor if resumo else
+                    0).replace(',','X').replace('.',',').replace('X','.') }}</div>
             </div>
             <div class="recon-item recon-warning">
                 <div class="recon-value">{{ resumo.divergencia_qtd if resumo else 0 }}</div>
                 <div class="recon-label">⚠️ Divergência de Valor</div>
-                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.divergencia_valor if resumo else 0).replace(',','X').replace('.',',').replace('X','.') }}</div>
+                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.divergencia_valor if resumo else
+                    0).replace(',','X').replace('.',',').replace('X','.') }}</div>
             </div>
             <div class="recon-item recon-danger">
                 <div class="recon-value">{{ resumo.suspeita_qtd if resumo else 0 }}</div>
                 <div class="recon-label">🔴 Suspeitas de Exclusão</div>
-                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.suspeita_valor if resumo else 0).replace(',','X').replace('.',',').replace('X','.') }}</div>
+                <div class="recon-money">R$ {{ "{:,.2f}".format(resumo.suspeita_valor if resumo else
+                    0).replace(',','X').replace('.',',').replace('X','.') }}</div>
             </div>
             <div class="recon-item recon-muted">
-                {% set total = ((resumo.normal_qtd|default(0)) + (resumo.divergencia_qtd|default(0)) + (resumo.suspeita_qtd|default(0))) if resumo else 0 %}
-                <div class="recon-value">{{ total }}</div>
+                <div class="recon-value">{{ resumo.total_analisado if resumo else 0 }}</div>
                 <div class="recon-label">📊 Total Processado</div>
-                <div class="recon-money">Parcelas do relatório ERP</div>
+                <div class="recon-money">Itens no Snapshot Atual de A_RECEBER</div>
+            </div>
+        </div>
+
+        <div
+            style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border); display:flex; flex-wrap:wrap; gap:16px;">
+            <div style="flex:1; min-width:250px;">
+                <span
+                    style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; display:block; margin-bottom:4px;">A_Receber
+                    Anterior (Ontem)</span>
+                <span style="font-size:13px; color:var(--text); font-weight:500;">{{ resumo.snap_a_rec_prev_str if
+                    resumo else '-' }}</span>
+            </div>
+            <div style="flex:1; min-width:250px;">
+                <span
+                    style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; display:block; margin-bottom:4px;">A_Receber
+                    Atual (Hoje)</span>
+                <span style="font-size:13px; color:var(--text); font-weight:500;">{{ resumo.snap_a_rec_curr_str if
+                    resumo else '-' }}</span>
+            </div>
+            <div style="flex:1; min-width:250px;">
+                <span
+                    style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; display:block; margin-bottom:4px;">Recebidos
+                    (Evidência Quitação)</span>
+                <span style="font-size:13px; color:var(--text); font-weight:500;">{{ resumo.snap_rec_str if resumo else
+                    '-' }}</span>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- Upload -->
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-header">
-        <h2 class="card-title">Upload — Relatório de Títulos Recebidos (RDPrint 5.0)</h2>
+        <h2 class="card-title">Upload — Snapshots de Relatórios de Títulos</h2>
     </div>
     <div class="card-body">
         <p style="font-size:13px; color:var(--text-2); margin-bottom:16px;">
-            Faça upload do arquivo <strong>RELATORIO DE TITULOS RECEBIDOS</strong> gerado pelo ERP.
-            O sistema irá comparar cada título (chave: <strong>Pedido + Vencimento</strong>) com o banco do app.
+            A inteligência da conferência funciona por Snapshots. Para descobrir quais parcelas
+            <strong>SUMIRAM</strong>,
+            você deve enviar relatórios de <strong>TÍTULOS A RECEBER</strong> periodicamente.
+            Para descobrir se foram pagos, basta enviar o <strong>TÍTULOS RECEBIDOS</strong>. O cruzamento é automático!
         </p>
         <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
-            <div class="form-group" style="flex:1; min-width:260px; margin:0;">
-                <label class="form-label">Arquivo HTML do ERP (TITULOS RECEBIDOS)</label>
+            <div class="form-group" style="flex:1; max-width:500px; margin:0;">
+                <label class="form-label">Arquivo HTML do ERP (TÍTULOS A RECEBER ou RECEBIDOS)</label>
                 <input type="file" id="file_recebido" class="form-control" accept=".html,.htm">
             </div>
-            <button type="button" class="btn btn-primary" onclick="processarConferencia()" style="white-space:nowrap;">
-                Iniciar Conferência
+            <button type="button" class="btn btn-primary" onclick="processarConferencia()"
+                style="white-space:nowrap; height:42px;">
+                Processar e Cruzar
             </button>
         </div>
         <div id="loadingMsg" style="display:none; margin-top:12px; color:var(--text-2); font-size:13px;">
-            ⏳ Processando... aguarde.
+            ⏳ Processando e cruzando dados em Camadas Múltiplas... aguarde.
         </div>
     </div>
 </div>
 
 <!-- Resultados -->
-<div id="resultsArea" {% if not detalhes %}style="display:none;"{% endif %}>
+<div id="resultsArea" {% if not detalhes %}style="display:none;" {% endif %}>
     <div class="card">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div class="card-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <h2 class="card-title">Detalhamento da Conferência</h2>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                 <!-- Busca por cliente -->
-                <input type="text" id="searchCliente" placeholder="Buscar cliente..."
-                       class="form-control" style="max-width:200px; font-size:12px; padding:6px 10px;"
-                       oninput="aplicarFiltros()">
+                <input type="text" id="searchCliente" placeholder="Buscar cliente..." class="form-control"
+                    style="max-width:200px; font-size:12px; padding:6px 10px;" oninput="aplicarFiltros()">
 
                 <!-- Filtros por situação -->
                 <div style="display:flex; gap:6px;">
                     <button class="tab-btn active" onclick="setGrupo('TODOS', this)">Todos</button>
-                    <button class="tab-btn" onclick="setGrupo('NORMAL', this)">✅ Normal</button>
+                    <button class="tab-btn" onclick="setGrupo('BAIXA JUSTIFICADA', this)">✅ Baixa Justificada</button>
                     <button class="tab-btn" onclick="setGrupo('DIVERGENCIA', this)">⚠️ Divergência</button>
+                    <button class="tab-btn" onclick="setGrupo('PARCELA REMOVIDA', this)">⚠️ Parcela Removida</button>
                     <button class="tab-btn" onclick="setGrupo('SUSPEITA', this)">🔴 Suspeita</button>
                 </div>
 
                 <!-- Exportar Excel -->
                 <a href="/api/conferencia/exportar-excel" class="btn"
-                   style="background:#16a34a; color:white; font-size:12px; padding:7px 14px; font-weight:600; text-decoration:none; border-radius:var(--radius-sm);">
+                    style="background:#16a34a; color:white; font-size:12px; padding:7px 14px; font-weight:600; text-decoration:none; border-radius:var(--radius-sm);">
                     ⬇ Exportar Excel
                 </a>
+
+                <!-- Diagnóstico -->
+                <button onclick="document.getElementById('modalDiagnostico').style.display = 'flex'" class="btn"
+                    style="background:var(--primary); color:white; font-size:12px; padding:7px 14px; font-weight:600; text-decoration:none; border-radius:var(--radius-sm); cursor:pointer; border:none;">
+                    🔍 Diagnóstico
+                </button>
 
                 <!-- Zerar -->
                 <button onclick="zerarRelatorio()"
@@ -167,12 +282,13 @@
                 <thead>
                     <tr>
                         <th>Cliente</th>
-                        <th>N. Pedido</th>
+                        <th>Pedido</th>
                         <th>Vencimento</th>
-                        <th>Valor ERP</th>
-                        <th>Valor App</th>
-                        <th>Status ERP</th>
+                        <th>Valor</th>
                         <th>Situação</th>
+                        <th>Evidência</th>
+                        <th>Snap. Anterior</th>
+                        <th>Snap. Atual</th>
                     </tr>
                 </thead>
                 <tbody id="resultsBody">
@@ -181,38 +297,82 @@
                     <tr class="recon-row" data-grupo="{{ item.grupo | default('SUSPEITA') }}"
                         data-cliente="{{ item.cliente | default('') | lower }}">
                         <td style="font-weight:600;">{{ item.cliente | default('N/A') }}</td>
-                        <td><code>{{ item.doc | default('N/A') }}</code></td>
+                        <td><code>{{ item.pedido | default('N/A') }}</code></td>
                         <td>{{ item.venc | default('N/A') }}</td>
-                        <td>R$ {{ "{:,.2f}".format(item.valor_erp | default(0)).replace(',','X').replace('.',',').replace('X','.') }}</td>
+                        <td>R$ {{ "{:,.2f}".format(item.valor |
+                            default(0)).replace(',','X').replace('.',',').replace('X','.') }}</td>
                         <td>
-                            {% if item.valor_app is not none and item.valor_app is not none %}
-                                R$ {{ "{:,.2f}".format(item.valor_app).replace(',','X').replace('.',',').replace('X','.') }}
+                            {% if item.grupo == 'BAIXA JUSTIFICADA' %}
+                            <span class="badge-situacao badge-normal">✅ {{ item.situacao }}</span>
+                            {% elif item.grupo == 'DIVERGENCIA' %}
+                            <span class="badge-situacao badge-diverge">⚠️ {{ item.situacao }}</span>
                             {% else %}
-                                <span style="color:var(--text-3); font-style:italic;">não encontrado</span>
+                            <span class="badge-situacao badge-suspeita">🔴 {{ item.situacao }}</span>
                             {% endif %}
                         </td>
                         <td>
-                            <span style="font-size:11px; background:var(--bg); border:1px solid var(--border); padding:2px 8px; border-radius:4px;">
-                                {{ item.status_erp | default('N/A') }}
+                            <span
+                                style="font-size:11px; font-weight: 600; background:var(--bg); border:1px solid var(--border); padding:2px 8px; border-radius:4px;">
+                                {{ item.evidencia | default('-') }}
                             </span>
                         </td>
-                        <td>
-                            {% if item.grupo == 'NORMAL' %}
-                                <span class="badge-situacao badge-normal">✅ Quitada normalmente</span>
-                            {% elif item.grupo == 'DIVERGENCIA' %}
-                                <span class="badge-situacao badge-diverge">⚠️ Divergência de valor</span>
-                            {% else %}
-                                <span class="badge-situacao badge-suspeita">🔴 Suspeita de exclusão</span>
-                            {% endif %}
-                        </td>
+                        <td style="font-size:11px; color:#555;">{{ item.snapshot_ant | default('-') }}</td>
+                        <td style="font-size:11px; color:#555;">{{ item.snapshot_atu | default('-') }}</td>
                     </tr>
                     {% endfor %}
                     {% endif %}
                 </tbody>
             </table>
-            <div id="emptyMsg" style="display:none; text-align:center; padding:30px; color:var(--text-3); font-size:13px;">
+            <div id="emptyMsg"
+                style="display:none; text-align:center; padding:30px; color:var(--text-3); font-size:13px;">
                 Nenhum registro encontrado para os filtros selecionados.
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Diagnóstico -->
+<div id="modalDiagnostico"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div
+        style="background:var(--card-bg); width:90%; max-width:800px; max-height:90vh; overflow-y:auto; padding:20px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0; font-size:16px;">🔍 Diagnóstico do Motor (Até 20 Registros Iniciais)</h3>
+            <button onclick="document.getElementById('modalDiagnostico').style.display='none'"
+                style="background:none; border:none; cursor:pointer; font-size:18px;">&times;</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table" style="font-size:12px;">
+                <thead>
+                    <tr>
+                        <th>Algoritmo Criptográfico HASH [SHA256]</th>
+                        <th>Chave Crua (Pedido_norm|Venc_norm|Cents|DAV|Doc)</th>
+                        <th>Cliente</th>
+                        <th>Auditoria do Motor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if resumo and resumo.diagnostico %}
+                    {% for d in resumo.diagnostico %}
+                    <tr>
+                        <td><code
+                                style="font-size:10px; background:var(--bg); padding:2px 4px; border-radius:4px;">{{ d.hash }}</code>
+                        </td>
+                        <td><code
+                                style="font-size:11px; background:var(--surface); padding:2px 4px; border-radius:4px; color:var(--text-2);">{{ d.chave_crua }}</code>
+                        </td>
+                        <td>{{ d.cliente }}</td>
+                        <td style="color:var(--text-2);">{{ d.motivo }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align:center;">Nenhum diagnóstico / log disponível.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -254,10 +414,15 @@
 
         try {
             const res = await fetch('/api/conferencia/processar', { method: 'POST', body: fd });
+            const data = await res.json();
+
             if (!res.ok) {
-                const err = await res.text();
-                alert('Erro no processamento: ' + err);
+                alert('Erro no processamento: ' + (data.detail || JSON.stringify(data)));
                 return;
+            }
+
+            if (data.msg) {
+                alert(data.msg);
             }
             window.location.reload();
         } catch (e) {

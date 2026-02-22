@@ -247,3 +247,38 @@ class ConferenciaTitulos(Base):
     resumo_json = Column(Text, nullable=False) # Totais de cada tipo
     detalhes_json = Column(Text, nullable=False) # Lista completa de títulos e situações
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class ReportSnapshot(Base):
+    __tablename__ = "report_snapshots"
+    id = Column(Integer, primary_key=True)
+    report_type = Column(String(50), nullable=False)  # A_RECEBER ou RECEBIDOS
+    created_at = Column(DateTime, default=datetime.utcnow)
+    arquivo_nome = Column(String(255), nullable=True)
+    hash_arquivo = Column(String(64), nullable=True) # SHA256 anti-fraude
+    total_itens = Column(Integer, default=0)
+    
+    items = relationship("ReportItem", back_populates="snapshot", cascade="all, delete-orphan")
+
+class ReportItem(Base):
+    __tablename__ = "report_items"
+    id = Column(Integer, primary_key=True)
+    snapshot_id = Column(Integer, ForeignKey("report_snapshots.id"), nullable=False)
+    
+    # Normalized fields for precise matching
+    pedido_norm = Column(String(50), nullable=False, default="") # Only digits
+    venc_norm = Column(Date, nullable=True) # YYYY-MM-DD
+    valor_centavos = Column(Integer, nullable=False, default=0)
+    n_doc = Column(String(100), nullable=False, default="")
+    dav = Column(String(50), nullable=False, default="")
+    hash_item = Column(String(64), nullable=True) # SHA256 anti-fraude (Obrigatório P/ Auditoria)
+    
+    # Auxiliary info for UI / Logging
+    cliente_nome = Column(String(190), nullable=False, default="")
+    status_erp = Column(String(50), nullable=False, default="")
+    
+    snapshot = relationship("ReportSnapshot", back_populates="items")
+    
+    __table_args__ = (
+        Index('ix_report_item_lookup', 'snapshot_id', 'pedido_norm', 'venc_norm', 'valor_centavos'),
+        Index('ix_report_item_hash', 'snapshot_id', 'hash_item'), # Para busca O(1) com nova regra
+    )

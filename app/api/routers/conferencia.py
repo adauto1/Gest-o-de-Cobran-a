@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.web import render, require_login
-from app.models import ConferenciaTitulos
+from app.models import ConferenciaTitulos, ReportSnapshot
 from app.services.conferencia_inteligente_service import process_smart_reconciliation
 
 router = APIRouter()
@@ -26,17 +26,22 @@ def conferencia_page(request: Request, db: Session = Depends(get_db)):
     last_process = db.query(ConferenciaTitulos).order_by(ConferenciaTitulos.data_processamento.desc()).first()
     detalhes = []
     resumo = None
+    msg = None
     if last_process:
         detalhes = json.loads(last_process.detalhes_json)
         resumo = json.loads(last_process.resumo_json)
         # Garantir que todas as chaves existam
         for key in ["normal_qtd", "normal_valor", "divergencia_qtd", "divergencia_valor",
-                    "suspeita_qtd", "suspeita_valor"]:
+                    "suspeita_qtd", "suspeita_valor", "total_analisado"]:
             resumo.setdefault(key, 0)
+        resumo.setdefault("diagnostico", [])
+        resumo.setdefault("snap_a_rec_prev_str", "-")
+        resumo.setdefault("snap_a_rec_curr_str", "-")
+        resumo.setdefault("snap_rec_str", "-")
         resumo["data"] = last_process.data_processamento.strftime("%d/%m/%Y %H:%M")
 
     return render("conferencia.html", request=request, user=user, title="Conferência de Títulos",
-                  active_page="conferencia", detalhes=detalhes, resumo=resumo)
+                  active_page="conferencia", detalhes=detalhes, resumo=resumo, msg=msg)
 
 
 @router.post("/api/conferencia/processar")
@@ -50,6 +55,10 @@ async def processar_conferencia(
         raise HTTPException(status_code=403, detail="Apenas administradores.")
     content_recebido = await file_recebido.read() if file_recebido else None
     results = process_smart_reconciliation(db, content_recebido)
+    
+    if "error" in results:
+        raise HTTPException(status_code=400, detail=results["error"])
+        
     return results
 
 
@@ -89,7 +98,7 @@ def exportar_excel(request: Request, db: Session = Depends(get_db)):
     ws["A3"] = ""
 
     # Cabeçalho da tabela
-    headers = ["Cliente", "N. Pedido", "Vencimento", "Valor ERP (R$)", "Valor App (R$)", "Status ERP", "Situação"]
+    headers = ["Cliente", "Pedido", "Vencimento", "Valor ERP (R$)", " Situação", "Evidência", "Snap. Anterior", "Snap. Atual"]
     ws.append(headers)
     hdr_row = ws.max_row
     for cell in ws[hdr_row]:
@@ -100,23 +109,23 @@ def exportar_excel(request: Request, db: Session = Depends(get_db)):
     # Dados
     for item in detalhes:
         grupo = item.get("grupo", "")
-        fill = fill_green if grupo == "NORMAL" else fill_yellow if grupo == "DIVERGENCIA" else fill_red
-        valor_app = item.get("valor_app")
+        fill = fill_green if grupo == "BAIXA JUSTIFICADA" else fill_yellow if grupo in ("DIVERGENCIA", "PARCELA REMOVIDA") else fill_red
         row = [
             item.get("cliente", ""),
-            item.get("doc", ""),
+            item.get("pedido", ""),
             item.get("venc", ""),
-            item.get("valor_erp", 0),
-            valor_app if valor_app is not None else "Não encontrado",
-            item.get("status_erp", ""),
+            item.get("valor", 0),
             item.get("situacao", ""),
+            item.get("evidencia", ""),
+            item.get("snapshot_ant", ""),
+            item.get("snapshot_atu", ""),
         ]
         ws.append(row)
         for cell in ws[ws.max_row]:
             cell.fill = fill
 
     # Largura das colunas
-    col_widths = [35, 15, 14, 16, 16, 14, 28]
+    col_widths = [35, 15, 14, 16, 25, 20, 20, 20]
     for i, width in enumerate(col_widths, 1):
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = width
 
@@ -144,5 +153,6 @@ async def zerar_conferencia(request: Request, db: Session = Depends(get_db)):
     if user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Apenas administradores podem zerar o relatório.")
     db.query(ConferenciaTitulos).delete()
+    db.query(ReportSnapshot).delete()
     db.commit()
     return {"success": True}
