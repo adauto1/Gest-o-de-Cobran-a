@@ -140,6 +140,7 @@ def run_collection_check(session_factory) -> dict:
             # Calcular atraso máximo e totais
             max_overdue = 0
             total_open = Decimal("0")
+            total_vencido = Decimal("0")
             nearest_due = None
 
             for inst in insts:
@@ -147,6 +148,8 @@ def run_collection_check(session_factory) -> dict:
                 if delay > max_overdue:
                     max_overdue = delay
                 total_open += Decimal(str(inst.open_amount))
+                if delay > 0:
+                    total_vencido += Decimal(str(inst.open_amount))
                 if nearest_due is None or inst.due_date < nearest_due:
                     nearest_due = inst.due_date
 
@@ -249,8 +252,8 @@ def run_collection_check(session_factory) -> dict:
                 "{valor}": format_money(insts[0].open_amount) if insts else "0,00",
                 "{VALOR}": format_money(insts[0].open_amount) if insts else "0,00",
                 "{valor_com_juros}": format_money(valor_com_juros),
-                "{total}": format_money(total_open), "{TOTAL}": format_money(total_open),
-                "{total_divida}": format_money(total_open),
+                "{total}": format_money(total_vencido), "{TOTAL}": format_money(total_vencido),
+                "{total_divida}": format_money(total_vencido),
                 "{dias_atraso}": str(max_overdue), "{DIAS}": str(max_overdue),
                 "{dias}": str(max_overdue),
                 "{vencimento}": venc_fmt, "{VENCIMENTO}": venc_fmt,
