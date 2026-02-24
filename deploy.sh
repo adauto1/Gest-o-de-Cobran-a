@@ -22,7 +22,7 @@ if [ ! -d "$VENV" ]; then
     python3 -m venv "$VENV"
 fi
 source "$VENV/bin/activate"
-pip install -r requirements.txt --quiet
+pip install -r requirements.txt --quiet --break-system-packages
 
 # 3. Migração do banco é automática!
 # O startup da aplicação executa:
