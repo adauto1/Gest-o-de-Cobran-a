@@ -7,12 +7,56 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
+    - name: "Diagnóstico — Testar conectividade TCP na porta 22"
+      run: |
+        HOST="${{ secrets.SSH_HOST }}"
+        PORT=22
+        echo "================================================"
+        echo " Testando conexão TCP: $HOST:$PORT"
+        echo "================================================"
+        if nc -zw 10 "$HOST" "$PORT"; then
+          echo "✅ SUCESSO — Porta $PORT acessível em $HOST"
+        else
+          echo "❌ FALHA — Porta $PORT inacessível em $HOST"
+          echo "   Verifique se o firewall da Hostinger permite o IP do GitHub Actions."
+          exit 1
+        fi
+
+    - name: "Deploy via SSH"
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT }}
-        script: /home/deploy/deploy.sh
+        key: ${{ secrets.SSH_KEY }}
+        port: 22
+        timeout: 60s
+        command_timeout: 10m
+        debug: true
+        script: |
+          set -e
+          echo "================================================"
+          echo " Iniciando deploy — $(date '+%d/%m/%Y %H:%M:%S')"
+          echo "================================================"
+
+          # Localizar o deploy.sh independente do usuário (root ou deploy)
+          DEPLOY_SCRIPT=""
+          for CANDIDATE in \
+            "$HOME/Gest-o-de-Cobran-a/deploy.sh" \
+            "/home/deploy/deploy.sh" \
+            "/root/Gest-o-de-Cobran-a/deploy.sh"; do
+            if [ -f "$CANDIDATE" ]; then
+              DEPLOY_SCRIPT="$CANDIDATE"
+              break
+            fi
+          done
+
+          if [ -z "$DEPLOY_SCRIPT" ]; then
+            echo "❌ ERRO: deploy.sh não encontrado em nenhum caminho conhecido."
+            exit 1
+          fi
+
+          echo "📄 Script encontrado: $DEPLOY_SCRIPT"
+          bash "$DEPLOY_SCRIPT"
+          echo "✅ Deploy concluído com sucesso — $(date '+%d/%m/%Y %H:%M:%S')"
