@@ -157,6 +157,23 @@ def toggle_msgs(request: Request, customer_id: int, db: Session = Depends(get_db
     db.commit()
     return {"success": True, "msgs_ativo": c.msgs_ativo}
 
+@router.get("/api/customers/{customer_id}")
+def get_customer_api(customer_id: int, request: Request, db: Session = Depends(get_db)):
+    """Retorna dados do cliente para preencher o modal de edição."""
+    require_login(request, db)
+    c = db.get(Customer, customer_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return {
+        "id": c.id,
+        "name": c.name,
+        "whatsapp": c.whatsapp or "",
+        "address": c.address or "",
+        "email": c.email or "",
+        "notes": c.notes or "",
+        "profile_cobranca": c.profile_cobranca or "AUTOMATICO",
+    }
+
 @router.patch("/api/customers/{customer_id}")
 def update_customer_api(customer_id: int, dados: CustomerUpdate, request: Request, db: Session = Depends(get_db)):
     """Atualiza dados do cliente via AJAX. Usa schema CustomerUpdate para validação."""
