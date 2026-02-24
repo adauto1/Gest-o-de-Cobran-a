@@ -15,8 +15,12 @@ cd "$APP_DIR"
 echo "📥 Atualizando código..."
 git pull origin main
 
-# 2. Ativar venv e instalar dependências
+# 2. Criar venv se não existir, ativar e instalar dependências
 echo "📦 Instalando dependências..."
+if [ ! -d "$VENV" ]; then
+    echo "   → Criando ambiente virtual em $VENV ..."
+    python3 -m venv "$VENV"
+fi
 source "$VENV/bin/activate"
 pip install -r requirements.txt --quiet
 
