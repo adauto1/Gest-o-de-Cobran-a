@@ -112,6 +112,18 @@
       </div>
 
       <div class="info-row">
+        <span class="info-label">Perfil:</span>
+        {% set pd = customer.perfil_devedor if customer.perfil_devedor else 'NORMAL' %}
+        <select onchange="salvarPerfilDevedor({{ customer.id }}, this.value)"
+          style="padding: 4px; font-size: 0.9em; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; font-weight: 600;">
+          <option value="NORMAL" {% if pd=='NORMAL' %}selected{% endif %}>Normal</option>
+          <option value="BOM_PAGADOR" {% if pd=='BOM_PAGADOR' %}selected{% endif %}>💚 Bom Pagador</option>
+          <option value="RECORRENTE" {% if pd=='RECORRENTE' %}selected{% endif %}>🔄 Recorrente</option>
+          <option value="DIFICIL" {% if pd=='DIFICIL' %}selected{% endif %}>🔴 Difícil</option>
+        </select>
+      </div>
+
+      <div class="info-row">
         <span class="info-label">Mensagens:</span>
         {% set msgs_on = customer.msgs_ativo | default(true) %}
         <button id="btnToggleMsgs"
@@ -362,6 +374,20 @@
       if (e.key === 'Enter') finish(true);
       if (e.key === 'Escape') finish(false);
     };
+  }
+
+  async function salvarPerfilDevedor(customerId, valor) {
+    try {
+      const res = await fetch(`/api/customers/${customerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ perfil_devedor: valor })
+      });
+      const data = await res.json();
+      if (!data.success) alert('Erro ao salvar perfil: ' + data.message);
+    } catch (err) {
+      alert('Erro de conexão ao salvar perfil');
+    }
   }
 </script>
 

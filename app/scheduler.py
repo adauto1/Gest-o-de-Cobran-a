@@ -14,10 +14,63 @@ log = logging.getLogger(__name__)
 
 from app.models import (
     Customer, Installment, CollectionRule, SentMessage, MessageDispatchLog,
-    Configuracoes, WhatsappHistorico, today as get_today
+    Configuracoes, WhatsappHistorico, CollectionAction, today as get_today
 )
 from app.core.helpers import format_money
 from app.services.whatsapp import enviar_whatsapp
+
+
+def check_unfulfilled_promises(session_factory) -> dict:
+    """Job diário (8h): marca promessas não cumpridas como PROMESSA_NAO_CUMPRIDA.
+    Para cada CollectionAction com outcome='PROMESSA' e promised_date < hoje,
+    verifica se o cliente ainda tem parcela ABERTA. Se sim, cria nova ação."""
+    db: Session = session_factory()
+    _today = get_today()
+    criadas = 0
+    try:
+        # Busca promessas vencidas (promised_date < hoje)
+        promessas = db.query(CollectionAction).filter(
+            CollectionAction.outcome == "PROMESSA",
+            CollectionAction.promised_date < _today
+        ).all()
+
+        for p in promessas:
+            # Verificar se já foi marcada como não cumprida hoje
+            ja_marcada = db.query(CollectionAction).filter(
+                CollectionAction.customer_id == p.customer_id,
+                CollectionAction.outcome == "PROMESSA_NAO_CUMPRIDA",
+                CollectionAction.created_at >= datetime.combine(_today, datetime.min.time())
+            ).first()
+            if ja_marcada:
+                continue
+
+            # Verificar se ainda tem parcela aberta
+            tem_aberta = db.query(Installment).filter(
+                Installment.customer_id == p.customer_id,
+                Installment.status == "ABERTA",
+                Installment.open_amount > 0
+            ).first()
+            if not tem_aberta:
+                continue
+
+            db.add(CollectionAction(
+                customer_id=p.customer_id,
+                user_id=p.user_id,
+                action_type="AUTO",
+                outcome="PROMESSA_NAO_CUMPRIDA",
+                notes=f"Promessa de {p.promised_date.strftime('%d/%m/%Y')} não foi cumprida."
+            ))
+            criadas += 1
+
+        if criadas:
+            db.commit()
+        log.info(f"[PROMESSAS] {criadas} promessas não cumpridas marcadas.")
+    except Exception as e:
+        log.error(f"[PROMESSAS] Erro: {e}")
+        db.rollback()
+    finally:
+        db.close()
+    return {"criadas": criadas}
 
 def _retry_rescheduled(db: Session, config, is_time_allowed: bool) -> int:
     """
@@ -153,6 +206,9 @@ def run_collection_check(session_factory) -> dict:
                 if nearest_due is None or inst.due_date < nearest_due:
                     nearest_due = inst.due_date
 
+            # Dias até o vencimento mais próximo (negativo = a vencer, positivo = vencido)
+            nearest_days = (_today - nearest_due).days if nearest_due else 0
+
             # Encontrar regra aplicável
             # Lógica de Migração Automática de Nível
             c_profile = getattr(customer, "profile_cobranca", "AUTOMATICO")
@@ -190,7 +246,9 @@ def run_collection_check(session_factory) -> dict:
                     if trigger_adjusted.date() == _today:
                         is_match = True
                 else:
-                    if r.start_days <= max_overdue <= r.end_days:
+                    # Regras de pré-vencimento (dias negativos) usam nearest_days
+                    check_days = nearest_days if r.start_days < 0 else max_overdue
+                    if r.start_days <= check_days <= r.end_days:
                         is_match = True
                 
                 if is_match:
@@ -273,12 +331,24 @@ def run_collection_check(session_factory) -> dict:
                 msg_body = msg_body.replace(k, v)
 
             phone = customer.whatsapp or ""
-            
+
+            # --- CANAL LIGACAO: cria tarefa manual em vez de enviar WhatsApp ---
+            if matched_rule.default_action == "LIGACAO":
+                db.add(CollectionAction(
+                    customer_id=cid,
+                    user_id=1,  # usuário sistema (admin)
+                    action_type="LIGACAO_PENDENTE",
+                    outcome="AGUARDANDO_CONTATO",
+                    notes=f"Ligar para {customer.name} — gerado automaticamente pela régua {matched_rule.level}."
+                ))
+                stats["created"] += 1
+                continue
+
             # --- ENVIO / LOG ---
             status_dispatch = "UNKNOWN"
             error_msg = None
             block_reason_compliance = "OK"
-            
+
             if not phone:
                  status_dispatch = "FAILED"
                  error_msg = "Sem telefone cadastrado"

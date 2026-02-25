@@ -18,7 +18,7 @@ from app.models import User, Configuracoes
 from app.core.security import hash_password
 from app.core.web import render
 from app.services.notifications import run_director_alerts, run_financial_alerts
-from app.scheduler import run_collection_check
+from app.scheduler import run_collection_check, check_unfulfilled_promises
 
 # --- Routers ---
 from app.api.routers import (
@@ -149,6 +149,14 @@ async def startup_event():
         id="financial_alerts",
         replace_existing=True,
         next_run_time=datetime.now(scheduler.timezone) + timedelta(minutes=45)
+    )
+
+    # Job 4: Promessas não cumpridas — diário às 8h
+    scheduler.add_job(
+        lambda: check_unfulfilled_promises(SL),
+        CronTrigger(hour=8, minute=0),
+        id="check_promises",
+        replace_existing=True
     )
 
     scheduler.start()

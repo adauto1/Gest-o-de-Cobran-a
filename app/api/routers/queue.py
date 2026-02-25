@@ -10,8 +10,8 @@ from typing import Optional
 from app.core.database import get_db
 from app.models import Customer, Installment, today
 from app.core.web import render, require_login
-from app.core.helpers import get_regua_nivel, bucket_priority, stores_list, get_status_label, get_last_contacts_map
-from app.schemas import PriorityQueueResponse, PriorityQueueItem
+from app.core.helpers import get_regua_nivel, bucket_priority, stores_list, get_status_label, get_last_contacts_full_map
+from app.schemas import PriorityQueueResponse, PriorityQueueItem, QueueStats
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def _build_overdue_subquery(db: Session, filters: list):
     ).filter(*filters).group_by(Installment.customer_id).subquery()
 
 
-def _apply_user_filters(query, stmt, user, db: Session):
+def _apply_user_filters(query, _stmt, user, db: Session):
     """Aplica filtros de acesso por role e loja."""
     if user.role == "COBRANCA":
         if user.store:
@@ -73,15 +73,47 @@ def get_priority_queue_api(
     total_pages = (total_items + limit - 1) // limit
     results = query.offset(offset).limit(limit).all()
 
-    # Busca todos os últimos contatos de uma vez (sem N+1)
+    # Busca últimos contatos + outcome de uma vez (sem N+1)
     customer_ids = [row[0].id for row in results]
-    last_contacts = get_last_contacts_map(db, customer_ids)
+    last_contacts = get_last_contacts_full_map(db, customer_ids)
+
+    # Calcula stats da carteira para o usuário atual
+    from app.models import CollectionAction
+    from datetime import datetime
+    today_start = datetime.combine(today(), datetime.min.time())
+
+    all_ids_query = db.query(Customer.id).join(stmt, Customer.id == stmt.c.customer_id)
+    all_ids_query = _apply_user_filters(all_ids_query, stmt, user, db)
+    all_customer_ids = [r[0] for r in all_ids_query.all()]
+
+    sem_contato_hoje = 0
+    promessas_abertas = 0
+    if all_customer_ids:
+        contatados_hoje = db.query(CollectionAction.customer_id).filter(
+            CollectionAction.customer_id.in_(all_customer_ids),
+            CollectionAction.created_at >= today_start
+        ).distinct().count()
+        sem_contato_hoje = len(all_customer_ids) - contatados_hoje
+        from sqlalchemy import or_
+        promessas_abertas = db.query(CollectionAction.customer_id).filter(
+            CollectionAction.customer_id.in_(all_customer_ids),
+            CollectionAction.outcome == "PROMESSA",
+            or_(CollectionAction.promised_date == None, CollectionAction.promised_date >= today())
+        ).distinct().count()
+
+    stats = QueueStats(
+        total_carteira=total_items,
+        sem_contato_hoje=max(0, sem_contato_hoje),
+        promessas_abertas=promessas_abertas
+    )
 
     items = []
     for row in results:
         cust, mo, to, co = row
         max_over = int(mo) if mo else 0
-        ultimo_contato_str = last_contacts.get(cust.id, "Sem contato")
+        contato_info = last_contacts.get(cust.id, {})
+        ultimo_contato_str = contato_info.get("str", "Sem contato") if contato_info else "Sem contato"
+        ultimo_outcome = contato_info.get("outcome", None) if contato_info else None
 
         items.append(PriorityQueueItem(
             cliente_id=cust.id,
@@ -92,16 +124,19 @@ def get_priority_queue_api(
             data_vencimento=(today() - timedelta(days=max_over)).strftime("%d/%m/%Y") if mo is not None else "",
             profile_cobranca=cust.profile_cobranca,
             ultimo_contato_str=ultimo_contato_str,
+            ultimo_outcome=ultimo_outcome,
             qtd_parcelas=co,
             status_label=get_status_label(max_over),
-            regua_nivel=get_regua_nivel(cust.profile_cobranca, max_over)
+            regua_nivel=get_regua_nivel(cust.profile_cobranca, max_over),
+            perfil_devedor=getattr(cust, "perfil_devedor", None) or "NORMAL"
         ))
 
     return PriorityQueueResponse(
         items=items,
         total_items=total_items,
         total_pages=total_pages,
-        current_page=page
+        current_page=page,
+        stats=stats
     )
 
 
@@ -171,14 +206,17 @@ def queue_page(
     total_pages = (total_items + page_size - 1) // page_size
     results = query.offset(offset).limit(page_size).all()
 
-    # Busca todos os últimos contatos de uma vez (sem N+1)
+    # Busca últimos contatos + outcome de uma vez (sem N+1)
     customer_ids = [row[0].id for row in results]
-    last_contacts = get_last_contacts_map(db, customer_ids)
+    last_contacts = get_last_contacts_full_map(db, customer_ids)
 
     items = []
     for row in results:
         cust, mo, to, co = row
         max_over = int(mo) if mo else 0
+        contato_info = last_contacts.get(cust.id, {})
+        ultimo_contato_str = contato_info.get("str", "Sem contato") if contato_info else "Sem contato"
+        ultimo_outcome = contato_info.get("outcome", None) if contato_info else None
         items.append({
             "customer": cust,
             "max_overdue": max_over,
@@ -187,7 +225,9 @@ def queue_page(
             "count_open": co,
             "regua_nivel": get_regua_nivel(cust.profile_cobranca, max_over),
             "status_label": get_status_label(max_over),
-            "ultimo_contato_str": last_contacts.get(cust.id, "Sem contato"),
+            "ultimo_contato_str": ultimo_contato_str,
+            "ultimo_outcome": ultimo_outcome,
+            "perfil_devedor": getattr(cust, "perfil_devedor", None) or "NORMAL",
             "data_vencimento": (today() - timedelta(days=max_over)).isoformat()
         })
 

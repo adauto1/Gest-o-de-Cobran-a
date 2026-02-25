@@ -40,6 +40,7 @@ class CustomerUpdate(BaseModel):
     notes: Optional[str] = None
     profile_cobranca: Optional[str] = None
     email: Optional[str] = None
+    perfil_devedor: Optional[str] = None
 
 class Customer(CustomerBase):
     id: int
@@ -101,12 +102,20 @@ class PriorityQueueItem(BaseModel):
     data_vencimento: str
     profile_cobranca: str
     ultimo_contato_str: str
+    ultimo_outcome: Optional[str] = None
     qtd_parcelas: int
     status_label: str
     regua_nivel: str
+    perfil_devedor: Optional[str] = None
+
+class QueueStats(BaseModel):
+    total_carteira: int
+    sem_contato_hoje: int
+    promessas_abertas: int
 
 class PriorityQueueResponse(BaseModel):
     items: List[PriorityQueueItem]
     total_items: int
     total_pages: int
     current_page: int
+    stats: Optional[QueueStats] = None

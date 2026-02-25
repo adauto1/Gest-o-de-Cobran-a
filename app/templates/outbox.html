@@ -254,7 +254,18 @@
                 return;
             }
 
+            let lastDate = null;
             json.data.forEach(item => {
+                // Separador de data
+                const itemDate = item.scheduled_for || item.created_at.split('T')[0];
+                if (itemDate !== lastDate) {
+                    lastDate = itemDate;
+                    const sep = document.createElement('tr');
+                    const dateLabel = itemDate ? new Date(itemDate + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }) : '';
+                    sep.innerHTML = `<td colspan="9" style="background:var(--bg); padding:8px 12px; font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em; border-top:2px solid var(--border);">${dateLabel}</td>`;
+                    tbody.appendChild(sep);
+                }
+
                 const tr = document.createElement('tr');
 
                 // Status Badge

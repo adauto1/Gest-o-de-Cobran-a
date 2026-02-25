@@ -185,6 +185,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         current_commission = format_money(comm_data["commission_value"])
 
     admin_stats = {}
+    team_metrics = []
     if user.role == "ADMIN":
         admin_stats = {
             "customers": db.query(Customer).count(),
@@ -192,7 +193,31 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             "open_installments": db.query(Installment).filter(Installment.status == "ABERTA").count(),
             "overdue_installments": db.query(Installment).filter(Installment.status == "ABERTA", Installment.due_date < dt_today).count()
         }
-
+        today_start = datetime.combine(dt_today, datetime.min.time())
+        cobradores = db.query(User).filter(User.role == "COBRANCA", User.active == True).order_by(User.name).all()
+        for cobrador in cobradores:
+            contatados = db.query(CollectionAction.customer_id).filter(
+                CollectionAction.user_id == cobrador.id,
+                CollectionAction.created_at >= today_start
+            ).distinct().count()
+            promessas = db.query(CollectionAction).filter(
+                CollectionAction.user_id == cobrador.id,
+                CollectionAction.outcome.in_(["PROMESSA", "PROMESSA_PAGAMENTO"]),
+                CollectionAction.created_at >= today_start
+            ).count()
+            valor_prometido = db.query(func.sum(CollectionAction.promised_amount)).filter(
+                CollectionAction.user_id == cobrador.id,
+                CollectionAction.outcome.in_(["PROMESSA", "PROMESSA_PAGAMENTO"]),
+                CollectionAction.created_at >= today_start
+            ).scalar() or Decimal(0)
+            taxa = int(promessas / contatados * 100) if contatados > 0 else 0
+            team_metrics.append({
+                "cobrador": cobrador.name,
+                "contatados_hoje": contatados,
+                "promessas_hoje": promessas,
+                "valor_prometido_hoje": format_money(valor_prometido),
+                "taxa_conversao": taxa,
+            })
 
     # Smart Reconciliation Data
     smart_recon = db.query(ConferenciaTitulos).order_by(ConferenciaTitulos.data_processamento.desc()).first()
@@ -213,4 +238,5 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                   recovery_goals=calculate_recovery_goals(db, user),
                   current_commission=current_commission,
                   admin_stats=admin_stats,
+                  team_metrics=team_metrics,
                   smart_data=smart_data)

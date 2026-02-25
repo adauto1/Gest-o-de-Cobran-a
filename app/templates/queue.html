@@ -91,8 +91,23 @@
           </td>
           <td data-label="Cliente">
             <div class="client-cell">
-              <span class="client-name">{{ it.customer.name }}</span>
-              <span class="client-sub">{{ it.count_open }} parcelas, {{ it.ultimo_contato_str }}</span>
+              <span class="client-name">
+                {{ it.customer.name }}
+                {% if it.perfil_devedor == 'BOM_PAGADOR' %} 💚
+                {% elif it.perfil_devedor == 'RECORRENTE' %} 🔄
+                {% elif it.perfil_devedor == 'DIFICIL' %} 🔴
+                {% endif %}
+              </span>
+              <span class="client-sub">
+                {{ it.count_open }} parcelas · {{ it.ultimo_contato_str }}
+                {% if it.ultimo_outcome == 'PROMESSA_NAO_CUMPRIDA' %}
+                  <span style="color:#dc2626; font-weight:600;"> ⚠️ Promessa não cumprida</span>
+                {% elif it.ultimo_outcome in ['PROMESSA', 'PROMESSA_PAGAMENTO'] %}
+                  <span style="color:#2563eb;"> · 🤝 Promessa</span>
+                {% elif it.ultimo_outcome %}
+                  · {{ it.ultimo_outcome | lower | replace("_", " ") }}
+                {% endif %}
+              </span>
             </div>
           </td>
           <td data-label="Régua" style="text-align: center;">

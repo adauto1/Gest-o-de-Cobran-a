@@ -91,11 +91,12 @@ def rule_for_overdue(db, overdue_days: int, level: str = "LEVE"):
 
 def get_last_contacts_map(db, customer_ids: List[int]) -> dict:
     """Busca o último contato de todos os clientes em uma única query (evita N+1).
-    Retorna {customer_id: data_formatada_str}.
+    Retorna {customer_id: "há X dias" ou "Sem contato"}.
     """
     if not customer_ids:
         return {}
     from sqlalchemy import func
+    from datetime import datetime
     from app.models import CollectionAction
     subq = db.query(
         CollectionAction.customer_id,
@@ -105,8 +106,75 @@ def get_last_contacts_map(db, customer_ids: List[int]) -> dict:
     ).group_by(CollectionAction.customer_id).subquery()
 
     rows = db.query(subq.c.customer_id, subq.c.last_contact).all()
-    return {
-        row.customer_id: row.last_contact.strftime("%d/%m/%Y")
-        for row in rows
-        if row.last_contact
-    }
+    result = {}
+    today_dt = date.today()
+    for row in rows:
+        if not row.last_contact:
+            continue
+        last = row.last_contact
+        if isinstance(last, str):
+            try:
+                last = datetime.fromisoformat(last)
+            except Exception:
+                result[row.customer_id] = last
+                continue
+        delta = (today_dt - last.date()).days
+        if delta == 0:
+            result[row.customer_id] = "hoje"
+        elif delta == 1:
+            result[row.customer_id] = "há 1 dia"
+        else:
+            result[row.customer_id] = f"há {delta} dias"
+    return result
+
+
+def get_last_contacts_full_map(db, customer_ids: List[int]) -> dict:
+    """Busca o último contato E o outcome de todos os clientes em uma query.
+    Retorna {customer_id: {"str": "há X dias", "outcome": "PROMESSA_PAGAMENTO"}}.
+    """
+    if not customer_ids:
+        return {}
+    from sqlalchemy import func
+    from datetime import datetime
+    from app.models import CollectionAction
+
+    # Usa MAX(id) em vez de MAX(created_at) para evitar problemas de precisão
+    # de timestamp no SQLite — id é inteiro único e sempre confiável.
+    subq = db.query(
+        CollectionAction.customer_id,
+        func.max(CollectionAction.id).label("last_id")
+    ).filter(
+        CollectionAction.customer_id.in_(customer_ids)
+    ).group_by(CollectionAction.customer_id).subquery()
+
+    rows = db.query(
+        subq.c.customer_id,
+        CollectionAction.created_at.label("last_contact"),
+        CollectionAction.outcome
+    ).join(
+        CollectionAction,
+        (CollectionAction.customer_id == subq.c.customer_id) &
+        (CollectionAction.id == subq.c.last_id)
+    ).all()
+
+    result = {}
+    today_dt = date.today()
+    for row in rows:
+        if not row.last_contact:
+            continue
+        last = row.last_contact
+        if isinstance(last, str):
+            try:
+                last = datetime.fromisoformat(last)
+            except Exception:
+                result[row.customer_id] = {"str": last, "outcome": row.outcome}
+                continue
+        delta = (today_dt - last.date()).days
+        if delta == 0:
+            date_str = "hoje"
+        elif delta == 1:
+            date_str = "há 1 dia"
+        else:
+            date_str = f"há {delta} dias"
+        result[row.customer_id] = {"str": date_str, "outcome": row.outcome or ""}
+    return result

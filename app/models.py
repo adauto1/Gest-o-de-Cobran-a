@@ -36,6 +36,7 @@ class Customer(Base):
     email = Column(String(120), nullable=True)
     notes = Column(Text, nullable=True)
     profile_cobranca = Column(String(20), nullable=False, default="AUTOMATICO")
+    perfil_devedor = Column(String(20), default="NORMAL", server_default="NORMAL")
     msgs_ativo = Column(Boolean, default=True, server_default="1")
     assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

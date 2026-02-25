@@ -1001,6 +1001,25 @@
           const items = isArray ? data : (data.items || []);
           filaTotalPages = isArray ? 1 : (data.total_pages || 1);
 
+          // Barra de stats da carteira
+          if (!isArray && data.stats) {
+            const s = data.stats;
+            let statsBar = document.getElementById('fila-stats-bar');
+            if (!statsBar) {
+              statsBar = document.createElement('div');
+              statsBar.id = 'fila-stats-bar';
+              statsBar.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;padding:8px 12px;background:var(--bg-2,#f8fafc);border-radius:8px;margin-bottom:12px;font-size:13px;color:var(--text-2,#555);border:1px solid var(--border,#e2e8f0);';
+              const tableWrapper = body.closest('table') || body.parentElement;
+              tableWrapper.parentElement.insertBefore(statsBar, tableWrapper);
+            }
+            const semContato = s.sem_contato_hoje || 0;
+            const promessas = s.promessas_abertas || 0;
+            statsBar.innerHTML = `
+              <span>📋 <strong>${s.total_carteira}</strong> clientes na fila</span>
+              <span style="color:${semContato > 0 ? '#dc2626' : '#16a34a'}">📵 <strong>${semContato}</strong> sem contato hoje</span>
+              <span style="color:#2563eb">🤝 <strong>${promessas}</strong> promessas abertas</span>`;
+          }
+
           if (items.length === 0) {
             body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">Sem clientes em atraso.</td></tr>';
             paginDiv.style.display = 'none';
@@ -1035,11 +1054,26 @@
                 whatsappHtml = `<a class="q-action-btn whatsapp" href="${waUrl}" target="_blank" title="Abrir Chat WhatsApp"><i data-lucide="message-circle"></i></a>`;
               }
 
+              // Ícone de perfil do devedor
+              const perfilIcons = { BOM_PAGADOR: '💚', RECORRENTE: '🔄', DIFICIL: '🔴' };
+              const perfilIcon = perfilIcons[item.perfil_devedor] ? ` ${perfilIcons[item.perfil_devedor]}` : '';
+
+              // Outcome do último contato
+              let outcomeTag = '';
+              if (item.ultimo_outcome === 'PROMESSA_NAO_CUMPRIDA') {
+                outcomeTag = ' <span style="color:#dc2626;font-weight:600;">⚠️ Promessa não cumprida</span>';
+              } else if (item.ultimo_outcome === 'PROMESSA' || item.ultimo_outcome === 'PROMESSA_PAGAMENTO') {
+                outcomeTag = ' · <span style="color:#2563eb;">🤝 Promessa</span>';
+              } else if (item.ultimo_outcome) {
+                const outcomeFmt = item.ultimo_outcome.replace(/_/g, ' ').toLowerCase();
+                outcomeTag = ` · ${outcomeFmt}`;
+              }
+
               const tr = document.createElement('tr');
               tr.innerHTML = `
                   <td data-label="Cliente">
-                    <div class="q-client-name">${item.nome_cliente}</div>
-                    <div class="q-client-meta">${item.qtd_parcelas || 1} parcelas · Último contato: ${item.ultimo_contato_str || 'Sem contato'}</div>
+                    <div class="q-client-name">${item.nome_cliente}${perfilIcon}</div>
+                    <div class="q-client-meta">${item.qtd_parcelas || 1} parcelas · ${item.ultimo_contato_str || 'Sem contato'}${outcomeTag}</div>
                   </td>
                   <td data-label="Régua" style="text-align: center;">
                     <div class="regua-dot dot-${item.regua_nivel || 'LEVE'}" title="Régua: ${item.regua_nivel || 'LEVE'}"></div>
@@ -1420,7 +1454,7 @@
 
           if (resp.ok) {
             closeEditModal();
-            loadPriorityQueue(); // Recarrega a fila
+            await loadPriorityQueue(); // Recarrega a fila
             alert('✅ Cadastro atualizado com sucesso!');
           } else {
             alert('❌ Erro ao atualizar cadastro.');
@@ -1445,6 +1479,10 @@
         document.getElementById('contact_customer_id').value = customerId;
         document.getElementById('contact_customer_name').value = customerName;
         document.getElementById('contact_display_name').textContent = customerName;
+        // Pré-definir data da promessa: hoje + 3 dias
+        const d = new Date(); d.setDate(d.getDate() + 3);
+        const iso = d.toISOString().split('T')[0];
+        document.getElementById('contact_next_date').value = iso;
         document.getElementById('contactModal').classList.add('active');
         // Inicializa campos conforme seleção padrão
         togglePromessaFields();
@@ -1502,7 +1540,7 @@
 
           if (resp.ok) {
             closeContactModal();
-            loadPriorityQueue();
+            await loadPriorityQueue();
             alert('✅ Contato registrado com sucesso!');
           } else {
             // Exibe a mensagem real do servidor
@@ -1619,6 +1657,64 @@
         </div>
       </div>
     </div>
+
+  {% if team_metrics %}
+  <div class="card" style="grid-column: 1 / -1; margin-top: 20px;">
+    <div class="card-h">
+      <div class="card-title">
+        <i data-lucide="users" style="color: var(--primary-text)"></i>
+        Equipe de Cobrança — Hoje
+      </div>
+      <span class="muted small">Desempenho do dia por cobrador</span>
+    </div>
+    <div class="table-wrap">
+      <table class="clean-table">
+        <thead>
+          <tr>
+            <th>Cobrador</th>
+            <th style="text-align:center">Clientes Contatados</th>
+            <th style="text-align:center">Promessas</th>
+            <th style="text-align:right">Valor Prometido</th>
+            <th style="text-align:center">Taxa de Conversão</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in team_metrics %}
+          <tr>
+            <td style="font-weight:600">{{ m.cobrador }}</td>
+            <td style="text-align:center">
+              {% if m.contatados_hoje > 0 %}
+              <span class="badge green">{{ m.contatados_hoje }}</span>
+              {% else %}
+              <span class="badge" style="background:#f3f4f6; color:#6b7280;">0</span>
+              {% endif %}
+            </td>
+            <td style="text-align:center">
+              {% if m.promessas_hoje > 0 %}
+              <span class="badge blue">{{ m.promessas_hoje }}</span>
+              {% else %}
+              <span style="color:var(--text-3)">—</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right; font-weight:700">{{ m.valor_prometido_hoje }}</td>
+            <td style="text-align:center">
+              {% if m.taxa_conversao >= 50 %}
+              <span class="badge green">{{ m.taxa_conversao }}%</span>
+              {% elif m.taxa_conversao >= 20 %}
+              <span class="badge yellow">{{ m.taxa_conversao }}%</span>
+              {% elif m.taxa_conversao > 0 %}
+              <span class="badge red">{{ m.taxa_conversao }}%</span>
+              {% else %}
+              <span style="color:var(--text-3)">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
 
   </div> <!-- End Content Grid -->
 </div> <!-- End Dash Wrap -->

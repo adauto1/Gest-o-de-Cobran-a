@@ -1,5 +1,40 @@
+from __future__ import annotations
 from datetime import datetime, time, timedelta, date
+from zoneinfo import ZoneInfo
 from app.core.config import TIMEZONE as TZ, BUSINESS_HOUR_START as HORA_INICIO, BUSINESS_HOUR_END as HORA_FIM
+
+# Mapeamento DDD → fuso horário (DDDs que diferem do padrão Campo Grande UTC-4)
+_DDD_FUSO = {
+    "68": "America/Rio_Branco",       # Acre: UTC-5
+    "92": "America/Manaus",           # Amazonas: UTC-4
+    "97": "America/Manaus",
+    "95": "America/Boa_Vista",        # Roraima: UTC-4
+    "69": "America/Porto_Velho",      # Rondônia: UTC-4
+    "65": "America/Cuiaba",           # Mato Grosso: UTC-4
+    "66": "America/Cuiaba",
+    "91": "America/Belem",            # Pará: UTC-3
+    "93": "America/Belem",
+    "94": "America/Belem",
+    "96": "America/Belem",            # Amapá: UTC-3
+    "98": "America/Fortaleza",        # Maranhão: UTC-3
+    "99": "America/Fortaleza",
+}
+
+def _tz_for_phone(phone: str | None):
+    """Retorna o fuso horário adequado para um número de telefone pelo DDD."""
+    if not phone:
+        return TZ
+    digits = "".join(c for c in phone if c.isdigit())
+    if digits.startswith("55") and len(digits) >= 4:
+        digits = digits[2:]
+    ddd = digits[:2] if len(digits) >= 2 else ""
+    tz_name = _DDD_FUSO.get(ddd)
+    if tz_name:
+        try:
+            return ZoneInfo(tz_name)
+        except Exception:
+            pass
+    return TZ
 
 # Feriados Nacionais (Fixos e Móveis aproximados para 2024-2026)
 # Idealmente usar library 'holidays' ou tabela no banco.
@@ -75,13 +110,14 @@ def calcular_data_disparo(data_base: datetime, dias_gatilho: int) -> datetime:
     
     return normalizar_para_janela_comercial(alvo)
 
-def check_msg_allowed_now(return_reason: bool = False):
-    """Helper simples para o scheduler saber se pode rodar AGORA (instant check)."""
-    if TZ is None:
-        # Fallback se TZ falhar import
+def check_msg_allowed_now(return_reason: bool = False, phone: str | None = None):
+    """Helper simples para o scheduler saber se pode rodar AGORA (instant check).
+    Se phone for fornecido, ajusta o fuso horário pelo DDD do telefone."""
+    tz = _tz_for_phone(phone) if phone else TZ
+    if tz is None:
         agora = datetime.now()
     else:
-        agora = datetime.now(TZ)
+        agora = datetime.now(tz)
     
     reason = None
     allowed = True

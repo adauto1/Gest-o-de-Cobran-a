@@ -114,11 +114,14 @@
   }
 </style>
 <div class="card">
-  <div class="card-header">
+  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
     <div>
       <h1>Clientes</h1>
       <p class="muted small">Busca por nome e visão rápida do total em aberto</p>
     </div>
+    <a href="/export/clientes.csv{% if store %}?store={{ store }}{% endif %}" class="btn btn-secondary small" title="Exportar CSV">
+      <i data-lucide="download"></i> Exportar CSV
+    </a>
   </div>
 
   <form method="get" action="/customers" class="filters">
@@ -162,7 +165,13 @@
           <!-- Cliente -->
           <td data-label="Cliente">
             <div class="client-cell">
-              <span class="client-name">{{ r.c.name }}</span>
+              <span class="client-name">
+                {{ r.c.name }}
+                {% if r.c.perfil_devedor == 'BOM_PAGADOR' %} 💚
+                {% elif r.c.perfil_devedor == 'RECORRENTE' %} 🔄
+                {% elif r.c.perfil_devedor == 'DIFICIL' %} 🔴
+                {% endif %}
+              </span>
               <span class="client-sub">{{ r.count_open }} parcelas, {{ r.ultimo_contato_str }}</span>
             </div>
           </td>

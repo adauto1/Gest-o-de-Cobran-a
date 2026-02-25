@@ -1,10 +1,13 @@
 import logging
+import csv
+import io
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session, joinedload, subqueryload
 from starlette.status import HTTP_302_FOUND
 from decimal import Decimal
 from datetime import datetime
+from typing import Optional
 
 from app.core.database import get_db
 from app.models import Customer, CollectionAction, User, days_overdue
@@ -172,6 +175,7 @@ def get_customer_api(customer_id: int, request: Request, db: Session = Depends(g
         "email": c.email or "",
         "notes": c.notes or "",
         "profile_cobranca": c.profile_cobranca or "AUTOMATICO",
+        "perfil_devedor": getattr(c, "perfil_devedor", None) or "NORMAL",
     }
 
 @router.patch("/api/customers/{customer_id}")
@@ -193,6 +197,101 @@ def update_customer_api(customer_id: int, dados: CustomerUpdate, request: Reques
         cliente.profile_cobranca = dados.profile_cobranca
     if dados.email is not None:
         cliente.email = dados.email.strip()
+    if dados.perfil_devedor is not None:
+        if dados.perfil_devedor in ("NORMAL", "BOM_PAGADOR", "RECORRENTE", "DIFICIL"):
+            cliente.perfil_devedor = dados.perfil_devedor
     cliente.updated_at = datetime.utcnow()
     db.commit()
     return {"success": True, "message": "Cliente atualizado com sucesso"}
+
+
+@router.get("/export/clientes.csv")
+def export_clientes_csv(
+    request: Request,
+    store: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Exporta clientes com parcelas abertas para CSV."""
+    require_login(request, db)
+
+    query = db.query(Customer).options(subqueryload(Customer.installments))
+    if store:
+        query = query.filter(Customer.store == store)
+    customers = query.order_by(Customer.name).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Nome", "WhatsApp", "Loja", "Parcelas Abertas", "Total Aberto (R$)", "Maior Atraso (dias)", "Perfil Devedor"])
+
+    for c in customers:
+        insts = [i for i in c.installments if i.status == "ABERTA" and Decimal(i.open_amount) > 0]
+        if not insts:
+            continue
+        max_over = max(days_overdue(i.due_date) for i in insts)
+        total_open = sum(Decimal(i.open_amount) for i in insts)
+        writer.writerow([
+            c.name,
+            c.whatsapp or "",
+            c.store or "",
+            len(insts),
+            f"{total_open:.2f}".replace(".", ","),
+            max_over,
+            getattr(c, "perfil_devedor", "NORMAL") or "NORMAL",
+        ])
+
+    output.seek(0)
+    headers = {"Content-Disposition": "attachment; filename=clientes.csv"}
+    return StreamingResponse(iter([output.getvalue()]), media_type="text/csv; charset=utf-8", headers=headers)
+
+
+@router.get("/export/promessas.csv")
+def export_promessas_csv(
+    request: Request,
+    mes: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Exporta promessas do mês para CSV. mes=YYYY-MM, padrão = mês atual."""
+    require_login(request, db)
+
+    from app.models import CollectionAction, User as UserModel
+    hoje = datetime.utcnow()
+    if mes:
+        try:
+            ano, m = int(mes.split("-")[0]), int(mes.split("-")[1])
+        except Exception:
+            ano, m = hoje.year, hoje.month
+    else:
+        ano, m = hoje.year, hoje.month
+
+    inicio = datetime(ano, m, 1)
+    if m == 12:
+        fim = datetime(ano + 1, 1, 1)
+    else:
+        fim = datetime(ano, m + 1, 1)
+
+    rows = db.query(CollectionAction, Customer, UserModel).join(
+        Customer, Customer.id == CollectionAction.customer_id
+    ).join(
+        UserModel, UserModel.id == CollectionAction.user_id
+    ).filter(
+        CollectionAction.outcome.in_(["PROMESSA", "PROMESSA_PAGAMENTO"]),
+        CollectionAction.created_at >= inicio,
+        CollectionAction.created_at < fim,
+    ).order_by(CollectionAction.promised_date).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Data Promessa", "Cliente", "Valor Prometido (R$)", "Cobrador", "Registrado Em"])
+
+    for action, cust, usr in rows:
+        writer.writerow([
+            action.promised_date.strftime("%d/%m/%Y") if action.promised_date else "",
+            cust.name,
+            f"{action.promised_amount:.2f}".replace(".", ",") if action.promised_amount else "",
+            usr.name,
+            action.created_at.strftime("%d/%m/%Y %H:%M"),
+        ])
+
+    output.seek(0)
+    headers = {"Content-Disposition": f"attachment; filename=promessas-{ano}-{m:02d}.csv"}
+    return StreamingResponse(iter([output.getvalue()]), media_type="text/csv; charset=utf-8", headers=headers)
