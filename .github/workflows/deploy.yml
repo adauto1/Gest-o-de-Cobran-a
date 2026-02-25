@@ -9,21 +9,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: "Diagnóstico — Testar conectividade TCP na porta 22"
-      run: |
-        HOST="${{ secrets.SSH_HOST }}"
-        PORT=22
-        echo "================================================"
-        echo " Testando conexão TCP: $HOST:$PORT"
-        echo "================================================"
-        if nc -zw 10 "$HOST" "$PORT"; then
-          echo "✅ SUCESSO — Porta $PORT acessível em $HOST"
-        else
-          echo "❌ FALHA — Porta $PORT inacessível em $HOST"
-          echo "   Verifique se o firewall da Hostinger permite o IP do GitHub Actions."
-          exit 1
-        fi
-
     - name: "Deploy via SSH"
       uses: appleboy/ssh-action@v1.0.3
       with:
