@@ -12,17 +12,18 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-# --- Core & Models ---
 from app.core.database import Base, engine, get_db, run_migrations
 from app.models import User, Configuracoes
 from app.core.security import hash_password
 from app.core.web import render
+from app.core.config import settings
 from app.services.notifications import run_director_alerts, run_financial_alerts
-from app.scheduler import run_collection_check, check_unfulfilled_promises
+from app.scheduler import run_collection_check, check_unfulfilled_promises, save_aging_snapshot, run_weekly_report
 
 # --- Routers ---
 from app.api.routers import (
-    customers, queue, rules, import_data, auth, users, actions, messages, dashboard, commissions, settings, conferencia
+    customers, queue, rules, import_data, auth, users, actions, messages, dashboard, commissions, settings, conferencia,
+    campanhas, acordos, promessas, relatorio, whatsapp_webhook
 )
 
 # --- Logging Estruturado ---
@@ -63,7 +64,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Middleware
-SECRET_KEY = os.getenv("SESSION_SECRET", "CHANGE-ME-IN-PROD")
+SECRET_KEY = settings.session_secret
 if SECRET_KEY == "CHANGE-ME-IN-PROD":
     logger.warning(
         "[SEGURANÇA] SESSION_SECRET usando valor padrão inseguro! "
@@ -87,6 +88,11 @@ app.include_router(dashboard.router)
 app.include_router(commissions.router)
 app.include_router(settings.router)
 app.include_router(conferencia.router)
+app.include_router(campanhas.router)
+app.include_router(acordos.router)
+app.include_router(promessas.router)
+app.include_router(relatorio.router)
+app.include_router(whatsapp_webhook.router)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -102,10 +108,10 @@ def root_redirect():
 async def startup_event():
     # Admin Auto-creation
     db = next(get_db())
-    admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@portalmoveis.local")
+    admin_email = settings.default_admin_email
     admin = db.query(User).filter(User.email == admin_email).first()
     if not admin:
-        admin_pass = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
+        admin_pass = settings.default_admin_password
         db.add(User(
             name="Administrador",
             email=admin_email,
@@ -156,6 +162,22 @@ async def startup_event():
         lambda: check_unfulfilled_promises(SL),
         CronTrigger(hour=8, minute=0),
         id="check_promises",
+        replace_existing=True
+    )
+
+    # Job 5: Snapshot de aging — diário às 10h
+    scheduler.add_job(
+        lambda: save_aging_snapshot(SL),
+        CronTrigger(hour=10, minute=0),
+        id="aging_snapshot",
+        replace_existing=True
+    )
+
+    # Job 6: Relatório semanal — sábados às 18h
+    scheduler.add_job(
+        lambda: run_weekly_report(SL),
+        CronTrigger(day_of_week="sat", hour=18, minute=0),
+        id="weekly_report",
         replace_existing=True
     )
 

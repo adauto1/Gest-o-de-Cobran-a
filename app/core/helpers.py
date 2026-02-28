@@ -178,3 +178,63 @@ def get_last_contacts_full_map(db, customer_ids: List[int]) -> dict:
             date_str = f"há {delta} dias"
         result[row.customer_id] = {"str": date_str, "outcome": row.outcome or ""}
     return result
+
+
+def calcular_score_propensao(customer, actions: list) -> int:
+    """Calcula score de propensão ao pagamento (0-100) com base em heurísticas.
+
+    Lógica:
+    - Base neutra: 50
+    - Taxa de cumprimento de promessas: +0 a +30
+    - Não atendeu: -4 por ocorrência (máx -20)
+    - Recusa: -10 por ocorrência (máx -20)
+    - Perfil devedor: BOM_PAGADOR=+15, RECORRENTE=-5, DIFICIL=-20
+    """
+    score = 50
+
+    promessas = [a for a in actions if a.outcome in ("PROMESSA", "PROMESSA_PAGAMENTO")]
+    cumpridas = [a for a in actions if a.outcome in ("PROMESSA_PAGAMENTO", "PAGOU")]
+    nao_cumpridas = [a for a in actions if a.outcome == "PROMESSA_NAO_CUMPRIDA"]
+    nao_atendeu = [a for a in actions if a.outcome == "NAO_ATENDEU"]
+    recusa = [a for a in actions if a.outcome == "RECUSA"]
+
+    total_promessas = len(promessas) + len(nao_cumpridas)
+    if total_promessas > 0:
+        taxa = len(cumpridas) / total_promessas
+        score += int(taxa * 30)
+
+    score -= min(20, len(nao_atendeu) * 4)
+    score -= min(20, len(recusa) * 10)
+
+    perfil_map = {"BOM_PAGADOR": 15, "NORMAL": 0, "RECORRENTE": -5, "DIFICIL": -20}
+    score += perfil_map.get(getattr(customer, "perfil_devedor", "NORMAL") or "NORMAL", 0)
+
+    return max(0, min(100, int(score)))
+
+
+def get_scores_batch(db, customer_ids: list, customers_map: dict) -> dict:
+    """Busca todas as ações de cobrança dos clientes em uma query e calcula scores.
+    Retorna {customer_id: score}.
+    """
+    if not customer_ids:
+        return {}
+    from app.models import CollectionAction
+
+    rows = db.query(CollectionAction).filter(
+        CollectionAction.customer_id.in_(customer_ids)
+    ).all()
+
+    # Agrupar ações por cliente
+    actions_by_customer: dict = {cid: [] for cid in customer_ids}
+    for row in rows:
+        if row.customer_id in actions_by_customer:
+            actions_by_customer[row.customer_id].append(row)
+
+    result = {}
+    for cid in customer_ids:
+        customer = customers_map.get(cid)
+        if customer:
+            result[cid] = calcular_score_propensao(customer, actions_by_customer[cid])
+        else:
+            result[cid] = 50
+    return result

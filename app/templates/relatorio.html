@@ -1,0 +1,152 @@
+{% extends "layout.html" %}
+{% block content %}
+<style>
+  .rel-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:16px; margin-bottom:24px; }
+  .rel-kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px; }
+  .rel-kpi-label { font-size:12px; color:var(--text-3); font-weight:600; margin-bottom:4px; }
+  .rel-kpi-value { font-size:24px; font-weight:800; color:var(--text); }
+  .rel-section { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:20px; }
+  .rel-section h3 { font-size:14px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .progress-bar { height:8px; background:var(--bg); border-radius:4px; overflow:hidden; margin:4px 0 8px; }
+  .progress-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#6366f1,#818cf8); transition:width .5s; }
+</style>
+
+<div class="card">
+  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1>Relatório Gerencial</h1>
+      <p class="muted small">Visão consolidada do desempenho da cobrança</p>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="date" id="filtro_de" class="input" style="width:140px;">
+        <span class="muted small">até</span>
+        <input type="date" id="filtro_ate" class="input" style="width:140px;">
+        <button onclick="loadRelatorio()" class="btn primary">Filtrar</button>
+      </div>
+      <button onclick="enviarDiretores(this)" class="btn secondary" title="Enviar resumo via WhatsApp para os diretores">
+        📲 Enviar Diretores
+      </button>
+    </div>
+  </div>
+
+  <div id="rel-content" style="margin-top:20px;">
+    <div class="muted small" style="text-align:center; padding:40px;">Carregando relatório...</div>
+  </div>
+</div>
+
+<script>
+  function defaultDates() {
+    const ate = new Date();
+    const de = new Date(ate); de.setDate(de.getDate()-30);
+    document.getElementById('filtro_de').value = de.toISOString().split('T')[0];
+    document.getElementById('filtro_ate').value = ate.toISOString().split('T')[0];
+  }
+
+  async function loadRelatorio() {
+    const de = document.getElementById('filtro_de').value;
+    const ate = document.getElementById('filtro_ate').value;
+    const el = document.getElementById('rel-content');
+    el.innerHTML = '<div class="muted small" style="text-align:center; padding:40px;">Calculando...</div>';
+
+    try {
+      const res = await fetch(`/api/relatorio?de=${de}&ate=${ate}`);
+      const d = await res.json();
+
+      const fmtBrl = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+      // KPIs
+      let kpisHtml = `
+        <div class="rel-kpi-grid">
+          <div class="rel-kpi"><div class="rel-kpi-label">💰 Recuperado</div><div class="rel-kpi-value" style="color:#16a34a;">${fmtBrl(d.recuperado)}</div></div>
+          <div class="rel-kpi"><div class="rel-kpi-label">📋 Em Aberto</div><div class="rel-kpi-value" style="color:#dc2626;">${fmtBrl(d.total_aberto)}</div></div>
+          <div class="rel-kpi"><div class="rel-kpi-label">📞 Contatados</div><div class="rel-kpi-value">${d.funil?.contatados||0}</div></div>
+          <div class="rel-kpi"><div class="rel-kpi-label">🤝 Prometidos</div><div class="rel-kpi-value">${d.funil?.com_promessa||0}</div></div>
+          <div class="rel-kpi"><div class="rel-kpi-label">💸 Pagos</div><div class="rel-kpi-value">${d.funil?.pagos||0}</div></div>
+          <div class="rel-kpi"><div class="rel-kpi-label">📬 Msgs Enviadas</div><div class="rel-kpi-value">${d.mensagens_enviadas||0}</div></div>
+        </div>`;
+
+      // Ranking cobradores
+      let rankHtml = '<div class="rel-section"><h3>🏆 Ranking de Cobradores</h3>';
+      if (d.ranking && d.ranking.length) {
+        rankHtml += '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+        rankHtml += '<thead><tr style="border-bottom:1px solid var(--border);"><th style="padding:8px; text-align:left;">#</th><th style="padding:8px; text-align:left;">Cobrador</th><th style="padding:8px; text-align:center;">Ações</th><th style="padding:8px; text-align:center;">Promessas</th><th style="padding:8px; text-align:center;">Taxa</th></tr></thead><tbody>';
+        d.ranking.forEach((r,i) => {
+          const medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `${i+1}°`;
+          const taxa = r.total > 0 ? Math.round(r.promessas/r.total*100) : 0;
+          rankHtml += `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px;">${medal}</td>
+            <td style="padding:8px; font-weight:600;">${r.cobrador}</td>
+            <td style="padding:8px; text-align:center;">${r.total}</td>
+            <td style="padding:8px; text-align:center;"><span style="background:#dbeafe; color:#1d4ed8; padding:2px 8px; border-radius:10px; font-weight:700;">${r.promessas}</span></td>
+            <td style="padding:8px; text-align:center;"><span style="background:${taxa>=50?'#dcfce7':'#fef3c7'}; color:${taxa>=50?'#166534':'#92400e'}; padding:2px 8px; border-radius:10px; font-weight:700;">${taxa}%</span></td>
+          </tr>`;
+        });
+        rankHtml += '</tbody></table>';
+      } else {
+        rankHtml += '<div class="muted small">Sem dados no período.</div>';
+      }
+      rankHtml += '</div>';
+
+      // Eficácia da Régua
+      let eficaciaHtml = '<div class="rel-section"><h3>📊 Eficácia da Régua</h3>';
+      if (d.eficacia_regua && d.eficacia_regua.length) {
+        eficaciaHtml += '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+        eficaciaHtml += '<thead><tr style="border-bottom:1px solid var(--border);"><th style="padding:8px; text-align:left;">Régua</th><th style="padding:8px; text-align:center;">Gatilho</th><th style="padding:8px; text-align:center;">Enviadas</th><th style="padding:8px; text-align:center;">Converteram</th><th style="padding:8px; text-align:center;">Taxa</th></tr></thead><tbody>';
+        d.eficacia_regua.forEach(r => {
+          const taxa = r.taxa_promessa || 0;
+          eficaciaHtml += `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px; font-weight:600;">${r.regua}</td>
+            <td style="padding:8px; text-align:center;">${r.gatilho_dias}d</td>
+            <td style="padding:8px; text-align:center;">${r.total_enviados}</td>
+            <td style="padding:8px; text-align:center;">${r.clientes_prometeram}</td>
+            <td style="padding:8px; text-align:center;">
+              <div>${taxa.toFixed(1)}%</div>
+              <div class="progress-bar" style="width:80px; display:inline-block;"><div class="progress-fill" style="width:${Math.min(100,taxa)}%;"></div></div>
+            </td>
+          </tr>`;
+        });
+        eficaciaHtml += '</tbody></table>';
+      } else {
+        eficaciaHtml += '<div class="muted small">Sem dados de eficácia no período.</div>';
+      }
+      eficaciaHtml += '</div>';
+
+      // Campanhas ativas
+      let campHtml = '';
+      if (d.campanhas && d.campanhas.length) {
+        campHtml = '<div class="rel-section"><h3>📣 Campanhas Ativas</h3><div style="display:flex; flex-wrap:wrap; gap:10px;">';
+        d.campanhas.forEach(c => {
+          campHtml += `<div style="border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:12px;">
+            <div style="font-weight:700;">${c.nome}</div>
+            <div class="muted">${c.data_inicio} → ${c.data_fim}</div>
+            ${c.desconto_pct ? `<div style="color:#92400e; font-weight:600;">🏷️ ${c.desconto_pct}% desconto</div>` : ''}
+          </div>`;
+        });
+        campHtml += '</div></div>';
+      }
+
+      el.innerHTML = kpisHtml + rankHtml + eficaciaHtml + campHtml;
+    } catch(e) {
+      el.innerHTML = `<div style="color:var(--danger); padding:20px;">Erro ao carregar: ${e.message}</div>`;
+    }
+  }
+
+  async function enviarDiretores(btn) {
+    if (!confirm('Enviar resumo semanal via WhatsApp para os diretores agora?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    try {
+      const res = await fetch('/api/relatorio/enviar-diretores', { method: 'POST' });
+      const d = await res.json();
+      if (d.enviados !== undefined) alert(`✅ Enviado para ${d.enviados} diretor(es)!`);
+      else alert('Erro: ' + (d.detail || 'Falha ao enviar'));
+    } catch { alert('Erro de conexão.'); } finally {
+      btn.disabled = false;
+      btn.textContent = '📲 Enviar Diretores';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { defaultDates(); loadRelatorio(); });
+</script>
+{% endblock %}

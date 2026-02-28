@@ -18,6 +18,7 @@ from app.core.web import render, require_login
 import os
 from app.core.helpers import parse_decimal, parse_date_br as parse_date
 from app.services.sync_customers import sync_erp_customers
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ def sync_customers_api(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Apenas ADMIN")
     
     # Busca o arquivo HTM na pasta de dados padrão
-    data_dir = os.getenv("DATA_DIR", "data")
+    data_dir = settings.data_dir
     erp_file = os.path.join(data_dir, "RELATORIO.HTM")
     
     if not os.path.exists(erp_file):

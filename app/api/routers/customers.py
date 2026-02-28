@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session, joinedload, subqueryload
 from starlette.status import HTTP_302_FOUND
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from app.core.database import get_db
@@ -109,11 +109,15 @@ def customer_detail_page(request: Request, customer_id: int, db: Session = Depen
         od = days_overdue(i.due_date) if i.status == "ABERTA" and Decimal(i.open_amount) > 0 else 0
         inst_view.append({"i": i, "overdue": od})
 
+    _today = datetime.now().date()
+    _yesterday = _today - timedelta(days=1)
     return render("customer.html", request=request, user=user, title="Cliente", customer=c,
                   installments=inst_view, actions=actions,
                   regua_nivel=get_regua_nivel(c.profile_cobranca, max_over),
                   total_open=format_money(total_open), max_overdue=max_over,
-                  wa_link=link, wa_message=msg)
+                  wa_link=link, wa_message=msg,
+                  today=_today.strftime("%d/%m/%Y"),
+                  yesterday=_yesterday.strftime("%d/%m/%Y"))
 
 @router.post("/customers/{customer_id}/assign")
 def assign_customer(request: Request, customer_id: int, assigned_to_user_id: int = Form(...), db: Session = Depends(get_db)):

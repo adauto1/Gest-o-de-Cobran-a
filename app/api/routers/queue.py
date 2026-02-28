@@ -10,7 +10,7 @@ from typing import Optional
 from app.core.database import get_db
 from app.models import Customer, Installment, today
 from app.core.web import render, require_login
-from app.core.helpers import get_regua_nivel, bucket_priority, stores_list, get_status_label, get_last_contacts_full_map
+from app.core.helpers import get_regua_nivel, bucket_priority, stores_list, get_status_label, get_last_contacts_full_map, get_scores_batch
 from app.schemas import PriorityQueueResponse, PriorityQueueItem, QueueStats
 
 router = APIRouter()
@@ -77,6 +77,10 @@ def get_priority_queue_api(
     customer_ids = [row[0].id for row in results]
     last_contacts = get_last_contacts_full_map(db, customer_ids)
 
+    # Score de propensão ao pagamento em lote (sem N+1)
+    customers_map = {row[0].id: row[0] for row in results}
+    scores = get_scores_batch(db, customer_ids, customers_map)
+
     # Calcula stats da carteira para o usuário atual
     from app.models import CollectionAction
     from datetime import datetime
@@ -128,7 +132,8 @@ def get_priority_queue_api(
             qtd_parcelas=co,
             status_label=get_status_label(max_over),
             regua_nivel=get_regua_nivel(cust.profile_cobranca, max_over),
-            perfil_devedor=getattr(cust, "perfil_devedor", None) or "NORMAL"
+            perfil_devedor=getattr(cust, "perfil_devedor", None) or "NORMAL",
+            score_propensao=scores.get(cust.id, 50)
         ))
 
     return PriorityQueueResponse(

@@ -142,7 +142,66 @@ class Configuracoes(Base):
     whatsapp_client_token = Column(String(100), nullable=True)
     scheduler_hora_disparo = Column(Integer, default=9, server_default="9")
     director_alert_min_installments = Column(Integer, default=3, server_default="3")
+    # PIX
+    pix_chave = Column(String(100), nullable=True)
+    pix_tipo = Column(String(20), default="CNPJ", server_default="CNPJ")
+    # Metas diárias por cobrador
+    meta_contatos_diarios = Column(Integer, default=20, server_default="20")
+    meta_promessas_diarios = Column(Integer, default=5, server_default="5")
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Campanha(Base):
+    """Campanhas de cobrança com segmento e desconto."""
+    __tablename__ = "campanhas"
+    id = Column(Integer, primary_key=True)
+    nome = Column(String(120), nullable=False)
+    descricao = Column(Text, nullable=True)
+    desconto_pct = Column(Numeric(5, 2), nullable=True)   # % de desconto oferecido
+    data_inicio = Column(Date, nullable=False)
+    data_fim = Column(Date, nullable=False)
+    segmento_atraso_min = Column(Integer, default=0)       # dias mínimos de atraso
+    segmento_atraso_max = Column(Integer, default=9999)    # dias máximos de atraso
+    segmento_perfil = Column(String(20), default="TODOS")  # TODOS/LEVE/MODERADA/INTENSA
+    ativa = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Acordo(Base):
+    """Acordos de renegociação simples (sem gerar novas parcelas)."""
+    __tablename__ = "acordos"
+    id = Column(Integer, primary_key=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    data_acordo = Column(Date, nullable=False)
+    desconto_pct = Column(Numeric(5, 2), nullable=True)
+    valor_original = Column(Numeric(12, 2), nullable=False)
+    valor_acordado = Column(Numeric(12, 2), nullable=False)
+    novo_prazo = Column(Date, nullable=False)
+    forma_pagamento = Column(String(50), default="PIX")    # PIX/BOLETO/DINHEIRO/CARTAO
+    status = Column(String(20), default="ATIVO")           # ATIVO/CUMPRIDO/QUEBRADO
+    notas = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    customer = relationship("Customer")
+    user = relationship("User")
+
+
+class AgingSnapshot(Base):
+    """Snapshot diário do aging da carteira (1 registro por dia)."""
+    __tablename__ = "aging_snapshots"
+    id = Column(Integer, primary_key=True)
+    data = Column(Date, unique=True, nullable=False)
+    c_1_30 = Column(Integer, default=0)
+    v_1_30 = Column(Numeric(12, 2), default=0)
+    c_31_60 = Column(Integer, default=0)
+    v_31_60 = Column(Numeric(12, 2), default=0)
+    c_61_90 = Column(Integer, default=0)
+    v_61_90 = Column(Numeric(12, 2), default=0)
+    c_90plus = Column(Integer, default=0)
+    v_90plus = Column(Numeric(12, 2), default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class WhatsappHistorico(Base):
     __tablename__ = "whatsapp_historico"

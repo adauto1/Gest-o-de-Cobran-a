@@ -110,6 +110,11 @@ async def update_settings_api(request: Request, db: Session = Depends(get_db)):
     if "director_alert_min_installments" in dados:
         config.director_alert_min_installments = int(dados["director_alert_min_installments"])
 
+    if "pix_chave" in dados: config.pix_chave = str(dados["pix_chave"]).strip() or None
+    if "pix_tipo" in dados: config.pix_tipo = str(dados["pix_tipo"]).strip()
+    if "meta_contatos_diarios" in dados: config.meta_contatos_diarios = int(dados["meta_contatos_diarios"])
+    if "meta_promessas_diarios" in dados: config.meta_promessas_diarios = int(dados["meta_promessas_diarios"])
+
     if "scheduler_hora_disparo" in dados:
         nova_hora = int(dados["scheduler_hora_disparo"])
         config.scheduler_hora_disparo = nova_hora

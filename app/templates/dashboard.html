@@ -926,6 +926,95 @@
   </div>
 
 
+  <!-- Funil de Cobrança + Previsão + Meta Diária -->
+  <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-bottom:24px;">
+
+    <!-- Funil de Cobrança -->
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="font-size:18px;">🔀</span>
+        <span style="font-weight:700; font-size:14px; color:var(--text);">Funil de Cobrança</span>
+        <span class="muted small" style="margin-left:auto;">últimos 30 dias</span>
+      </div>
+      <div style="display:flex; align-items:stretch; gap:6px;">
+        {% set funnel_steps = [
+          ('Total', funil.total, '#6366f1', '👥'),
+          ('Contatados', funil.contatados, '#3b82f6', '📞'),
+          ('Prometidos', funil.com_promessa, '#f59e0b', '🤝'),
+          ('Pagos', funil.pagos, '#10b981', '💰')
+        ] %}
+        {% for lbl, val, cor, ico in funnel_steps %}
+        <div style="flex:1; text-align:center; padding:12px 6px; border-radius:8px; background:{{ cor }}15; border:1px solid {{ cor }}30;">
+          <div style="font-size:18px;">{{ ico }}</div>
+          <div style="font-size:22px; font-weight:800; color:{{ cor }};">{{ val }}</div>
+          <div style="font-size:11px; color:var(--text-3); margin-top:2px;">{{ lbl }}</div>
+        </div>
+        {% if not loop.last %}
+        <div style="display:flex; align-items:center; color:var(--text-3); font-size:16px;">→</div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <div style="display:flex; gap:16px; margin-top:12px; font-size:12px; color:var(--text-2);">
+        <span>Contato: <strong>{{ funil.taxa_contato }}%</strong></span>
+        <span>Promessa: <strong>{{ funil.taxa_promessa }}%</strong></span>
+        <span>Pagamento: <strong>{{ funil.taxa_pagamento }}%</strong></span>
+      </div>
+    </div>
+
+    <!-- Previsão de Recuperação -->
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span style="font-size:18px;">📈</span>
+          <span style="font-weight:700; font-size:14px; color:var(--text);">Previsão de Recuperação</span>
+        </div>
+        <div class="muted small" style="margin-bottom:16px;">próximos 30 dias</div>
+        <div style="font-size:28px; font-weight:800; color:#16a34a;">{{ previsao_recuperacao }}</div>
+        <div class="muted small" style="margin-top:6px;">Taxa histórica de cumprimento: <strong>{{ taxa_cumprimento_pct }}%</strong></div>
+      </div>
+      <a href="/promessas" style="display:block; margin-top:16px; text-align:center; padding:8px; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:6px; color:#6366f1; font-size:12px; font-weight:600; text-decoration:none;">
+        📅 Ver Calendário de Promessas
+      </a>
+    </div>
+  </div>
+
+  <!-- Meta Diária do Cobrador -->
+  {% if user.role == "COBRANCA" %}
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px; margin-bottom:24px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+      <span style="font-size:18px;">🎯</span>
+      <span style="font-weight:700; font-size:14px; color:var(--text);">Minha Meta de Hoje</span>
+      <span class="muted small" style="margin-left:auto;">{{ today }}</span>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-size:13px; font-weight:600;">Clientes Contatados</span>
+          <span style="font-size:13px; font-weight:700; color:{% if progresso_contatos >= 100 %}#16a34a{% else %}var(--text-2){% endif %};">
+            {{ contatados_hoje_user }} / {{ meta_contatos }}
+          </span>
+        </div>
+        <div class="meta-bar-bg">
+          <div class="meta-bar-fill" style="width:{{ progresso_contatos }}%;"></div>
+        </div>
+        <div style="font-size:11px; color:var(--text-3); margin-top:4px;">{{ progresso_contatos }}% da meta</div>
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-size:13px; font-weight:600;">Promessas Registradas</span>
+          <span style="font-size:13px; font-weight:700; color:{% if progresso_promessas >= 100 %}#16a34a{% else %}var(--text-2){% endif %};">
+            {{ promessas_hoje_user }} / {{ meta_promessas }}
+          </span>
+        </div>
+        <div class="meta-bar-bg">
+          <div class="meta-bar-fill" style="width:{{ progresso_promessas }}%; background:linear-gradient(90deg,#6366f1,#818cf8);"></div>
+        </div>
+        <div style="font-size:11px; color:var(--text-3); margin-top:4px;">{{ progresso_promessas }}% da meta</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Content Grid: Queue + Right Column -->
   <div class="content-grid">
 
@@ -1081,6 +1170,13 @@
                   <td data-label="Em Aberto"><span class="q-amount">R$ ${Number(item.valor_em_aberto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
                   <td data-label="Status">
                     <span class="q-badge ${badgeClass}">${item.status_label || ''}</span>
+                    ${(() => {
+                      const sc = item.score_propensao;
+                      if (sc == null) return '';
+                      const col = sc >= 71 ? '#16a34a' : sc >= 31 ? '#d97706' : '#dc2626';
+                      const ico = sc >= 71 ? '🟢' : sc >= 31 ? '🟡' : '🔴';
+                      return `<span title="Score de propensão: ${sc}/100" style="margin-left:4px;font-size:11px;color:${col};font-weight:600;">${ico}${sc}</span>`;
+                    })()}
                   </td>
                   <td data-label="Ações">
                     <div class="q-actions">

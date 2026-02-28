@@ -10,3 +10,5 @@ passlib[bcrypt]
 python-dotenv
 cryptography
 apscheduler>=3.10.0
+pydantic-settings>=2.0.0
+alembic>=1.13.0

@@ -24,8 +24,7 @@ verify_commission.py
 verify_system.py
 diagnose_today.py
 check_feb.py
-relatorio.htm
-relatorio.html
+
 
 # Scripts de debug/manutenção local (não vão para VPS)
 audit_db.py

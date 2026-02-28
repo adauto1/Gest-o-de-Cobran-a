@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import List, Dict
 
 from app.core.database import get_db
-from app.models import Installment, Customer, CollectionAction, User, today, ConferenciaTitulos
+from app.models import Installment, Customer, CollectionAction, User, today, ConferenciaTitulos, Configuracoes
 from app.core.web import render, require_login
 from app.core.helpers import format_money
 from app.core.config import RECOVERY_TARGET_PCT
@@ -219,6 +219,84 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 "taxa_conversao": taxa,
             })
 
+    # --- Funil de Cobrança (últimos 30 dias) ---
+    periodo_inicio = dt_today - timedelta(days=30)
+    periodo_inicio_dt = datetime.combine(periodo_inicio, datetime.min.time())
+
+    funil_contatados = db.query(CollectionAction.customer_id).filter(
+        CollectionAction.created_at >= periodo_inicio_dt
+    ).distinct().count()
+
+    funil_com_promessa = db.query(CollectionAction.customer_id).filter(
+        CollectionAction.created_at >= periodo_inicio_dt,
+        CollectionAction.outcome == "PROMESSA"
+    ).distinct().count()
+
+    funil_pagos = db.query(Installment.customer_id).filter(
+        Installment.status == "PAGA",
+        Installment.paid_at >= periodo_inicio_dt
+    ).distinct().count()
+
+    funil_total = db.query(Customer.id).join(
+        Installment, Customer.id == Installment.customer_id
+    ).filter(Installment.status == "ABERTA", Installment.open_amount > 0).distinct().count()
+
+    funil = {
+        "total": funil_total,
+        "contatados": funil_contatados,
+        "com_promessa": funil_com_promessa,
+        "pagos": funil_pagos,
+        "taxa_contato": int(funil_contatados / funil_total * 100) if funil_total > 0 else 0,
+        "taxa_promessa": int(funil_com_promessa / funil_contatados * 100) if funil_contatados > 0 else 0,
+        "taxa_pagamento": int(funil_pagos / funil_com_promessa * 100) if funil_com_promessa > 0 else 0,
+    }
+
+    # --- Previsão de Recuperação (próximos 30 dias) ---
+    prox_30 = dt_today + timedelta(days=30)
+    promessas_futuras_valor = db.query(func.sum(CollectionAction.promised_amount)).filter(
+        CollectionAction.outcome == "PROMESSA",
+        CollectionAction.promised_date >= dt_today,
+        CollectionAction.promised_date <= prox_30
+    ).scalar() or Decimal("0")
+
+    # Taxa histórica de cumprimento (últimos 90 dias)
+    hist_90 = dt_today - timedelta(days=90)
+    hist_90_dt = datetime.combine(hist_90, datetime.min.time())
+    total_prom_hist = db.query(CollectionAction).filter(
+        CollectionAction.created_at >= hist_90_dt,
+        CollectionAction.outcome.in_(["PROMESSA", "PROMESSA_NAO_CUMPRIDA"])
+    ).count()
+    cumpridas_hist = db.query(CollectionAction).filter(
+        CollectionAction.created_at >= hist_90_dt,
+        CollectionAction.outcome == "PROMESSA_PAGAMENTO"
+    ).count()
+    taxa_cumprimento = Decimal(cumpridas_hist) / Decimal(total_prom_hist) if total_prom_hist > 0 else Decimal("0.5")
+    previsao_recuperacao = format_money(promessas_futuras_valor * taxa_cumprimento)
+    taxa_cumprimento_pct = int(taxa_cumprimento * 100)
+
+    # --- Meta Diária do Cobrador ---
+    config = db.query(Configuracoes).first()
+    meta_contatos = getattr(config, "meta_contatos_diarios", 20) or 20
+    meta_promessas = getattr(config, "meta_promessas_diarios", 5) or 5
+
+    progresso_contatos = 0
+    progresso_promessas = 0
+    contatados_hoje_user = 0
+    promessas_hoje_user = 0
+    if user.role == "COBRANCA":
+        today_start = datetime.combine(dt_today, datetime.min.time())
+        contatados_hoje_user = db.query(CollectionAction.customer_id).filter(
+            CollectionAction.user_id == user.id,
+            CollectionAction.created_at >= today_start
+        ).distinct().count()
+        promessas_hoje_user = db.query(CollectionAction).filter(
+            CollectionAction.user_id == user.id,
+            CollectionAction.outcome.in_(["PROMESSA", "PROMESSA_PAGAMENTO"]),
+            CollectionAction.created_at >= today_start
+        ).count()
+        progresso_contatos = min(100, int(contatados_hoje_user / meta_contatos * 100)) if meta_contatos > 0 else 0
+        progresso_promessas = min(100, int(promessas_hoje_user / meta_promessas * 100)) if meta_promessas > 0 else 0
+
     # Smart Reconciliation Data
     smart_recon = db.query(ConferenciaTitulos).order_by(ConferenciaTitulos.data_processamento.desc()).first()
     smart_data = None
@@ -239,4 +317,13 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                   current_commission=current_commission,
                   admin_stats=admin_stats,
                   team_metrics=team_metrics,
-                  smart_data=smart_data)
+                  smart_data=smart_data,
+                  funil=funil,
+                  previsao_recuperacao=previsao_recuperacao,
+                  taxa_cumprimento_pct=taxa_cumprimento_pct,
+                  meta_contatos=meta_contatos,
+                  meta_promessas=meta_promessas,
+                  contatados_hoje_user=contatados_hoje_user,
+                  promessas_hoje_user=promessas_hoje_user,
+                  progresso_contatos=progresso_contatos,
+                  progresso_promessas=progresso_promessas)

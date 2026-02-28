@@ -2,11 +2,12 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from app.core.config import settings
 
-DATA_DIR = os.getenv("DATA_DIR", "./data")
+DATA_DIR = settings.data_dir
 os.makedirs(DATA_DIR, exist_ok=True)
 
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR}/app.db")
+DATABASE_URL = settings.get_database_url
 
 engine = create_engine(
     DATABASE_URL,

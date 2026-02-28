@@ -1,0 +1,172 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <h1>Campanhas de Cobrança</h1>
+      <p class="muted small">Segmente clientes e ofereça condições especiais para acelerar a recuperação</p>
+    </div>
+    <button onclick="openModal()" class="btn primary">+ Nova Campanha</button>
+  </div>
+
+  <div id="campanhas-list" style="display:flex; flex-direction:column; gap:16px; margin-top:20px;">
+    <div class="muted small" style="text-align:center; padding:40px;">Carregando campanhas...</div>
+  </div>
+</div>
+
+<!-- Modal Nova Campanha -->
+<div id="modalCampanha" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+  <div style="background:var(--surface); border-radius:12px; padding:28px; max-width:520px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h3 style="margin-bottom:20px; font-size:18px; font-weight:700;">📣 Nova Campanha</h3>
+    <form id="formCampanha" onsubmit="saveCampanha(event)">
+      <div style="margin-bottom:14px;">
+        <label class="small muted">Nome da Campanha</label>
+        <input type="text" id="c_nome" class="input" style="width:100%; margin-top:4px;" required placeholder="Ex: Feirão de Julho">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="small muted">Descrição (opcional)</label>
+        <textarea id="c_descricao" class="input" rows="2" style="width:100%; margin-top:4px;" placeholder="Detalhes da campanha..."></textarea>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+        <div>
+          <label class="small muted">Desconto (%)</label>
+          <input type="number" id="c_desconto" class="input" style="width:100%; margin-top:4px;" min="0" max="100" step="0.01" placeholder="0 = sem desconto">
+        </div>
+        <div>
+          <label class="small muted">Perfil do Segmento</label>
+          <select id="c_perfil" class="input" style="width:100%; margin-top:4px;">
+            <option value="TODOS">Todos</option>
+            <option value="LEVE">Leve</option>
+            <option value="MODERADA">Moderada</option>
+            <option value="INTENSA">Intensa</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+        <div>
+          <label class="small muted">Atraso mínimo (dias)</label>
+          <input type="number" id="c_atraso_min" class="input" style="width:100%; margin-top:4px;" min="0" value="0">
+        </div>
+        <div>
+          <label class="small muted">Atraso máximo (dias)</label>
+          <input type="number" id="c_atraso_max" class="input" style="width:100%; margin-top:4px;" min="0" value="9999">
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+        <div>
+          <label class="small muted">Data de Início</label>
+          <input type="date" id="c_inicio" class="input" style="width:100%; margin-top:4px;" required>
+        </div>
+        <div>
+          <label class="small muted">Data de Fim</label>
+          <input type="date" id="c_fim" class="input" style="width:100%; margin-top:4px;" required>
+        </div>
+      </div>
+      <p class="muted small" style="margin-bottom:16px;">
+        Use <code>{nome_campanha}</code> e <code>{desconto_campanha}</code> nos templates das regras de cobrança.
+      </p>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" onclick="closeModal()" class="btn secondary">Cancelar</button>
+        <button type="submit" class="btn primary">Salvar Campanha</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  async function loadCampanhas() {
+    const el = document.getElementById('campanhas-list');
+    try {
+      const res = await fetch('/api/campanhas');
+      const data = await res.json();
+      if (!data.length) {
+        el.innerHTML = '<div class="muted small" style="text-align:center;padding:40px;">Nenhuma campanha cadastrada. Crie a primeira!</div>';
+        return;
+      }
+      el.innerHTML = '';
+      for (const c of data) {
+        // Buscar elegíveis
+        let elegiveis = '...';
+        try {
+          const r2 = await fetch(`/api/campanhas/${c.id}/elegiveis`);
+          const d2 = await r2.json();
+          elegiveis = d2.total;
+        } catch {}
+
+        const statusColor = c.ativa ? '#16a34a' : '#6b7280';
+        const statusLabel = c.ativa ? 'Ativa' : 'Inativa';
+        const card = document.createElement('div');
+        card.style.cssText = 'border:1px solid var(--border); border-radius:10px; padding:18px; background:var(--surface); display:flex; align-items:flex-start; gap:16px;';
+        card.innerHTML = `
+          <div style="flex:1;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+              <span style="font-weight:700; font-size:15px;">${c.nome}</span>
+              <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; background:${statusColor}20; color:${statusColor};">${statusLabel}</span>
+              ${c.desconto_pct ? `<span style="font-size:11px; background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; font-weight:600;">🏷️ ${c.desconto_pct}% OFF</span>` : ''}
+            </div>
+            ${c.descricao ? `<div class="muted small" style="margin-bottom:8px;">${c.descricao}</div>` : ''}
+            <div style="display:flex; gap:16px; font-size:12px; color:var(--text-2);">
+              <span>📅 ${c.data_inicio} → ${c.data_fim}</span>
+              <span>⏱️ Atraso: ${c.segmento_atraso_min}–${c.segmento_atraso_max} dias</span>
+              <span>🎯 Perfil: ${c.segmento_perfil}</span>
+              <span>👥 <strong>${elegiveis}</strong> clientes elegíveis</span>
+            </div>
+          </div>
+          <button onclick="toggleCampanha(${c.id}, this)" class="btn small ${c.ativa ? 'danger' : 'primary'}" style="white-space:nowrap;">
+            ${c.ativa ? '⏸ Desativar' : '▶ Ativar'}
+          </button>
+        `;
+        el.appendChild(card);
+      }
+    } catch (e) {
+      el.innerHTML = '<div style="color:var(--danger); padding:20px;">Erro ao carregar campanhas.</div>';
+    }
+  }
+
+  async function toggleCampanha(id, btn) {
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/campanhas/${id}/toggle`, { method: 'POST' });
+      if (res.ok) loadCampanhas();
+      else alert('Erro ao alterar status.');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function saveCampanha(e) {
+    e.preventDefault();
+    const payload = {
+      nome: document.getElementById('c_nome').value,
+      descricao: document.getElementById('c_descricao').value || null,
+      desconto_pct: parseFloat(document.getElementById('c_desconto').value) || null,
+      segmento_perfil: document.getElementById('c_perfil').value,
+      segmento_atraso_min: parseInt(document.getElementById('c_atraso_min').value) || 0,
+      segmento_atraso_max: parseInt(document.getElementById('c_atraso_max').value) || 9999,
+      data_inicio: document.getElementById('c_inicio').value,
+      data_fim: document.getElementById('c_fim').value,
+    };
+    try {
+      const res = await fetch('/campanhas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (res.ok) { closeModal(); loadCampanhas(); }
+      else { const d = await res.json(); alert('Erro: ' + (d.detail || 'Falha ao salvar')); }
+    } catch { alert('Erro de conexão.'); }
+  }
+
+  function openModal() {
+    // Pré-preencher datas
+    const today = new Date().toISOString().split('T')[0];
+    const next30 = new Date(Date.now() + 30*86400000).toISOString().split('T')[0];
+    document.getElementById('c_inicio').value = today;
+    document.getElementById('c_fim').value = next30;
+    document.getElementById('modalCampanha').style.display = 'flex';
+  }
+  function closeModal() {
+    document.getElementById('modalCampanha').style.display = 'none';
+    document.getElementById('formCampanha').reset();
+  }
+  document.getElementById('modalCampanha').addEventListener('click', e => { if (e.target.id === 'modalCampanha') closeModal(); });
+
+  document.addEventListener('DOMContentLoaded', loadCampanhas);
+</script>
+{% endblock %}

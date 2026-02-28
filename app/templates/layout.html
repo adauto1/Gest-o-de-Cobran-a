@@ -36,6 +36,9 @@
         <a class="nav-link {% if active_page == 'customers' %}active{% endif %}" href="/customers">
           <i data-lucide="users"></i> Clientes
         </a>
+        <a class="nav-link {% if active_page == 'promessas' %}active{% endif %}" href="/promessas">
+          <i data-lucide="calendar-check"></i> Promessas
+        </a>
         <a class="nav-link {% if active_page == 'agreements' %}active{% endif %}" href="/agreements">
           <i data-lucide="handshake"></i> Acordos
         </a>
@@ -52,8 +55,11 @@
         <!-- GESTÃO -->
         {% if user.role == "ADMIN" %}
         <div class="sidebar-group-label">Gestão</div>
-        <a class="nav-link {% if active_page == 'reports' %}active{% endif %}" href="/reports">
-          <i data-lucide="bar-chart-3"></i> Relatórios
+        <a class="nav-link {% if active_page == 'relatorio' %}active{% endif %}" href="/relatorio">
+          <i data-lucide="bar-chart-3"></i> Relatório
+        </a>
+        <a class="nav-link {% if active_page == 'campanhas' %}active{% endif %}" href="/campanhas">
+          <i data-lucide="megaphone"></i> Campanhas
         </a>
         <a class="nav-link {% if active_page == 'users' %}active{% endif %}" href="/users">
           <i data-lucide="users"></i> Usuários

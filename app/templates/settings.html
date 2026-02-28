@@ -101,6 +101,48 @@
                 </p>
             </div>
 
+            <!-- PIX -->
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <h4 style="font-size: 14px; margin-bottom: 12px;">💳 Chave PIX (para templates da régua)</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label class="small muted">Chave PIX</label>
+                        <input type="text" id="pix_chave" class="input" style="width: 100%; margin-top: 4px;"
+                            placeholder="Ex: 00.000.000/0001-00"
+                            value="{{ config.pix_chave or '' }}">
+                    </div>
+                    <div>
+                        <label class="small muted">Tipo de Chave</label>
+                        <select id="pix_tipo" class="input" style="width: 100%; margin-top: 4px;">
+                            {% for tipo in ['CNPJ','CPF','EMAIL','TELEFONE','ALEATORIA'] %}
+                            <option value="{{ tipo }}" {% if (config.pix_tipo or 'CNPJ') == tipo %}selected{% endif %}>{{ tipo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <p class="muted small" style="margin-top: 6px;">Use <code>{chave_pix}</code> e <code>{tipo_pix}</code> nos templates das regras.</p>
+            </div>
+
+            <!-- Metas Diárias -->
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <h4 style="font-size: 14px; margin-bottom: 12px;">🎯 Metas Diárias dos Cobradores</h4>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div>
+                        <label class="small muted">Meta de Contatos/dia</label>
+                        <input type="number" id="meta_contatos_diarios" class="input"
+                            min="1" max="200" style="width: 90px; margin-top: 4px;"
+                            value="{{ config.meta_contatos_diarios or 20 }}">
+                    </div>
+                    <div>
+                        <label class="small muted">Meta de Promessas/dia</label>
+                        <input type="number" id="meta_promessas_diarios" class="input"
+                            min="1" max="100" style="width: 90px; margin-top: 4px;"
+                            value="{{ config.meta_promessas_diarios or 5 }}">
+                    </div>
+                </div>
+                <p class="muted small" style="margin-top: 6px;">Visível na barra de progresso do dashboard de cada cobrador.</p>
+            </div>
+
             <div id="save-msg" style="margin-bottom: 10px; display: none;" class="alert alert-success">Configurações
                 salvas!</div>
             <button type="submit" id="save-btn" class="btn primary">Salvar Configurações</button>
@@ -195,7 +237,11 @@
             whatsapp_token: document.getElementById('whatsapp_token').value,
             whatsapp_client_token: document.getElementById('whatsapp_client_token').value,
             scheduler_hora_disparo: parseInt(document.getElementById('scheduler_hora_disparo').value),
-            director_alert_min_installments: parseInt(document.getElementById('director_alert_min_installments').value)
+            director_alert_min_installments: parseInt(document.getElementById('director_alert_min_installments').value),
+            pix_chave: document.getElementById('pix_chave').value.trim(),
+            pix_tipo: document.getElementById('pix_tipo').value,
+            meta_contatos_diarios: parseInt(document.getElementById('meta_contatos_diarios').value) || 20,
+            meta_promessas_diarios: parseInt(document.getElementById('meta_promessas_diarios').value) || 5
         };
 
         btn.disabled = true;

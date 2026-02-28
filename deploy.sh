@@ -50,6 +50,10 @@ sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE customers ADD COLUMN msgs_ativo INTE
 sqlite3 "$APP_DIR/data/app.db" "CREATE TABLE IF NOT EXISTS reconciliation_stats (id INTEGER PRIMARY KEY, date DATE UNIQUE, total_paid_erp INTEGER, normally_paid INTEGER, cancelled_or_deleted INTEGER, details_json TEXT, created_at DATETIME, updated_at DATETIME);" 2>/dev/null || true
 sqlite3 "$APP_DIR/data/app.db" "CREATE TABLE IF NOT EXISTS conferencia_titulos (id INTEGER PRIMARY KEY, data_processamento DATETIME, resumo_json TEXT, detalhes_json TEXT, created_at DATETIME);" 2>/dev/null || true
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE customers ADD COLUMN perfil_devedor TEXT DEFAULT 'NORMAL';" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN pix_chave TEXT;" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN pix_tipo TEXT DEFAULT 'CNPJ';" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN meta_contatos_diarios INTEGER DEFAULT 20;" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN meta_promessas_diarios INTEGER DEFAULT 5;" 2>/dev/null || true
 
 # 4. Reiniciar serviço
 echo "🔄 Reiniciando serviço..."

@@ -258,6 +258,22 @@ def run_collection_check(session_factory) -> dict:
             if not matched_rule:
                 continue
 
+            # --- CADÊNCIA MULTICANAL: escalonar se 3+ NAO_ATENDEU nos últimos 14 dias ---
+            from datetime import timedelta
+            cutoff_14d = datetime.combine(_today - timedelta(days=14), datetime.min.time())
+            nao_atendeu_count = db.query(CollectionAction).filter(
+                CollectionAction.customer_id == cid,
+                CollectionAction.outcome == "NAO_ATENDEU",
+                CollectionAction.created_at >= cutoff_14d
+            ).count()
+            if nao_atendeu_count >= 3 and c_profile != "AUTOMATICO":
+                if customer.profile_cobranca == "LEVE":
+                    customer.profile_cobranca = "MODERADA"
+                    log.info(f"[MULTICANAL] {customer.name} escalado LEVE→MODERADA")
+                elif customer.profile_cobranca == "MODERADA":
+                    customer.profile_cobranca = "INTENSA"
+                    log.info(f"[MULTICANAL] {customer.name} escalado MODERADA→INTENSA")
+
             # Verificar frequência
             last_msg = (
                 db.query(SentMessage)
@@ -279,8 +295,21 @@ def run_collection_check(session_factory) -> dict:
             msg_body = matched_rule.template_message
             cpf_raw = customer.cpf_cnpj or ""
             cpf_masked = f"***.{cpf_raw[3:6]}.{cpf_raw[6:9]}-**" if len(cpf_raw) >= 11 else cpf_raw
-            chave_pix = "00.000.000/0001-00"
+            chave_pix = getattr(config, "pix_chave", None) or "00.000.000/0001-00"
+            tipo_pix = getattr(config, "pix_tipo", None) or "CNPJ"
             link_pagto = f"https://portalmoveis.com.br/pagar/{customer.external_key}"
+
+            # --- CAMPANHA ATIVA: detectar se cliente é elegível ---
+            from app.models import Campanha
+            campanha_ativa = db.query(Campanha).filter(
+                Campanha.ativa == True,
+                Campanha.data_inicio <= _today,
+                Campanha.data_fim >= _today,
+                Campanha.segmento_atraso_min <= max_overdue,
+                Campanha.segmento_atraso_max >= max_overdue,
+            ).filter(
+                (Campanha.segmento_perfil == "TODOS") | (Campanha.segmento_perfil == effective_profile)
+            ).first()
             
             juros = Decimal("1.10") if max_overdue > 30 else Decimal("1.02")
             valor_com_juros = insts[0].open_amount * juros if insts else Decimal("0")
@@ -325,7 +354,11 @@ def run_collection_check(session_factory) -> dict:
                 "{cpf_mascarado}": cpf_masked,
                 "{telefone}": "(67) 99916-1881",
                 "{chave_pix}": chave_pix,
+                "{tipo_pix}": tipo_pix,
                 "{link_pagamento}": link_pagto,
+                # Campanha
+                "{nome_campanha}": campanha_ativa.nome if campanha_ativa else "",
+                "{desconto_campanha}": str(int(campanha_ativa.desconto_pct or 0)) if campanha_ativa else "0",
             }
             for k, v in replacements.items():
                 msg_body = msg_body.replace(k, v)
@@ -421,3 +454,148 @@ def run_collection_check(session_factory) -> dict:
         db.close()
 
     return stats
+
+
+def save_aging_snapshot(session_factory) -> dict:
+    """Job diário (10h): salva snapshot do aging atual para análise de tendência."""
+    from datetime import timedelta
+    from app.models import AgingSnapshot
+    db: Session = session_factory()
+    _today = get_today()
+    try:
+        # Evitar duplicata
+        if db.query(AgingSnapshot).filter(AgingSnapshot.data == _today).first():
+            log.info("[AGING] Snapshot já salvo hoje.")
+            return {"status": "ja_salvo"}
+
+        # Calcular aging atual
+        buckets = {
+            "1_30":   {"c": 0, "v": Decimal("0")},
+            "31_60":  {"c": 0, "v": Decimal("0")},
+            "61_90":  {"c": 0, "v": Decimal("0")},
+            "90plus": {"c": 0, "v": Decimal("0")},
+        }
+        open_insts = db.query(Installment).filter(
+            Installment.status == "ABERTA",
+            Installment.due_date < _today
+        ).all()
+        for inst in open_insts:
+            overdue = (_today - inst.due_date).days
+            amt = Decimal(str(inst.open_amount or 0))
+            if overdue <= 30:
+                key = "1_30"
+            elif overdue <= 60:
+                key = "31_60"
+            elif overdue <= 90:
+                key = "61_90"
+            else:
+                key = "90plus"
+            buckets[key]["c"] += 1
+            buckets[key]["v"] += amt
+
+        snap = AgingSnapshot(
+            data=_today,
+            c_1_30=buckets["1_30"]["c"],   v_1_30=buckets["1_30"]["v"],
+            c_31_60=buckets["31_60"]["c"],  v_31_60=buckets["31_60"]["v"],
+            c_61_90=buckets["61_90"]["c"],  v_61_90=buckets["61_90"]["v"],
+            c_90plus=buckets["90plus"]["c"], v_90plus=buckets["90plus"]["v"],
+        )
+        db.add(snap)
+        db.commit()
+        log.info(f"[AGING] Snapshot salvo para {_today}.")
+        return {"status": "salvo"}
+    except Exception as e:
+        db.rollback()
+        log.error(f"[AGING] Erro ao salvar snapshot: {e}")
+        return {"status": "erro", "error": str(e)}
+    finally:
+        db.close()
+
+
+def run_weekly_report(session_factory) -> dict:
+    """Job semanal (sábado 18h): envia resumo da semana via WhatsApp para Diretores."""
+    from datetime import timedelta
+    from app.models import Director
+    from app.services.whatsapp import enviar_whatsapp
+    from app.core.helpers import format_money
+
+    db: Session = session_factory()
+    _today = get_today()
+    semana_atras = _today - timedelta(days=7)
+    semana_atras_dt = datetime.combine(semana_atras, datetime.min.time())
+
+    try:
+        config = db.query(Configuracoes).first()
+        if not config or not config.whatsapp_ativo:
+            log.info("[RELATORIO] WhatsApp desativado — relatório semanal ignorado.")
+            return {"status": "skipped"}
+
+        directors = db.query(Director).filter(Director.active == True).all()
+        if not directors:
+            log.info("[RELATORIO] Nenhum diretor ativo.")
+            return {"status": "sem_diretores"}
+
+        # Calcular dados da semana
+        from sqlalchemy import func as sa_func
+        from app.models import CollectionAction as CA, User
+
+        # Recuperado na semana
+        recuperado = db.query(sa_func.sum(Installment.amount)).filter(
+            Installment.status == "PAGA",
+            Installment.paid_at >= semana_atras_dt
+        ).scalar() or Decimal("0")
+
+        # Total em aberto
+        total_aberto = db.query(sa_func.sum(Installment.open_amount)).filter(
+            Installment.status == "ABERTA"
+        ).scalar() or Decimal("0")
+
+        # Contatados na semana
+        contatados = db.query(CA.customer_id).filter(
+            CA.created_at >= semana_atras_dt
+        ).distinct().count()
+
+        # Promessas na semana
+        promessas = db.query(CA).filter(
+            CA.created_at >= semana_atras_dt,
+            CA.outcome.in_(["PROMESSA", "PROMESSA_PAGAMENTO"])
+        ).count()
+
+        # Top 3 cobradores
+        cobradores_stats = db.query(
+            User.name,
+            sa_func.count(CA.id).label("acoes")
+        ).join(CA, CA.user_id == User.id).filter(
+            CA.created_at >= semana_atras_dt,
+            User.role == "COBRANCA"
+        ).group_by(User.id, User.name).order_by(sa_func.count(CA.id).desc()).limit(3).all()
+
+        top3 = "\n".join([f"  {i+1}. {r.name}: {r.acoes} ações" for i, r in enumerate(cobradores_stats)]) or "  (sem dados)"
+
+        msg = (
+            f"📊 *RELATÓRIO SEMANAL — COBRANÇA*\n"
+            f"📅 {semana_atras.strftime('%d/%m')} a {_today.strftime('%d/%m/%Y')}\n\n"
+            f"💰 Recuperado: *{format_money(recuperado)}*\n"
+            f"📋 Total em aberto: *{format_money(total_aberto)}*\n"
+            f"📞 Clientes contatados: *{contatados}*\n"
+            f"🤝 Promessas registradas: *{promessas}*\n\n"
+            f"🏆 Top Cobradores:\n{top3}\n\n"
+            f"_Relatório automático — Gestão de Cobrança_"
+        )
+
+        enviados = 0
+        for d in directors:
+            try:
+                res = enviar_whatsapp(d.phone, msg, modo_teste=config.whatsapp_modo_teste)
+                if res.get("modo") in ("SIMULADO", "ENVIADO"):
+                    enviados += 1
+            except Exception as ex:
+                log.error(f"[RELATORIO] Erro ao enviar para {d.name}: {ex}")
+
+        log.info(f"[RELATORIO] Semanal enviado para {enviados}/{len(directors)} diretores.")
+        return {"status": "ok", "enviados": enviados}
+    except Exception as e:
+        log.error(f"[RELATORIO] Erro: {e}")
+        return {"status": "erro", "error": str(e)}
+    finally:
+        db.close()

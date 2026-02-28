@@ -170,6 +170,7 @@
   </div>
 
   <!-- COLUNA DA DIREITA: HISTÓRICO -->
+  <!-- Timeline Visual de Contatos -->
   <div class="card">
     <div class="card-h" style="padding: 0; margin-bottom: 15px; border: none;">
       <div class="card-title" style="font-size: 1.1em;">
@@ -181,33 +182,139 @@
     {% if actions|length == 0 %}
     <p class="muted">Nenhum contato registrado ainda.</p>
     {% else %}
-    <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
-      <ul class="list">
+    <div style="max-height: 480px; overflow-y: auto; padding-right: 8px;">
+      {% set outcome_colors = {
+        'PROMESSA': '#3b82f6', 'PROMESSA_PAGAMENTO': '#10b981',
+        'PAGOU': '#16a34a', 'NAO_ATENDEU': '#9ca3af',
+        'RECUSA': '#ef4444', 'PROMESSA_NAO_CUMPRIDA': '#f97316',
+        'NUMERO_ERRADO': '#6b7280', 'NEGOCIACAO': '#8b5cf6',
+        'AGUARDANDO_CONTATO': '#d97706', 'WHATSAPP_ENTRADA': '#25d366'
+      } %}
+      {% set action_icons = {
+        'LIGACAO': 'phone', 'WHATSAPP': 'message-circle', 'VISITA': 'home',
+        'EMAIL': 'mail', 'AUTO': 'bot', 'LIGACAO_PENDENTE': 'phone-missed',
+        'WHATSAPP_ENTRADA': 'message-circle'
+      } %}
+      {% set outcome_pt = {
+        'PROMESSA': 'Promessa de Pagamento', 'PROMESSA_PAGAMENTO': 'Promessa Realizada',
+        'PAGOU': 'Confirmou Pagamento', 'NAO_ATENDEU': 'Não Atendeu',
+        'RECUSA': 'Recusa de Pagamento', 'PROMESSA_NAO_CUMPRIDA': 'Promessa Não Cumprida',
+        'NUMERO_ERRADO': 'Número Errado', 'NEGOCIACAO': 'Em Negociação',
+        'AGUARDANDO_CONTATO': 'Aguardando Contato', 'WHATSAPP_ENTRADA': 'Resposta WhatsApp'
+      } %}
+      <div style="position:relative; padding-left:28px;">
+        <!-- Linha vertical -->
+        <div style="position:absolute; left:10px; top:0; bottom:0; width:2px; background:var(--border);"></div>
+        {% set prev_date = namespace(value=None) %}
         {% for a in actions %}
-        <li style="border-left: 3px solid var(--primary); padding-left: 12px; margin-bottom: 12px;">
-          <div style="font-weight: 600; font-size: 13px;">
-            {{ a.action_type }} — {{ a.outcome }}
+          {% set cor = outcome_colors.get(a.outcome, '#6366f1') %}
+          {% set icone = action_icons.get(a.action_type, 'clipboard') %}
+          {% set outcome_label = outcome_pt.get(a.outcome, a.outcome) %}
+          {% set acao_date = a.created_at.strftime('%d/%m/%Y') %}
+          {% if acao_date != prev_date.value %}
+          <div style="font-size:11px; font-weight:700; color:var(--text-3); margin:16px 0 8px -20px; text-transform:uppercase; letter-spacing:.5px;">
+            {% if acao_date == today %}Hoje
+            {% elif acao_date == yesterday %}Ontem
+            {% else %}{{ acao_date }}{% endif %}
           </div>
-          <div class="muted small" style="margin-top: 2px;">
-            {{ a.user.name }} · {{ a.created_at.strftime('%d/%m/%Y %H:%M') }}
-          </div>
-          {% if a.promised_date %}
-          <div class="muted small" style="color: var(--primary); font-weight: 500;">
-            Promessa: {{ a.promised_date.strftime('%d/%m/%Y') }}{% if a.promised_amount %} · R$ {{
-            "{:,.2f}".format(a.promised_amount).replace(",", "X").replace(".", ",").replace("X", ".") }}{% endif %}
-          </div>
+          {% set prev_date.value = acao_date %}
           {% endif %}
-          {% if a.notes %}
-          <div class="muted small"
-            style="font-style: italic; background: #f9f9f9; padding: 4px 8px; border-radius: 4px; margin-top: 5px;">
-            {{ a.notes }}
+          <div style="position:relative; margin-bottom:14px;">
+            <!-- Bolinha colorida -->
+            <div style="position:absolute; left:-22px; top:4px; width:14px; height:14px; border-radius:50%; background:{{ cor }}; border:2px solid white; box-shadow:0 0 0 2px {{ cor }}40;"></div>
+            <!-- Card da ação -->
+            <div style="background:var(--bg); border:1px solid {{ cor }}30; border-radius:8px; padding:10px 12px;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <i data-lucide="{{ icone }}" style="width:13px; height:13px; color:{{ cor }};"></i>
+                  <span style="font-weight:700; font-size:13px; color:{{ cor }};">{{ outcome_label }}</span>
+                </div>
+                <span style="font-size:11px; color:var(--text-3);">{{ a.created_at.strftime('%H:%M') }}</span>
+              </div>
+              <div style="font-size:11px; color:var(--text-3); margin-bottom:4px;">
+                {{ a.user.name }} · {{ a.action_type.replace('_',' ') }}
+              </div>
+              {% if a.promised_date %}
+              <div style="font-size:12px; color:#2563eb; font-weight:600; margin-bottom:4px;">
+                📅 Promessa: {{ a.promised_date.strftime('%d/%m/%Y') }}
+                {% if a.promised_amount %} · R$ {{ "{:,.2f}".format(a.promised_amount).replace(",","X").replace(".",",").replace("X",".") }}{% endif %}
+              </div>
+              {% endif %}
+              {% if a.notes %}
+              <div style="font-size:12px; color:var(--text-2); font-style:italic; border-top:1px solid var(--border); padding-top:6px; margin-top:6px;">
+                "{{ a.notes }}"
+              </div>
+              {% endif %}
+            </div>
           </div>
-          {% endif %}
-        </li>
         {% endfor %}
-      </ul>
+      </div>
     </div>
     {% endif %}
+  </div>
+
+  <!-- Seção de Acordos -->
+  <div class="card" style="margin-top:16px;">
+    <div class="card-h" style="padding:0; margin-bottom:15px; border:none; display:flex; justify-content:space-between; align-items:center;">
+      <div class="card-title" style="font-size:1.1em;">
+        <i data-lucide="handshake" style="color:var(--primary)"></i>
+        Acordos de Renegociação
+      </div>
+      <button onclick="openAcordoModal()" class="btn small primary">+ Registrar Acordo</button>
+    </div>
+    <div id="acordos-list-customer">
+      <div class="muted small">Carregando acordos...</div>
+    </div>
+  </div>
+
+  <!-- Modal de Acordo -->
+  <div id="modalAcordo" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div style="background:var(--surface); border-radius:12px; padding:24px; max-width:460px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <h3 style="margin-bottom:16px; font-size:16px; font-weight:700;">🤝 Registrar Acordo</h3>
+      <form id="formAcordo" onsubmit="saveAcordo(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label class="small muted">Valor Original (R$)</label>
+            <input type="number" id="ac_valor_original" class="input" style="width:100%; margin-top:4px;" step="0.01" min="0" required>
+          </div>
+          <div>
+            <label class="small muted">Desconto (%)</label>
+            <input type="number" id="ac_desconto" class="input" style="width:100%; margin-top:4px;" step="0.01" min="0" max="100" value="0" oninput="calcAcordo()">
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="small muted">Valor Acordado (R$)</label>
+          <input type="number" id="ac_valor_acordado" class="input" style="width:100%; margin-top:4px; background:#f0fdf4;" step="0.01" min="0" required readonly>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label class="small muted">Data do Acordo</label>
+            <input type="date" id="ac_data" class="input" style="width:100%; margin-top:4px;" required>
+          </div>
+          <div>
+            <label class="small muted">Novo Prazo</label>
+            <input type="date" id="ac_prazo" class="input" style="width:100%; margin-top:4px;" required>
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="small muted">Forma de Pagamento</label>
+          <select id="ac_forma" class="input" style="width:100%; margin-top:4px;">
+            <option value="PIX">PIX</option>
+            <option value="BOLETO">Boleto</option>
+            <option value="DINHEIRO">Dinheiro</option>
+            <option value="CARTAO">Cartão</option>
+          </select>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="small muted">Observações</label>
+          <textarea id="ac_notas" class="input" rows="2" style="width:100%; margin-top:4px;" placeholder="Condições do acordo..."></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" onclick="closeAcordoModal()" class="btn secondary">Cancelar</button>
+          <button type="submit" class="btn primary">Salvar Acordo</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- TABELA DE PARCELAS (LARGURA TOTAL) -->
@@ -389,6 +496,107 @@
       alert('Erro de conexão ao salvar perfil');
     }
   }
+
+  // === Acordos ===
+  const CUSTOMER_ID = {{ customer.id }};
+
+  async function loadAcordos() {
+    const el = document.getElementById('acordos-list-customer');
+    try {
+      const res = await fetch(`/api/acordos?customer_id=${CUSTOMER_ID}`);
+      const data = await res.json();
+      if (!data.length) {
+        el.innerHTML = '<div class="muted small">Nenhum acordo registrado.</div>';
+        return;
+      }
+      const statusColors = { ATIVO:'#d97706', CUMPRIDO:'#16a34a', QUEBRADO:'#dc2626' };
+      const statusEmoji = { ATIVO:'🟡', CUMPRIDO:'✅', QUEBRADO:'❌' };
+      el.innerHTML = '';
+      data.forEach(a => {
+        const cor = statusColors[a.status] || '#6b7280';
+        const emoji = statusEmoji[a.status] || '•';
+        const fmtBrl = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+        const div = document.createElement('div');
+        div.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:flex-start;';
+        div.innerHTML = `
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span style="font-weight:700;">${fmtBrl(a.valor_acordado)}</span>
+              <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; background:${cor}20; color:${cor};">${emoji} ${a.status}</span>
+            </div>
+            <div class="muted small">Original: ${fmtBrl(a.valor_original)} ${a.desconto_pct ? `· ${a.desconto_pct}% desconto` : ''} · ${a.forma_pagamento}</div>
+            <div class="muted small">Prazo: ${a.novo_prazo} · Acordo: ${a.data_acordo}</div>
+            ${a.notas ? `<div class="muted small" style="font-style:italic; margin-top:4px;">"${a.notas}"</div>` : ''}
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; margin-left:10px;">
+            ${a.status === 'ATIVO' ? `
+              <button onclick="updateAcordo(${a.id},'CUMPRIDO')" class="btn small primary" style="font-size:11px; padding:4px 8px;">✅ Cumpriu</button>
+              <button onclick="updateAcordo(${a.id},'QUEBRADO')" class="btn small danger" style="font-size:11px; padding:4px 8px;">❌ Quebrou</button>
+            ` : ''}
+          </div>`;
+        el.appendChild(div);
+      });
+    } catch(e) {
+      el.innerHTML = '<div style="color:var(--danger); font-size:13px;">Erro ao carregar acordos.</div>';
+    }
+  }
+
+  async function updateAcordo(id, status) {
+    try {
+      const res = await fetch(`/api/acordos/${id}/status`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({status})
+      });
+      if (res.ok) loadAcordos();
+      else alert('Erro ao atualizar acordo.');
+    } catch { alert('Erro de conexão.'); }
+  }
+
+  function calcAcordo() {
+    const orig = parseFloat(document.getElementById('ac_valor_original').value) || 0;
+    const desc = parseFloat(document.getElementById('ac_desconto').value) || 0;
+    const acordado = orig * (1 - desc/100);
+    document.getElementById('ac_valor_acordado').value = acordado.toFixed(2);
+  }
+
+  function openAcordoModal() {
+    // Pré-preencher valor original com total em aberto
+    const today = new Date().toISOString().split('T')[0];
+    const next30 = new Date(Date.now()+30*86400000).toISOString().split('T')[0];
+    document.getElementById('ac_data').value = today;
+    document.getElementById('ac_prazo').value = next30;
+    document.getElementById('modalAcordo').style.display = 'flex';
+  }
+  function closeAcordoModal() {
+    document.getElementById('modalAcordo').style.display = 'none';
+    document.getElementById('formAcordo').reset();
+  }
+  document.getElementById('modalAcordo').addEventListener('click', e => {
+    if (e.target.id === 'modalAcordo') closeAcordoModal();
+  });
+
+  async function saveAcordo(e) {
+    e.preventDefault();
+    const payload = {
+      customer_id: CUSTOMER_ID,
+      valor_original: parseFloat(document.getElementById('ac_valor_original').value),
+      desconto_pct: parseFloat(document.getElementById('ac_desconto').value) || null,
+      valor_acordado: parseFloat(document.getElementById('ac_valor_acordado').value),
+      data_acordo: document.getElementById('ac_data').value,
+      novo_prazo: document.getElementById('ac_prazo').value,
+      forma_pagamento: document.getElementById('ac_forma').value,
+      notas: document.getElementById('ac_notas').value || null
+    };
+    try {
+      const res = await fetch('/api/acordos', {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if (res.ok) { closeAcordoModal(); loadAcordos(); alert('✅ Acordo registrado!'); }
+      else { const d = await res.json(); alert('Erro: ' + (d.detail||'Falha ao salvar')); }
+    } catch { alert('Erro de conexão.'); }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadAcordos);
 </script>
 
 {% endblock %}
