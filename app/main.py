@@ -22,9 +22,10 @@ from app.scheduler import run_collection_check, check_unfulfilled_promises, save
 
 # --- Routers ---
 from app.api.routers import (
-    customers, queue, rules, import_data, auth, users, actions, messages, dashboard, commissions, settings, conferencia,
+    customers, queue, rules, import_data, auth, users, actions, messages, dashboard, commissions, conferencia,
     campanhas, acordos, promessas, relatorio, whatsapp_webhook
 )
+from app.api.routers import settings as settings_router
 
 # --- Logging Estruturado ---
 logging.basicConfig(
@@ -86,7 +87,7 @@ app.include_router(actions.router)
 app.include_router(messages.router)
 app.include_router(dashboard.router)
 app.include_router(commissions.router)
-app.include_router(settings.router)
+app.include_router(settings_router.router)
 app.include_router(conferencia.router)
 app.include_router(campanhas.router)
 app.include_router(acordos.router)

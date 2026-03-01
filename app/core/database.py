@@ -30,6 +30,11 @@ def run_migrations(engine):
         "ALTER TABLE customers ADD COLUMN msgs_ativo BOOLEAN DEFAULT 1",
         "ALTER TABLE configuracoes ADD COLUMN scheduler_hora_disparo INTEGER DEFAULT 9",
         "ALTER TABLE configuracoes ADD COLUMN director_alert_min_installments INTEGER DEFAULT 3",
+        "ALTER TABLE configuracoes ADD COLUMN pix_chave TEXT",
+        "ALTER TABLE configuracoes ADD COLUMN pix_tipo TEXT DEFAULT 'CNPJ'",
+        "ALTER TABLE configuracoes ADD COLUMN meta_contatos_diarios INTEGER DEFAULT 20",
+        "ALTER TABLE configuracoes ADD COLUMN meta_promessas_diarios INTEGER DEFAULT 5",
+        "ALTER TABLE customers ADD COLUMN perfil_devedor TEXT DEFAULT 'NORMAL'",
     ]
     with engine.connect() as conn:
         for sql in migrations:
