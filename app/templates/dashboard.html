@@ -1114,8 +1114,11 @@
         const paginDiv = document.getElementById('fila-pagination');
 
         try {
-          const reguaParam = window.filaFiltroRegua ? `&regua=${window.filaFiltroRegua}` : '';
-          const resp = await fetch(`/api/fila/prioridade?page=${page}&limit=30${reguaParam}`);
+          const _regua = window.filaFiltroRegua || '';
+          const reguaParam = _regua ? `&regua=${_regua}` : '';
+          const _url = `/api/fila/prioridade?page=${page}&limit=30${reguaParam}`;
+          console.log('[Fila] URL:', _url, '| filtro:', _regua || 'TODAS');
+          const resp = await fetch(_url);
           if (!resp.ok) {
             const errTxt = await resp.text();
             throw new Error(`Servidor retornou erro ${resp.status}: ${errTxt}`);
@@ -1141,8 +1144,9 @@
             }
             const semContato = s.sem_contato_hoje || 0;
             const promessas = s.promessas_abertas || 0;
+            const _filtroLabel = window.filaFiltroRegua ? ` — Régua: <strong>${window.filaFiltroRegua}</strong>` : '';
             statsBar.innerHTML = `
-              <span>📋 <strong>${s.total_carteira}</strong> clientes na fila</span>
+              <span>📋 <strong>${s.total_carteira}</strong> clientes na fila${_filtroLabel}</span>
               <span style="color:${semContato > 0 ? '#dc2626' : '#16a34a'}">📵 <strong>${semContato}</strong> sem contato hoje</span>
               <span style="color:#2563eb">🤝 <strong>${promessas}</strong> promessas abertas</span>`;
           }
