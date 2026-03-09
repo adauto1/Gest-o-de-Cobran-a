@@ -49,7 +49,7 @@ def get_priority_queue_api(
     db: Session = Depends(get_db)
 ):
     """Endpoint AJAX usado pelo dashboard para carregar a fila de prioridade."""
-    logger.debug(f"[fila/prioridade] page={page}, limit={limit}")
+    logger.info(f"[fila/prioridade] page={page}, limit={limit}, regua={regua}")
     user = require_login(request, db)
 
     if page < 1:
