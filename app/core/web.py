@@ -9,7 +9,8 @@ from app.core.helpers import format_money
 # --- Templating ---
 env = Environment(
     loader=FileSystemLoader("app/templates"),
-    autoescape=select_autoescape(["html", "xml"])
+    autoescape=select_autoescape(["html", "xml"]),
+    auto_reload=True
 )
 env.filters["brl"] = format_money
 env.globals["get_flashed_messages"] = lambda: []
