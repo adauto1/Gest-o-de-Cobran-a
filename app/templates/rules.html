@@ -21,8 +21,17 @@
   <div class="alert alert-success">{{ msg }}</div>
   {% endif %}
 
+  <!-- Navegação por nível -->
+  <div style="display:flex; gap:8px; padding:0 20px 16px; flex-wrap:wrap;">
+    <button onclick="filtrarNivel('TODAS')" id="btn-TODAS" class="btn primary small">Todas</button>
+    <button onclick="filtrarNivel('LEVE')" id="btn-LEVE" class="btn secondary small">🟢 Leve</button>
+    <button onclick="filtrarNivel('MODERADA')" id="btn-MODERADA" class="btn secondary small">🟡 Moderada</button>
+    <button onclick="filtrarNivel('INTENSA')" id="btn-INTENSA" class="btn secondary small">🔴 Intensa</button>
+    <span id="regua-count" class="muted small" style="align-self:center; margin-left:8px;"></span>
+  </div>
+
   <div class="table-wrap">
-    <table class="table">
+    <table class="table" id="tabela-regras">
       <thead>
         <tr>
           <th>Ativo</th>
@@ -37,7 +46,7 @@
       </thead>
       <tbody>
         {% for r in rules %}
-        <tr>
+        <tr data-nivel="{{ r.level }}">
           <td>{% if r.active %}✅{% else %}❌{% endif %}</td>
           <td><span class="pill">{{ r.level }}</span></td>
           <td>{{ r.start_days }} a {{ r.end_days }} d</td>
@@ -55,6 +64,26 @@
       </tbody>
     </table>
   </div>
+
+  <script>
+    let nivelAtivo = 'TODAS';
+    function filtrarNivel(nivel) {
+      nivelAtivo = nivel;
+      const rows = document.querySelectorAll('#tabela-regras tbody tr');
+      let visiveis = 0;
+      rows.forEach(row => {
+        const mostrar = nivel === 'TODAS' || row.dataset.nivel === nivel;
+        row.style.display = mostrar ? '' : 'none';
+        if (mostrar) visiveis++;
+      });
+      document.querySelectorAll('[id^="btn-"]').forEach(b => {
+        b.className = b.id === 'btn-' + nivel ? 'btn primary small' : 'btn secondary small';
+      });
+      const label = nivel === 'TODAS' ? 'todas as réguas' : `réguas ${nivel.toLowerCase()}`;
+      document.getElementById('regua-count').textContent = `${visiveis} ${label}`;
+    }
+    filtrarNivel('TODAS');
+  </script>
 
   <hr class="sep">
 
