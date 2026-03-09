@@ -1,8 +1,7 @@
 from __future__ import annotations
 import logging
-from datetime import date
 from decimal import Decimal
-from fastapi import APIRouter, Request, Depends, HTTPException, Form
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -63,40 +62,69 @@ def campanhas_page(request: Request, db: Session = Depends(get_db)):
                   hoje=hoje.isoformat())
 
 
+@router.get("/api/campanhas")
+def listar_campanhas_api(request: Request, db: Session = Depends(get_db)):
+    """Retorna lista de campanhas em JSON para o frontend."""
+    require_login(request, db)
+    campanhas = db.query(Campanha).order_by(Campanha.data_inicio.desc()).all()
+    hoje = today()
+    result = []
+    for c in campanhas:
+        if c.ativa and c.data_inicio <= hoje and c.data_fim >= hoje:
+            status = "ATIVA"
+        elif c.ativa and c.data_inicio > hoje:
+            status = "AGENDADA"
+        else:
+            status = "ENCERRADA"
+        result.append({
+            "id": c.id,
+            "nome": c.nome,
+            "descricao": c.descricao or "",
+            "desconto_pct": float(c.desconto_pct or 0),
+            "data_inicio": c.data_inicio.strftime("%d/%m/%Y"),
+            "data_fim": c.data_fim.strftime("%d/%m/%Y"),
+            "segmento_atraso_min": c.segmento_atraso_min,
+            "segmento_atraso_max": c.segmento_atraso_max,
+            "segmento_perfil": c.segmento_perfil,
+            "ativa": c.ativa,
+            "status": status,
+            "elegiveis": _count_elegiveis(db, c),
+        })
+    return result
+
+
 @router.post("/campanhas")
-async def criar_campanha(
-    request: Request,
-    nome: str = Form(...),
-    descricao: str = Form(""),
-    desconto_pct: str = Form(""),
-    data_inicio: str = Form(...),
-    data_fim: str = Form(...),
-    segmento_atraso_min: int = Form(0),
-    segmento_atraso_max: int = Form(9999),
-    segmento_perfil: str = Form("TODOS"),
-    db: Session = Depends(get_db)
-):
+async def criar_campanha(request: Request, db: Session = Depends(get_db)):
     user = require_login(request, db)
     if user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Apenas ADMIN")
 
     from datetime import datetime as dt
+    dados = await request.json()
+    nome = str(dados.get("nome", "")).strip()
+    if not nome:
+        raise HTTPException(status_code=422, detail="Nome obrigatorio")
+    try:
+        data_inicio = dt.strptime(dados.get("data_inicio", ""), "%Y-%m-%d").date()
+        data_fim = dt.strptime(dados.get("data_fim", ""), "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Datas invalidas. Use YYYY-MM-DD.")
+    desconto_raw = dados.get("desconto_pct")
     c = Campanha(
-        nome=nome.strip(),
-        descricao=descricao.strip() or None,
-        desconto_pct=Decimal(desconto_pct) if desconto_pct.strip() else None,
-        data_inicio=dt.strptime(data_inicio, "%Y-%m-%d").date(),
-        data_fim=dt.strptime(data_fim, "%Y-%m-%d").date(),
-        segmento_atraso_min=max(0, segmento_atraso_min),
-        segmento_atraso_max=max(0, segmento_atraso_max),
-        segmento_perfil=segmento_perfil,
+        nome=nome,
+        descricao=str(dados.get("descricao", "")).strip() or None,
+        desconto_pct=Decimal(str(desconto_raw)) if desconto_raw is not None else None,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        segmento_atraso_min=max(0, int(dados.get("segmento_atraso_min", 0))),
+        segmento_atraso_max=max(0, int(dados.get("segmento_atraso_max", 9999))),
+        segmento_perfil=str(dados.get("segmento_perfil", "TODOS")),
         ativa=True,
     )
     db.add(c)
     db.commit()
-    from fastapi.responses import RedirectResponse
-    from starlette.status import HTTP_302_FOUND
-    return RedirectResponse("/campanhas?msg=Campanha+criada!", status_code=HTTP_302_FOUND)
+    db.refresh(c)
+    return {"success": True, "id": c.id}
 
 
 @router.post("/campanhas/{campanha_id}/toggle")
@@ -122,7 +150,7 @@ def elegiveis(campanha_id: int, request: Request, db: Session = Depends(get_db))
 
 
 @router.get("/api/campanhas/ativas")
-def campanhas_ativas_api(request: Request, db: Session = Depends(get_db)):
+def campanhas_ativas_api(db: Session = Depends(get_db)):
     """Retorna campanhas ativas para o scheduler usar."""
     hoje = today()
     campanhas = db.query(Campanha).filter(

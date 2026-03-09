@@ -37,11 +37,17 @@ def get_outbox_api(
     query = db.query(MessageDispatchLog)
 
     if date_from:
-        df = datetime.strptime(date_from, "%Y-%m-%d").date()
-        query = query.filter(MessageDispatchLog.scheduled_for >= df)
+        try:
+            df = datetime.strptime(date_from, "%Y-%m-%d").date()
+            query = query.filter(MessageDispatchLog.scheduled_for >= df)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="date_from inválido. Use YYYY-MM-DD.")
     if date_to:
-        dt = datetime.strptime(date_to, "%Y-%m-%d").date()
-        query = query.filter(MessageDispatchLog.scheduled_for <= dt)
+        try:
+            dt = datetime.strptime(date_to, "%Y-%m-%d").date()
+            query = query.filter(MessageDispatchLog.scheduled_for <= dt)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="date_to inválido. Use YYYY-MM-DD.")
     if status:
         query = query.filter(MessageDispatchLog.status == status)
     if regua:

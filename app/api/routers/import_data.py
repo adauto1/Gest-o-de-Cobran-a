@@ -41,7 +41,7 @@ def sync_customers_api(request: Request, db: Session = Depends(get_db)):
                     break
 
     if not os.path.exists(erp_file):
-         return {"success": False, "detail": f"Arquivo ERP não encontrado em {data_dir}"}
+         return {"success": False, "detail": "Arquivo ERP não encontrado. Faça o upload do RELATORIO.HTM."}
 
     result = sync_erp_customers(erp_file, db)
     return result
@@ -165,7 +165,8 @@ def import_installments(request: Request, file: UploadFile = File(...), db: Sess
             amount = parse_decimal(r.get("valor_parcela") or "0")
             open_amount = parse_decimal(r.get("valor_em_aberto") or "0")
             status = (r.get("status") or "ABERTA").strip().upper()
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Erro ao processar linha (ext_key={ext}): {e}")
             errors += 1
             continue
 

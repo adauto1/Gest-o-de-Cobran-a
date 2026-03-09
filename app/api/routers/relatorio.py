@@ -151,7 +151,13 @@ def _calcular_dados_relatorio(db: Session, de: date, ate: date) -> dict:
         "ranking": ranking[:10],
         "eficacia": eficacia[:10],
         "campanhas": [{"nome": c.nome, "desconto_pct": float(c.desconto_pct or 0),
+                       "data_inicio": c.data_inicio.strftime("%d/%m/%Y"),
                        "data_fim": c.data_fim.strftime("%d/%m/%Y")} for c in campanhas],
+        "mensagens_enviadas": db.query(func.count(MessageDispatchLog.id)).filter(
+            MessageDispatchLog.created_at >= de_dt,
+            MessageDispatchLog.created_at <= ate_dt,
+            MessageDispatchLog.status.in_(["SENT", "SIMULATED"]),
+        ).scalar() or 0,
         "aging_hist": aging_hist,
     }
 

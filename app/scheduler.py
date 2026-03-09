@@ -138,10 +138,9 @@ def run_collection_check(session_factory) -> dict:
         rules = db.query(CollectionRule).filter(CollectionRule.active == True).all()
         if not rules:
             log.info("Nenhuma regra ativa encontrada.")
-            print("DEBUG: Nenhuma regra ativa encontrada.")
             return stats
-        
-        print(f"DEBUG: Total Active Rules in DB: {len(rules)}")
+
+        log.debug(f"Total de regras ativas no banco: {len(rules)}")
 
         # 1.5) Buscar configurações de WhatsApp
         config = db.query(Configuracoes).first()

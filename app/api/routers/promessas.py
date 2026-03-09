@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from datetime import datetime as dt, date
+from datetime import date
 from collections import defaultdict
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
@@ -71,7 +71,7 @@ def promessas_mes(mes: str = "", request: Request = None, db: Session = Depends(
     for r in rows:
         acao = r.CollectionAction
         cliente = r.Customer
-        dia_str = acao.promised_date.strftime("%Y-%m-%d")
+        dia_str = str(acao.promised_date.day)
 
         if acao.customer_id in cumpridas_ids:
             status_p = "CUMPRIDA"

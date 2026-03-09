@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from app.models import Configuracoes, Director, FinancialUser
 from app.core.web import render, require_login
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request, db: Session = Depends(get_db)):
@@ -19,7 +21,7 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
     try:
         config = db.query(Configuracoes).first()
     except Exception as e:
-        print(f"[ERROR] Falha ao ler configuracoes do banco: {e}")
+        logger.error(f"Falha ao ler configuracoes do banco: {e}")
         config = None
 
     if not config:
