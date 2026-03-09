@@ -1,47 +1,18 @@
-name: Deploy to VPS
+name: Deploy VPS
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: "Deploy via SSH"
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 22
-        timeout: 60s
-        command_timeout: 10m
-        debug: true
-        script: |
-          set -e
-          echo "================================================"
-          echo " Iniciando deploy — $(date '+%d/%m/%Y %H:%M:%S')"
-          echo "================================================"
-
-          # Localizar o deploy.sh independente do usuário (root ou deploy)
-          DEPLOY_SCRIPT=""
-          for CANDIDATE in \
-            "$HOME/Gest-o-de-Cobran-a/deploy.sh" \
-            "/home/deploy/deploy.sh" \
-            "/root/Gest-o-de-Cobran-a/deploy.sh"; do
-            if [ -f "$CANDIDATE" ]; then
-              DEPLOY_SCRIPT="$CANDIDATE"
-              break
-            fi
-          done
-
-          if [ -z "$DEPLOY_SCRIPT" ]; then
-            echo "❌ ERRO: deploy.sh não encontrado em nenhum caminho conhecido."
-            exit 1
-          fi
-
-          echo "📄 Script encontrado: $DEPLOY_SCRIPT"
-          bash "$DEPLOY_SCRIPT"
-          echo "✅ Deploy concluído com sucesso — $(date '+%d/%m/%Y %H:%M:%S')"
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 187.77.237.7
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: bash /root/deploy.sh
