@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func, case, or_, and_
 from decimal import Decimal
 from datetime import timedelta
 from typing import Optional
@@ -45,6 +45,7 @@ def get_priority_queue_api(
     request: Request,
     page: int = 1,
     limit: int = 30,
+    regua: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Endpoint AJAX usado pelo dashboard para carregar a fila de prioridade."""
@@ -61,6 +62,29 @@ def get_priority_queue_api(
     query = db.query(Customer, stmt.c.max_overdue_days, stmt.c.total_open_val, stmt.c.count_open_val)\
         .join(stmt, Customer.id == stmt.c.customer_id)
     query = _apply_user_filters(query, stmt, user, db)
+
+    # Filtro por nível de régua
+    if regua in ("LEVE", "MODERADA", "INTENSA"):
+        auto_cond = or_(
+            Customer.profile_cobranca == None,
+            Customer.profile_cobranca == "",
+            Customer.profile_cobranca == "AUTOMATICO"
+        )
+        if regua == "INTENSA":
+            query = query.filter(or_(
+                Customer.profile_cobranca == "INTENSA",
+                and_(auto_cond, stmt.c.max_overdue_days >= 60)
+            ))
+        elif regua == "MODERADA":
+            query = query.filter(or_(
+                Customer.profile_cobranca == "MODERADA",
+                and_(auto_cond, stmt.c.max_overdue_days >= 30, stmt.c.max_overdue_days < 60)
+            ))
+        else:  # LEVE
+            query = query.filter(or_(
+                Customer.profile_cobranca == "LEVE",
+                and_(auto_cond, stmt.c.max_overdue_days < 30)
+            ))
 
     prio_case = case(
         (stmt.c.max_overdue_days >= 30, 3),
@@ -98,7 +122,6 @@ def get_priority_queue_api(
             CollectionAction.created_at >= today_start
         ).distinct().count()
         sem_contato_hoje = len(all_customer_ids) - contatados_hoje
-        from sqlalchemy import or_
         promessas_abertas = db.query(CollectionAction.customer_id).filter(
             CollectionAction.customer_id.in_(all_customer_ids),
             CollectionAction.outcome == "PROMESSA",

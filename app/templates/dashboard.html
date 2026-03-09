@@ -1025,9 +1025,25 @@
           <div class="section-ttl-icon">📋</div>
           <span>Fila de Prioridade</span>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button id="filtro-TODAS" onclick="filtrarFila('TODAS')" class="btn-outline"
+            style="background: rgba(99,102,241,0.12); color: #4f46e5; font-weight: 600; border-color: #4f46e5;">
+            Todas
+          </button>
+          <button id="filtro-LEVE" onclick="filtrarFila('LEVE')" class="btn-outline"
+            style="color: var(--text-3);">
+            🟢 Leve
+          </button>
+          <button id="filtro-MODERADA" onclick="filtrarFila('MODERADA')" class="btn-outline"
+            style="color: var(--text-3);">
+            🟡 Moderada
+          </button>
+          <button id="filtro-INTENSA" onclick="filtrarFila('INTENSA')" class="btn-outline"
+            style="color: var(--text-3);">
+            🔴 Intensa
+          </button>
           <button onclick="openAgendaModal()" class="btn-outline"
-            style="background: rgba(30, 64, 175, 0.05); color: #1e40af;">
+            style="background: rgba(30, 64, 175, 0.05); color: #1e40af; margin-left: 4px;">
             <i data-lucide="calendar" style="width: 14px; height: 14px; margin-right: 4px;"></i>
             Agenda do Dia ({{ promises | length }})
           </button>
@@ -1066,6 +1082,26 @@
     <script>
       let filaCurrentPage = 1;
       let filaTotalPages = 1;
+      let filaFiltroRegua = '';
+
+      function filtrarFila(nivel) {
+        filaFiltroRegua = nivel === 'TODAS' ? '' : nivel;
+        // Atualiza estilo dos botões
+        ['TODAS','LEVE','MODERADA','INTENSA'].forEach(n => {
+          const btn = document.getElementById('filtro-' + n);
+          if (!btn) return;
+          if (n === nivel) {
+            btn.style.fontWeight = '600';
+            if (n === 'TODAS') { btn.style.background = 'rgba(99,102,241,0.12)'; btn.style.color = '#4f46e5'; btn.style.borderColor = '#4f46e5'; }
+            else if (n === 'LEVE') { btn.style.background = 'rgba(22,163,74,0.12)'; btn.style.color = '#15803d'; btn.style.borderColor = '#15803d'; }
+            else if (n === 'MODERADA') { btn.style.background = 'rgba(234,179,8,0.12)'; btn.style.color = '#a16207'; btn.style.borderColor = '#ca8a04'; }
+            else { btn.style.background = 'rgba(220,38,38,0.12)'; btn.style.color = '#b91c1c'; btn.style.borderColor = '#dc2626'; }
+          } else {
+            btn.style.background = ''; btn.style.color = 'var(--text-3)'; btn.style.borderColor = ''; btn.style.fontWeight = '';
+          }
+        });
+        loadPriorityQueue(1);
+      }
 
       async function loadPriorityQueue(page = 1) {
         // Garantir que page seja um número (evita erros se um evento for passado)
@@ -1077,7 +1113,8 @@
         const paginDiv = document.getElementById('fila-pagination');
 
         try {
-          const resp = await fetch(`/api/fila/prioridade?page=${page}&limit=30`);
+          const reguaParam = filaFiltroRegua ? `&regua=${filaFiltroRegua}` : '';
+          const resp = await fetch(`/api/fila/prioridade?page=${page}&limit=30${reguaParam}`);
           if (!resp.ok) {
             const errTxt = await resp.text();
             throw new Error(`Servidor retornou erro ${resp.status}: ${errTxt}`);
