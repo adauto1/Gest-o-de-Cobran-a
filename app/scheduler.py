@@ -5,16 +5,17 @@ from __future__ import annotations
 
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 log = logging.getLogger(__name__)
 
 from app.models import (
     Customer, Installment, CollectionRule, SentMessage, MessageDispatchLog,
-    Configuracoes, WhatsappHistorico, CollectionAction, today as get_today
+    Configuracoes, WhatsappHistorico, CollectionAction, Campanha, today as get_today
 )
 from app.core.helpers import format_money
 from app.services.whatsapp import enviar_whatsapp
@@ -179,7 +180,41 @@ def run_collection_check(session_factory) -> dict:
                 }
             customer_map[cid]["installments"].append(inst)
 
-        # 3) Para cada cliente, aplicar regras
+        # 3) Pré-busca em lote para evitar N+1 no loop principal
+        all_customer_ids = list(customer_map.keys())
+        rule_ids = [r.id for r in rules]
+
+        # 3a) Última mensagem enviada por (customer_id, rule_id)
+        _last_msg_rows = db.query(
+            SentMessage.customer_id,
+            SentMessage.rule_id,
+            func.max(SentMessage.created_at).label("last_sent")
+        ).filter(
+            SentMessage.customer_id.in_(all_customer_ids),
+            SentMessage.rule_id.in_(rule_ids)
+        ).group_by(SentMessage.customer_id, SentMessage.rule_id).all()
+        last_msg_map: dict = {(r.customer_id, r.rule_id): r.last_sent for r in _last_msg_rows}
+
+        # 3b) Contagem de NAO_ATENDEU por cliente nos últimos 14 dias
+        cutoff_14d = datetime.combine(_today - timedelta(days=14), datetime.min.time())
+        _nao_atendeu_rows = db.query(
+            CollectionAction.customer_id,
+            func.count(CollectionAction.id).label("cnt")
+        ).filter(
+            CollectionAction.customer_id.in_(all_customer_ids),
+            CollectionAction.outcome == "NAO_ATENDEU",
+            CollectionAction.created_at >= cutoff_14d
+        ).group_by(CollectionAction.customer_id).all()
+        nao_atendeu_map: dict = {r.customer_id: r.cnt for r in _nao_atendeu_rows}
+
+        # 3c) Campanhas ativas hoje (filtro restante feito em Python)
+        today_campanhas = db.query(Campanha).filter(
+            Campanha.ativa == True,
+            Campanha.data_inicio <= _today,
+            Campanha.data_fim >= _today,
+        ).all()
+
+        # 4) Para cada cliente, aplicar regras
         for cid, data in customer_map.items():
             customer = data["customer"]
             insts = data["installments"]
@@ -258,13 +293,7 @@ def run_collection_check(session_factory) -> dict:
                 continue
 
             # --- CADÊNCIA MULTICANAL: escalonar se 3+ NAO_ATENDEU nos últimos 14 dias ---
-            from datetime import timedelta
-            cutoff_14d = datetime.combine(_today - timedelta(days=14), datetime.min.time())
-            nao_atendeu_count = db.query(CollectionAction).filter(
-                CollectionAction.customer_id == cid,
-                CollectionAction.outcome == "NAO_ATENDEU",
-                CollectionAction.created_at >= cutoff_14d
-            ).count()
+            nao_atendeu_count = nao_atendeu_map.get(cid, 0)
             if nao_atendeu_count >= 3 and c_profile != "AUTOMATICO":
                 if customer.profile_cobranca == "LEVE":
                     customer.profile_cobranca = "MODERADA"
@@ -274,18 +303,9 @@ def run_collection_check(session_factory) -> dict:
                     log.info(f"[MULTICANAL] {customer.name} escalado MODERADA→INTENSA")
 
             # Verificar frequência
-            last_msg = (
-                db.query(SentMessage)
-                .filter(
-                    SentMessage.customer_id == cid,
-                    SentMessage.rule_id == matched_rule.id,
-                )
-                .order_by(SentMessage.created_at.desc())
-                .first()
-            )
-
-            if last_msg:
-                days_since = (_today - last_msg.created_at.date()).days
+            last_sent = last_msg_map.get((cid, matched_rule.id))
+            if last_sent:
+                days_since = (_today - last_sent.date()).days
                 if days_since < matched_rule.frequency:
                     stats["skipped_freq"] += 1
                     continue
@@ -298,17 +318,12 @@ def run_collection_check(session_factory) -> dict:
             tipo_pix = getattr(config, "pix_tipo", None) or "CNPJ"
             link_pagto = f"https://portalmoveis.com.br/pagar/{customer.external_key}"
 
-            # --- CAMPANHA ATIVA: detectar se cliente é elegível ---
-            from app.models import Campanha
-            campanha_ativa = db.query(Campanha).filter(
-                Campanha.ativa == True,
-                Campanha.data_inicio <= _today,
-                Campanha.data_fim >= _today,
-                Campanha.segmento_atraso_min <= max_overdue,
-                Campanha.segmento_atraso_max >= max_overdue,
-            ).filter(
-                (Campanha.segmento_perfil == "TODOS") | (Campanha.segmento_perfil == effective_profile)
-            ).first()
+            # --- CAMPANHA ATIVA: detectar se cliente é elegível (filtro em Python, sem query) ---
+            campanha_ativa = next((
+                c for c in today_campanhas
+                if c.segmento_atraso_min <= max_overdue <= c.segmento_atraso_max
+                and (c.segmento_perfil == "TODOS" or c.segmento_perfil == effective_profile)
+            ), None)
             
             juros = Decimal("1.10") if max_overdue > 30 else Decimal("1.02")
             valor_com_juros = insts[0].open_amount * juros if insts else Decimal("0")
@@ -434,7 +449,10 @@ def run_collection_check(session_factory) -> dict:
                 compliance_block_reason=block_reason_compliance,
                 message_rendered=msg_body,
                 error_message=error_msg,
-                metadata_json=json.dumps(replacements, default=str),
+                metadata_json=json.dumps(
+                    {k: v for k, v in replacements.items() if k not in ("{chave_pix}", "{telefone}")},
+                    default=str
+                ),
                 data_vencimento=nearest_due,
                 valor_original=insts[0].open_amount if insts else 0,
                 total_divida=total_open,

@@ -2,12 +2,27 @@ import logging
 from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, List, Literal
 from starlette.status import HTTP_302_FOUND
+from pydantic import BaseModel, Field
 
 from app.core.database import get_db
 from app.models import Configuracoes, Director, FinancialUser
 from app.core.web import render, require_login
+
+
+class SettingsUpdate(BaseModel):
+    whatsapp_ativo: Optional[bool] = None
+    whatsapp_modo_teste: Optional[bool] = None
+    whatsapp_instancia: Optional[str] = Field(None, max_length=100)
+    whatsapp_token: Optional[str] = Field(None, max_length=100)
+    whatsapp_client_token: Optional[str] = Field(None, max_length=100)
+    scheduler_hora_disparo: Optional[int] = Field(None, ge=0, le=23)
+    director_alert_min_installments: Optional[int] = Field(None, ge=1, le=100)
+    pix_chave: Optional[str] = Field(None, max_length=100)
+    pix_tipo: Optional[Literal["CNPJ", "CPF", "EMAIL", "TELEFONE", "ALEATORIA"]] = None
+    meta_contatos_diarios: Optional[int] = Field(None, ge=0, le=1000)
+    meta_promessas_diarios: Optional[int] = Field(None, ge=0, le=1000)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -92,47 +107,38 @@ async def update_settings_form(
     return RedirectResponse("/settings?msg=Configurações salvas!", status_code=HTTP_302_FOUND)
 
 @router.post("/api/settings")
-async def update_settings_api(request: Request, db: Session = Depends(get_db)):
+async def update_settings_api(request: Request, dados: SettingsUpdate, db: Session = Depends(get_db)):
     user = require_login(request, db)
     if user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Sem permissão")
-    
-    dados = await request.json()
+
     config = db.query(Configuracoes).first()
     if not config:
         config = Configuracoes()
         db.add(config)
-    
-    if "whatsapp_ativo" in dados: config.whatsapp_ativo = bool(dados["whatsapp_ativo"])
-    if "whatsapp_modo_teste" in dados: config.whatsapp_modo_teste = bool(dados["whatsapp_modo_teste"])
-    if "whatsapp_instancia" in dados: config.whatsapp_instancia = str(dados["whatsapp_instancia"]).strip()
-    if "whatsapp_token" in dados: config.whatsapp_token = str(dados["whatsapp_token"]).strip()
-    if "whatsapp_client_token" in dados: config.whatsapp_client_token = str(dados["whatsapp_client_token"]).strip()
 
-    if "director_alert_min_installments" in dados:
-        config.director_alert_min_installments = int(dados["director_alert_min_installments"])
+    if dados.whatsapp_ativo is not None: config.whatsapp_ativo = dados.whatsapp_ativo
+    if dados.whatsapp_modo_teste is not None: config.whatsapp_modo_teste = dados.whatsapp_modo_teste
+    if dados.whatsapp_instancia is not None: config.whatsapp_instancia = dados.whatsapp_instancia.strip()
+    if dados.whatsapp_token is not None: config.whatsapp_token = dados.whatsapp_token.strip()
+    if dados.whatsapp_client_token is not None: config.whatsapp_client_token = dados.whatsapp_client_token.strip()
+    if dados.director_alert_min_installments is not None: config.director_alert_min_installments = dados.director_alert_min_installments
+    if dados.pix_chave is not None: config.pix_chave = dados.pix_chave.strip() or None
+    if dados.pix_tipo is not None: config.pix_tipo = dados.pix_tipo
+    if dados.meta_contatos_diarios is not None: config.meta_contatos_diarios = dados.meta_contatos_diarios
+    if dados.meta_promessas_diarios is not None: config.meta_promessas_diarios = dados.meta_promessas_diarios
 
-    if "pix_chave" in dados: config.pix_chave = str(dados["pix_chave"]).strip() or None
-    if "pix_tipo" in dados: config.pix_tipo = str(dados["pix_tipo"]).strip()
-    if "meta_contatos_diarios" in dados: config.meta_contatos_diarios = int(dados["meta_contatos_diarios"])
-    if "meta_promessas_diarios" in dados: config.meta_promessas_diarios = int(dados["meta_promessas_diarios"])
-
-    if "scheduler_hora_disparo" in dados:
-        nova_hora = int(dados["scheduler_hora_disparo"])
-        config.scheduler_hora_disparo = nova_hora
-        # Reagendar o job da regua com a nova hora
+    if dados.scheduler_hora_disparo is not None:
+        config.scheduler_hora_disparo = dados.scheduler_hora_disparo
         try:
             from app.main import scheduler
             from apscheduler.triggers.cron import CronTrigger
-            from app.scheduler import run_collection_check
-            from app.core.database import SessionLocal
             scheduler.reschedule_job(
                 "collection_check",
-                trigger=CronTrigger(hour=nova_hora, minute=0)
+                trigger=CronTrigger(hour=dados.scheduler_hora_disparo, minute=0)
             )
         except Exception as e:
-            import logging
-            logging.getLogger(__name__).warning(f"[Settings] Reagendamento falhou: {e}")
+            logger.warning(f"[Settings] Reagendamento falhou: {e}")
 
     db.commit()
     return {"success": True}

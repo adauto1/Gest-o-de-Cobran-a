@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     data_dir: str = "./data"
     database_url: Optional[str] = None
 
+    # Environment
+    debug: bool = False
+
     # Application Preferences
     app_timezone: str = "America/Campo_Grande"
     business_hour_start: int = 9

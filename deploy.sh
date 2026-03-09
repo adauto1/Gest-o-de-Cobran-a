@@ -55,6 +55,15 @@ sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN pix_tipo TE
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN meta_contatos_diarios INTEGER DEFAULT 20;" 2>/dev/null || true
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN meta_promessas_diarios INTEGER DEFAULT 5;" 2>/dev/null || true
 
+# Indices de performance
+sqlite3 "$APP_DIR/data/app.db" "CREATE INDEX IF NOT EXISTS ix_inst_status_customer ON installments (status, customer_id);" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "CREATE INDEX IF NOT EXISTS ix_inst_status_due ON installments (status, due_date);" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "CREATE INDEX IF NOT EXISTS ix_inst_open_amount ON installments (open_amount);" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "CREATE INDEX IF NOT EXISTS ix_ca_customer_created ON collection_actions (customer_id, created_at);" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "CREATE INDEX IF NOT EXISTS ix_ca_outcome_created ON collection_actions (outcome, created_at);" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "CREATE INDEX IF NOT EXISTS ix_ca_user_created ON collection_actions (user_id, created_at);" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "CREATE INDEX IF NOT EXISTS ix_sm_customer_rule_created ON sent_messages (customer_id, rule_id, created_at);" 2>/dev/null || true
+
 # 4. Reiniciar serviço
 echo "🔄 Reiniciando serviço..."
 sudo systemctl restart gestor-cobranca

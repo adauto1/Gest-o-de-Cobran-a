@@ -69,6 +69,12 @@ class Installment(Base):
 
     customer = relationship("Customer", back_populates="installments")
 
+    __table_args__ = (
+        Index('ix_inst_status_customer', 'status', 'customer_id'),
+        Index('ix_inst_status_due', 'status', 'due_date'),
+        Index('ix_inst_open_amount', 'open_amount'),
+    )
+
 class CollectionAction(Base):
     __tablename__ = "collection_actions"
     id = Column(Integer, primary_key=True)
@@ -84,6 +90,12 @@ class CollectionAction(Base):
 
     customer = relationship("Customer", back_populates="actions")
     user = relationship("User")
+
+    __table_args__ = (
+        Index('ix_ca_customer_created', 'customer_id', 'created_at'),
+        Index('ix_ca_outcome_created', 'outcome', 'created_at'),
+        Index('ix_ca_user_created', 'user_id', 'created_at'),
+    )
 
 class CollectionRule(Base):
     __tablename__ = "collection_rules"
@@ -113,6 +125,10 @@ class SentMessage(Base):
     customer = relationship("Customer")
     user = relationship("User")
     rule = relationship("CollectionRule")
+
+    __table_args__ = (
+        Index('ix_sm_customer_rule_created', 'customer_id', 'rule_id', 'created_at'),
+    )
 
 class ComissaoCobranca(Base):
     __tablename__ = "comissoes_cobranca"

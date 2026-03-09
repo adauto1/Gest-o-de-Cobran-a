@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from app.core.database import get_db, SessionLocal
+from app.core.config import settings
 from app.models import User
 from app.core.helpers import format_money
 
@@ -10,7 +11,7 @@ from app.core.helpers import format_money
 env = Environment(
     loader=FileSystemLoader("app/templates"),
     autoescape=select_autoescape(["html", "xml"]),
-    auto_reload=True
+    auto_reload=settings.debug  # True apenas em desenvolvimento (DEBUG=true no .env)
 )
 env.filters["brl"] = format_money
 env.globals["get_flashed_messages"] = lambda: []

@@ -1086,7 +1086,6 @@
 
       function filtrarFila(nivel) {
         window.filaFiltroRegua = nivel === 'TODAS' ? '' : nivel;
-        console.log('[Filtro] Régua selecionada:', nivel, '| filaFiltroRegua:', window.filaFiltroRegua);
         // Atualiza estilo dos botões
         ['TODAS','LEVE','MODERADA','INTENSA'].forEach(n => {
           const btn = document.getElementById('filtro-' + n);
@@ -1117,7 +1116,6 @@
           const _regua = window.filaFiltroRegua || '';
           const reguaParam = _regua ? `&regua=${_regua}` : '';
           const _url = `/api/fila/prioridade?page=${page}&limit=30${reguaParam}`;
-          console.log('[Fila] URL:', _url, '| filtro:', _regua || 'TODAS');
           const resp = await fetch(_url);
           if (!resp.ok) {
             const errTxt = await resp.text();

@@ -35,6 +35,14 @@ def run_migrations(engine):
         "ALTER TABLE configuracoes ADD COLUMN meta_contatos_diarios INTEGER DEFAULT 20",
         "ALTER TABLE configuracoes ADD COLUMN meta_promessas_diarios INTEGER DEFAULT 5",
         "ALTER TABLE customers ADD COLUMN perfil_devedor TEXT DEFAULT 'NORMAL'",
+        # Índices de performance — CREATE INDEX IF NOT EXISTS é idempotente
+        "CREATE INDEX IF NOT EXISTS ix_inst_status_customer ON installments (status, customer_id)",
+        "CREATE INDEX IF NOT EXISTS ix_inst_status_due ON installments (status, due_date)",
+        "CREATE INDEX IF NOT EXISTS ix_inst_open_amount ON installments (open_amount)",
+        "CREATE INDEX IF NOT EXISTS ix_ca_customer_created ON collection_actions (customer_id, created_at)",
+        "CREATE INDEX IF NOT EXISTS ix_ca_outcome_created ON collection_actions (outcome, created_at)",
+        "CREATE INDEX IF NOT EXISTS ix_ca_user_created ON collection_actions (user_id, created_at)",
+        "CREATE INDEX IF NOT EXISTS ix_sm_customer_rule_created ON sent_messages (customer_id, rule_id, created_at)",
     ]
     with engine.connect() as conn:
         for sql in migrations:
