@@ -1082,10 +1082,11 @@
     <script>
       let filaCurrentPage = 1;
       let filaTotalPages = 1;
-      let filaFiltroRegua = '';
+      window.filaFiltroRegua = '';
 
       function filtrarFila(nivel) {
-        filaFiltroRegua = nivel === 'TODAS' ? '' : nivel;
+        window.filaFiltroRegua = nivel === 'TODAS' ? '' : nivel;
+        console.log('[Filtro] Régua selecionada:', nivel, '| filaFiltroRegua:', window.filaFiltroRegua);
         // Atualiza estilo dos botões
         ['TODAS','LEVE','MODERADA','INTENSA'].forEach(n => {
           const btn = document.getElementById('filtro-' + n);
@@ -1113,7 +1114,7 @@
         const paginDiv = document.getElementById('fila-pagination');
 
         try {
-          const reguaParam = filaFiltroRegua ? `&regua=${filaFiltroRegua}` : '';
+          const reguaParam = window.filaFiltroRegua ? `&regua=${window.filaFiltroRegua}` : '';
           const resp = await fetch(`/api/fila/prioridade?page=${page}&limit=30${reguaParam}`);
           if (!resp.ok) {
             const errTxt = await resp.text();
