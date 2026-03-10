@@ -15,5 +15,5 @@ jobs:
           host: 187.77.237.7
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 443
+          port: 2222
           script: bash /root/deploy.sh
