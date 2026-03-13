@@ -1,0 +1,17 @@
+name: Seed Rules VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Executar seed_rules.py no VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 187.77.237.7
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: docker exec gestor-cobranca python seed_rules.py
