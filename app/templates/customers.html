@@ -377,7 +377,7 @@
       }
     });
 
-    // Busca automática (debounce 400ms) + Enter
+    // Busca automática (debounce 200ms) + Enter
     (function () {
       const qInput = document.getElementById('search-q');
       const storeSelect = document.getElementById('search-store');
@@ -394,7 +394,7 @@
 
       qInput.addEventListener('input', function () {
         clearTimeout(timer);
-        timer = setTimeout(submitSearch, 400);
+        timer = setTimeout(submitSearch, 200);
       });
 
       qInput.addEventListener('keydown', function (e) {
