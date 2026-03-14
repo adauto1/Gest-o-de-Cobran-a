@@ -1,6 +1,7 @@
 import logging
 import csv
 import io
+from pydantic import BaseModel
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session, joinedload, subqueryload
@@ -41,6 +42,9 @@ def customers_page(request: Request, q: str = "", store: str = "", db: Session =
     rows = []
     for c in customers:
         insts = [i for i in c.installments if i.status == "ABERTA" and Decimal(i.open_amount) > 0]
+        # Quando há busca por nome, inclui o cliente mesmo sem dívida ativa
+        if not insts and not q.strip():
+            continue
         if insts:
             max_over = max(days_overdue(i.due_date) for i in insts)
             total_open = sum(Decimal(i.open_amount) for i in insts)
@@ -163,6 +167,29 @@ def toggle_msgs(request: Request, customer_id: int, db: Session = Depends(get_db
     c.msgs_ativo = not getattr(c, 'msgs_ativo', True)
     db.commit()
     return {"success": True, "msgs_ativo": c.msgs_ativo}
+
+class PausarBody(BaseModel):
+    pausado_ate: Optional[str] = None  # 'YYYY-MM-DD' ou null para remover pausa
+
+@router.patch("/api/customers/{customer_id}/pausar")
+def pausar_cobranca(customer_id: int, body: PausarBody, request: Request, db: Session = Depends(get_db)):
+    """Define ou remove pausa de cobrança automática. pausado_ate=null remove a pausa."""
+    from datetime import date as date_type
+    user = require_login(request, db)
+    if user.role not in ["ADMIN", "COBRANCA"]:
+        raise HTTPException(status_code=403, detail="Sem permissão")
+    c = db.get(Customer, customer_id)
+    if not c:
+        return {"success": False, "message": "Cliente não encontrado"}
+    if body.pausado_ate:
+        try:
+            c.pausado_ate = date_type.fromisoformat(body.pausado_ate)
+        except ValueError:
+            return {"success": False, "message": "Data inválida"}
+    else:
+        c.pausado_ate = None
+    db.commit()
+    return {"success": True, "pausado_ate": c.pausado_ate.isoformat() if c.pausado_ate else None}
 
 @router.get("/api/customers/{customer_id}")
 def get_customer_api(customer_id: int, request: Request, db: Session = Depends(get_db)):

@@ -182,8 +182,11 @@ async def startup_event():
         replace_existing=True
     )
 
-    scheduler.start()
-    logger.info(f"[SCHEDULER] Jobs registrados. Regua dispara as {hora_disparo}h.")
+    if not settings.debug:
+        scheduler.start()
+        logger.info(f"[SCHEDULER] Jobs registrados. Regua dispara as {hora_disparo}h.")
+    else:
+        logger.info("[SCHEDULER] Scheduler desativado localmente (modo DEBUG) para evitar mensagens acidentais.")
 
 if __name__ == "__main__":
     import uvicorn

@@ -224,6 +224,11 @@ def run_collection_check(session_factory) -> dict:
             if not getattr(customer, 'msgs_ativo', True):
                 continue
 
+            # Pular clientes em pausa de cobrança (pausado_ate >= hoje)
+            pausado_ate = getattr(customer, 'pausado_ate', None)
+            if pausado_ate and pausado_ate >= _today:
+                continue
+
             # Calcular atraso máximo e totais
             max_overdue = 0
             total_open = Decimal("0")

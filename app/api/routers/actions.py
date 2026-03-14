@@ -1,15 +1,14 @@
 import logging
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
+from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from decimal import Decimal
 from datetime import datetime
 from starlette.status import HTTP_302_FOUND
 
 from app.core.database import get_db
-from app.models import Customer, CollectionAction, CollectionRule, today
-from app.core.web import require_login
-from app.core.helpers import rule_for_overdue, parse_decimal
+from app.models import Customer, CollectionAction
+from app.core.web import require_login, get_or_404
+from app.core.helpers import parse_decimal
 from app.schemas import CollectionActionCreate
 
 router = APIRouter()
@@ -18,9 +17,7 @@ logger = logging.getLogger(__name__)
 @router.post("/api/collection-actions")
 def create_action_ajax(request: Request, action_data: CollectionActionCreate, db: Session = Depends(get_db)):
     user = require_login(request, db)
-    c = db.get(Customer, action_data.customer_id)
-    if not c:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    c = get_or_404(db, Customer, action_data.customer_id, "Cliente não encontrado")
 
     action = CollectionAction(
         customer_id=c.id,
@@ -47,18 +44,15 @@ def create_action(
     db: Session = Depends(get_db)
 ):
     user = require_login(request, db)
-    c = db.get(Customer, customer_id)
-    if not c:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    c = get_or_404(db, Customer, customer_id, "Cliente não encontrado")
 
-    from app.core.helpers import parse_decimal  # Avoid circular if any
     p_date = None
     if promised_date:
         try:
             p_date = datetime.strptime(promised_date, "%Y-%m-%d").date()
         except ValueError:
             logger.warning(f"Data inválida recebida: {promised_date!r}")
-    
+
     p_amt = parse_decimal(promised_amount) if promised_amount else None
 
     action = CollectionAction(
@@ -72,5 +66,5 @@ def create_action(
     )
     db.add(action)
     db.commit()
-    
+
     return RedirectResponse(f"/customers/{customer_id}?msg=Ação registrada!", status_code=HTTP_302_FOUND)

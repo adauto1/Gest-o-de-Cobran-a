@@ -8,7 +8,7 @@ from sqlalchemy import func
 
 from app.core.database import get_db
 from app.models import Campanha, Customer, Installment, today
-from app.core.web import render, require_login
+from app.core.web import render, require_login, require_admin, get_or_404
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -36,9 +36,7 @@ def _count_elegiveis(db: Session, campanha: Campanha) -> int:
 
 @router.get("/campanhas", response_class=HTMLResponse)
 def campanhas_page(request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    user = require_admin(request, db)
 
     campanhas = db.query(Campanha).order_by(Campanha.data_inicio.desc()).all()
     hoje = today()
@@ -95,9 +93,7 @@ def listar_campanhas_api(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/campanhas")
 async def criar_campanha(request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    require_admin(request, db)
 
     from datetime import datetime as dt
     dados = await request.json()
@@ -129,12 +125,8 @@ async def criar_campanha(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/campanhas/{campanha_id}/toggle")
 def toggle_campanha(campanha_id: int, request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
-    c = db.get(Campanha, campanha_id)
-    if not c:
-        raise HTTPException(status_code=404)
+    require_admin(request, db)
+    c = get_or_404(db, Campanha, campanha_id)
     c.ativa = not c.ativa
     db.commit()
     return {"success": True, "ativa": c.ativa}
@@ -143,9 +135,7 @@ def toggle_campanha(campanha_id: int, request: Request, db: Session = Depends(ge
 @router.get("/api/campanhas/{campanha_id}/elegiveis")
 def elegiveis(campanha_id: int, request: Request, db: Session = Depends(get_db)):
     require_login(request, db)
-    c = db.get(Campanha, campanha_id)
-    if not c:
-        raise HTTPException(status_code=404)
+    c = get_or_404(db, Campanha, campanha_id)
     return {"count": _count_elegiveis(db, c)}
 
 

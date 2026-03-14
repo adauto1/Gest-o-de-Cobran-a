@@ -1,33 +1,31 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy.orm import Session
-from decimal import Decimal
-from datetime import datetime
+import logging
 import csv
 import io
+import os
 import re
-from typing import Optional, List, Dict
+from datetime import datetime
+from decimal import Decimal
+from typing import List, Dict
+
 from bs4 import BeautifulSoup
+from fastapi import APIRouter, Request, Depends, UploadFile, File
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import (
-    Customer, Installment, CollectionAction, SentMessage, 
-    ComissaoCobranca, User
-)
-from app.core.web import render, require_login
-import os
+from app.models import Customer, Installment, CollectionAction, SentMessage, ComissaoCobranca
+from app.core.web import render, require_admin
 from app.core.helpers import parse_decimal, parse_date_br as parse_date
 from app.services.sync_customers import sync_erp_customers
 from app.core.config import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/api/sync/customers")
 def sync_customers_api(request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
-    
+    require_admin(request, db)
+
     # Busca o arquivo HTM na pasta de dados padrão
     data_dir = settings.data_dir
     erp_file = os.path.join(data_dir, "RELATORIO.HTM")
@@ -110,17 +108,12 @@ def parse_infocommerce_html(content: bytes) -> List[Dict]:
 
 @router.get("/import", response_class=HTMLResponse)
 def import_page(request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    user = require_admin(request, db)
     return render("import.html", request=request, user=user, title="Importação")
 
 @router.post("/import/customers")
 def import_customers(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
-
+    require_admin(request, db)
     rows = read_csv_upload(file)
     errors = 0
     upserts = 0
@@ -145,10 +138,7 @@ def import_customers(request: Request, file: UploadFile = File(...), db: Session
 
 @router.post("/import/installments")
 def import_installments(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
-
+    require_admin(request, db)
     rows = read_csv_upload(file)
     errors = 0
     upserts = 0
@@ -198,9 +188,7 @@ def import_installments(request: Request, file: UploadFile = File(...), db: Sess
 @router.post("/import/upload")
 def import_erp_upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Importa dados do ERP a partir de arquivo HTML (InfoCommerce) ou Excel."""
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    require_admin(request, db)
     
     content = file.file.read()
     filename = file.filename.lower()
@@ -286,10 +274,7 @@ def import_erp_upload(request: Request, file: UploadFile = File(...), db: Sessio
 
 @router.post("/import/reset")
 def reset_database(request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
-    
+    require_admin(request, db)
     try:
         db.query(CollectionAction).delete()
         db.query(SentMessage).delete()

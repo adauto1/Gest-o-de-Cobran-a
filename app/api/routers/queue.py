@@ -156,7 +156,8 @@ def get_priority_queue_api(
             status_label=get_status_label(max_over),
             regua_nivel=get_regua_nivel(cust.profile_cobranca, max_over),
             perfil_devedor=getattr(cust, "perfil_devedor", None) or "NORMAL",
-            score_propensao=scores.get(cust.id, 50)
+            score_propensao=scores.get(cust.id, 50),
+            pausado_ate=getattr(cust, "pausado_ate", None).isoformat() if getattr(cust, "pausado_ate", None) else None
         ))
 
     return PriorityQueueResponse(
@@ -256,7 +257,8 @@ def queue_page(
             "ultimo_contato_str": ultimo_contato_str,
             "ultimo_outcome": ultimo_outcome,
             "perfil_devedor": getattr(cust, "perfil_devedor", None) or "NORMAL",
-            "data_vencimento": (today() - timedelta(days=max_over)).isoformat()
+            "data_vencimento": (today() - timedelta(days=max_over)).isoformat(),
+            "pausado_ate": getattr(cust, "pausado_ate", None).isoformat() if getattr(cust, "pausado_ate", None) else None
         })
 
     return render("queue.html", request=request, user=user, title="Fila de Cobrança",

@@ -38,6 +38,7 @@ class Customer(Base):
     profile_cobranca = Column(String(20), nullable=False, default="AUTOMATICO")
     perfil_devedor = Column(String(20), default="NORMAL", server_default="NORMAL")
     msgs_ativo = Column(Boolean, default=True, server_default="1")
+    pausado_ate = Column(Date, nullable=True)
     assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)

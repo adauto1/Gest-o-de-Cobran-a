@@ -112,28 +112,147 @@
   .btn-action-icon:hover {
     color: var(--primary);
   }
+
+  /* ── Toolbar de busca ─────────────────────────────── */
+  .customers-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 24px 0;
+    gap: 16px;
+  }
+
+  .customers-header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .customers-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 24px 20px;
+    flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-wrap .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-3);
+    pointer-events: none;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    padding: 10px 14px 10px 40px;
+    border: 1.5px solid var(--border);
+    border-radius: 50px;
+    font-size: 13px;
+    font-family: var(--font-main);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-wrap input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(216, 242, 121, 0.25);
+    background: white;
+  }
+
+  .search-wrap input::placeholder {
+    color: var(--text-3);
+  }
+
+  .customers-toolbar select {
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 50px;
+    font-size: 13px;
+    font-family: var(--font-main);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    min-width: 160px;
+  }
+
+  .customers-toolbar select:focus {
+    border-color: var(--primary);
+  }
+
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    color: var(--text-2);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .btn-export svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .btn-export:hover {
+    border-color: var(--primary);
+    background: rgba(216, 242, 121, 0.12);
+    color: var(--primary-text);
+  }
 </style>
 <div class="card">
-  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-    <div>
+
+  <!-- Cabeçalho -->
+  <div class="customers-header">
+    <div style="display:flex; align-items:center; gap:12px;">
       <h1>Clientes</h1>
-      <p class="muted small">Busca por nome e visão rápida do total em aberto</p>
+      {% if rows %}
+      <span style="background:var(--bg); color:var(--text-3); font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px;">{{ rows|length }} encontrados</span>
+      {% endif %}
     </div>
-    <a href="/export/clientes.csv{% if store %}?store={{ store }}{% endif %}" class="btn btn-secondary small" title="Exportar CSV">
+    <a href="/export/clientes.csv{% if store %}?store={{ store }}{% endif %}" class="btn-export" title="Exportar CSV">
       <i data-lucide="download"></i> Exportar CSV
     </a>
   </div>
 
-  <form method="get" action="/customers" class="filters">
-    <input name="q" placeholder="Buscar cliente..." value="{{ q }}">
-    <select name="store">
+  <!-- Toolbar: busca + filtro -->
+  <div class="customers-toolbar">
+    <div class="search-wrap">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input id="search-q" name="q" placeholder="Buscar cliente por nome..." value="{{ q }}" autocomplete="off">
+    </div>
+    <select id="search-store" name="store">
       <option value="">Todas as lojas</option>
       {% for s in stores %}
       <option value="{{ s }}" {% if store==s %}selected{% endif %}>{{ s }}</option>
       {% endfor %}
     </select>
-    <button class="btn" type="submit">Buscar</button>
-  </form>
+  </div>
 
   <div class="table-wrap">
     <table class="table">
@@ -237,47 +356,68 @@
     </table>
   </div>
 
-  <div class="muted small" style="margin-top:12px">Mostrando até 300 clientes por busca.</div>
-</div>
-{% endblock %}
+  <div class="muted small" style="margin-top:12px; padding: 0 24px 16px;">Máximo 300 clientes por busca.</div>
 
-<script>
-  // Criar funções de toggle para cada cliente
-  {% for r in rows %}
-  function toggleReguaMenu{ { r.c.id } } () {
-    const menu = document.getElementById('menu{{ r.c.id }}');
-    // Fecha todos os outros menus
-    document.querySelectorAll('[id^="menu"]').forEach(m => {
-      if (m.id !== 'menu{{ r.c.id }}') {
-        m.style.display = 'none';
+  <script>
+    // Criar funções de toggle para cada cliente
+    {% for r in rows %}
+    function toggleReguaMenu{{ r.c.id }}() {
+      const menu = document.getElementById('menu{{ r.c.id }}');
+      document.querySelectorAll('[id^="menu"]').forEach(m => {
+        if (m.id !== 'menu{{ r.c.id }}') m.style.display = 'none';
+      });
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+    {% endfor %}
+
+    // Fechar ao clicar fora
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('button')) {
+        document.querySelectorAll('[id^="menu"]').forEach(m => { m.style.display = 'none'; });
       }
     });
-    // Toggle do menu atual
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-  }
-  {% endfor %}
 
-  // Fechar ao clicar fora
-  document.addEventListener('click', function (e) {
-    if (!e.target.closest('button')) {
-      document.querySelectorAll('[id^="menu"]').forEach(m => {
-        m.style.display = 'none';
+    // Busca automática (debounce 400ms) + Enter
+    (function () {
+      const qInput = document.getElementById('search-q');
+      const storeSelect = document.getElementById('search-store');
+      let timer;
+
+      function submitSearch() {
+        const q = qInput.value.trim();
+        const store = storeSelect.value;
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (store) params.set('store', store);
+        window.location.href = '/customers' + (params.toString() ? '?' + params.toString() : '');
+      }
+
+      qInput.addEventListener('input', function () {
+        clearTimeout(timer);
+        timer = setTimeout(submitSearch, 400);
       });
-    }
-  });
 
-  // Salvar régua
-  function salvarRegua(clienteId, regua) {
-    fetch(`/api/customers/${clienteId}/regua`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile_cobranca: regua })
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) location.reload();
-        else alert('Erro: ' + data.message);
+      qInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { clearTimeout(timer); submitSearch(); }
+      });
+
+      storeSelect.addEventListener('change', submitSearch);
+    })();
+
+    // Salvar régua
+    function salvarRegua(clienteId, regua) {
+      fetch(`/api/customers/${clienteId}/regua`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_cobranca: regua })
       })
-      .catch(err => alert('Erro ao salvar'));
-  }
-</script>
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) location.reload();
+          else alert('Erro: ' + data.message);
+        })
+        .catch(() => alert('Erro ao salvar'));
+    }
+  </script>
+</div>
+{% endblock %}

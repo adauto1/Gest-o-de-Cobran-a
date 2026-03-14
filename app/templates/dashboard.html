@@ -40,7 +40,7 @@
   }
 
   .alert-banner-title {
-    font-weight: 700;
+    font-weight: 500;
     font-size: 13px;
     color: var(--danger);
     margin-bottom: 2px;
@@ -48,7 +48,8 @@
 
   .alert-banner-desc {
     font-size: 12px;
-    color: var(--text-2);
+    font-weight: 400;
+    color: var(--text-3);
   }
 
   .alert-banner-btn {
@@ -108,8 +109,8 @@
   .kpi-v2-badge {
     margin-left: auto;
     font-size: 10px;
-    font-weight: 600;
-    padding: 4px 8px;
+    font-weight: 400;
+    padding: 3px 7px;
     border-radius: 6px;
     text-transform: uppercase;
     letter-spacing: .3px;
@@ -131,19 +132,18 @@
   }
 
   .kpi-v2-label {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-2);
-    /* Matches sidebar text color */
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-3);
     margin-bottom: 6px;
+    letter-spacing: 0.1px;
   }
 
   .kpi-v2-value {
-    font-size: 24px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 500;
     color: var(--text-2);
-    /* Matches sidebar text color, removing pure black */
-    letter-spacing: -.5px;
+    letter-spacing: -.3px;
   }
 
   .kpi-v2-value.critical {
@@ -171,8 +171,8 @@
   }
 
   .aging-title {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 400;
     color: var(--text);
     display: flex;
     align-items: center;
@@ -232,10 +232,11 @@
 
   .aging-days {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: .5px;
     margin-bottom: 8px;
+    opacity: 0.85;
   }
 
   .aging-card.lv1 .aging-days,
@@ -259,22 +260,22 @@
   }
 
   .aging-count {
-    font-size: 30px;
-    font-weight: 800;
-    letter-spacing: -1px;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -.5px;
     margin-bottom: 2px;
   }
 
   .aging-label {
     font-size: 11px;
-    color: var(--text-2);
+    color: var(--text-3);
     margin-bottom: 6px;
   }
 
   .aging-card-value {
     font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
+    font-weight: 500;
+    color: var(--text-2);
   }
 
   /* Content Grid */
@@ -301,8 +302,8 @@
   }
 
   .section-ttl {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text);
     display: flex;
     align-items: center;
@@ -347,7 +348,7 @@
   .q-table th {
     text-align: left;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: .5px;
     color: var(--text-3);
@@ -356,7 +357,7 @@
   }
 
   .q-table td {
-    padding: 14px 8px;
+    padding: 12px 8px;
     border-bottom: 1px solid var(--border);
     vertical-align: middle;
   }
@@ -370,29 +371,36 @@
   }
 
   .q-client-name {
-    font-weight: 600;
+    font-weight: 500;
     font-size: 13px;
     color: var(--text);
     margin-bottom: 2px;
+    cursor: pointer;
+  }
+
+  a.q-client-name:hover {
+    color: var(--primary-text);
+    text-decoration: underline !important;
   }
 
   .q-client-meta {
     font-size: 11px;
+    font-weight: 400;
     color: var(--text-3);
   }
 
   .q-amount {
-    font-weight: 600;
+    font-weight: 500;
     font-size: 13px;
     color: var(--text);
   }
 
   .q-badge {
     display: inline-block;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 6px;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: .3px;
   }
@@ -415,34 +423,194 @@
   .q-actions {
     display: flex;
     gap: 6px;
+    align-items: center;
   }
 
   .q-action-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text-2);
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text-3);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all .15s;
-    font-size: 13px;
     text-decoration: none;
+    flex-shrink: 0;
   }
+  .q-action-btn svg { width: 17px; height: 17px; }
 
-  .q-action-btn:hover {
-    background: #3b82f6;
-    border-color: #3b82f6;
-    color: #fff;
+  /* Z-API send */
+  .q-action-btn.whatsapp-manual {
+    background: rgba(37,211,102,0.1);
+    color: #16a34a;
+    border-color: rgba(37,211,102,0.3);
   }
-
-  .q-action-btn.whatsapp:hover {
+  .q-action-btn.whatsapp-manual:hover {
     background: #25d366;
     border-color: #25d366;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 14px rgba(37,211,102,0.4);
   }
+
+  /* WhatsApp direto */
+  .q-action-btn.whatsapp {
+    background: #25d366;
+    color: #fff;
+    border-color: #25d366;
+  }
+  .q-action-btn.whatsapp:hover {
+    background: #1db954;
+    border-color: #1db954;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 14px rgba(37,211,102,0.45);
+  }
+
+  /* sem telefone */
+  .q-action-btn:not(.whatsapp-manual):not(.whatsapp):not(.pausar):hover {
+    background: var(--bg);
+    color: var(--text-2);
+    border-color: var(--text-3);
+  }
+
+  /* Botão Pausar cobrança */
+  .q-action-btn.pausar {
+    background: rgba(251,146,60,0.12);
+    color: #ea580c;
+    border-color: rgba(251,146,60,0.35);
+  }
+  .q-action-btn.pausar:hover {
+    background: #fb923c;
+    border-color: #fb923c;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 14px rgba(251,146,60,0.4);
+  }
+  .q-action-btn.pausar.ativo {
+    background: #fb923c;
+    color: #fff;
+    border-color: #ea580c;
+  }
+  .q-action-btn.pausar.ativo:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    box-shadow: 0 5px 14px rgba(220,38,38,0.35);
+  }
+
+  /* Popover de pausa */
+  .pausa-wrap { position: relative; }
+  .pausa-popover {
+    display: none;
+    position: absolute;
+    z-index: 999;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    width: 230px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
+  .pausa-popover.open { display: block; }
+  .pausa-popover-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 10px;
+  }
+  .pausa-popover input[type="date"] {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: var(--font-main);
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    transition: border-color .2s;
+  }
+  .pausa-popover input[type="date"]:focus { border-color: #fb923c; }
+  .pausa-popover-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pausa-popover-btns button {
+    flex: 1;
+    padding: 7px 0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    font-family: var(--font-main);
+    transition: all .15s;
+    background: var(--bg);
+    color: var(--text-2);
+  }
+  .pausa-btn-ok { background: #fb923c !important; color: #fff !important; border-color: #fb923c !important; }
+  .pausa-btn-ok:hover { background: #ea580c !important; }
+  .pausa-btn-rm { background: #fee2e2 !important; color: #dc2626 !important; border-color: #fca5a5 !important; font-size: 11px !important; }
+  .pausa-btn-rm:hover { background: #dc2626 !important; color: #fff !important; }
+
+  /* Botão de telefone */
+  .phone-wrap { position: relative; }
+
+  .phone-popover {
+    display: none;
+    position: absolute;
+    z-index: 999;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    width: 220px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
+  .phone-popover.open { display: block; }
+  .phone-popover-title, .phone-popover-num {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 10px;
+  }
+  .phone-popover-input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: var(--font-main);
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    transition: border-color .2s;
+  }
+  .phone-popover-input:focus { border-color: #25d366; }
+  .phone-popover-btns { display: flex; gap: 6px; }
+  .phone-popover-btns button {
+    flex: 1;
+    padding: 7px 0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    font-family: var(--font-main);
+    transition: all .15s;
+    background: var(--bg);
+    color: var(--text-2);
+  }
+  .phone-btn-ok { background: #16a34a !important; color: #fff !important; border-color: #16a34a !important; }
+  .phone-btn-ok:hover { background: #15803d !important; }
 
   /* Right Column */
   .right-col {
@@ -713,53 +881,6 @@
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
 
-  /* Improved Action Buttons */
-  .q-action-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 5px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all .2s;
-    font-size: 11px;
-    text-decoration: none;
-  }
-
-  .q-action-btn.edit {
-    background: rgba(59, 130, 246, 0.15);
-    color: #3b82f6;
-    border-color: rgba(59, 130, 246, 0.2);
-  }
-
-  .q-action-btn.edit:hover {
-    background: rgba(59, 130, 246, 0.25);
-    border-color: rgba(59, 130, 246, 0.4);
-  }
-
-  .q-action-btn.whatsapp {
-    background: rgba(37, 211, 102, 0.15);
-    color: #25d366;
-    border-color: rgba(37, 211, 102, 0.2);
-  }
-
-  .q-action-btn.whatsapp:hover {
-    background: rgba(37, 211, 102, 0.25);
-    border-color: rgba(37, 211, 102, 0.4);
-  }
-
-  .q-action-btn.register {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border-color: rgba(16, 185, 129, 0.2);
-  }
-
-  .q-action-btn.register:hover {
-    background: rgba(16, 185, 129, 0.25);
-    border-color: rgba(16, 185, 129, 0.4);
-  }
 
   /* Sync Loading Spin */
   .spin {
@@ -788,7 +909,7 @@
     padding: 6px 12px;
     border-radius: var(--radius-sm);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: .5px;
     border: 1px solid var(--border);
@@ -933,7 +1054,7 @@
     <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px;">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
         <span style="font-size:18px;">🔀</span>
-        <span style="font-weight:700; font-size:14px; color:var(--text);">Funil de Cobrança</span>
+        <span style="font-weight:500; font-size:13px; color:var(--text);">Funil de Cobrança</span>
         <span class="muted small" style="margin-left:auto;">últimos 30 dias</span>
       </div>
       <div style="display:flex; align-items:stretch; gap:6px;">
@@ -946,8 +1067,8 @@
         {% for lbl, val, cor, ico in funnel_steps %}
         <div style="flex:1; text-align:center; padding:12px 6px; border-radius:8px; background:{{ cor }}15; border:1px solid {{ cor }}30;">
           <div style="font-size:18px;">{{ ico }}</div>
-          <div style="font-size:22px; font-weight:800; color:{{ cor }};">{{ val }}</div>
-          <div style="font-size:11px; color:var(--text-3); margin-top:2px;">{{ lbl }}</div>
+          <div style="font-size:20px; font-weight:500; color:{{ cor }};">{{ val }}</div>
+          <div style="font-size:11px; color:var(--text-3); margin-top:2px; font-weight:400;">{{ lbl }}</div>
         </div>
         {% if not loop.last %}
         <div style="display:flex; align-items:center; color:var(--text-3); font-size:16px;">→</div>
@@ -966,10 +1087,10 @@
       <div>
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
           <span style="font-size:18px;">📈</span>
-          <span style="font-weight:700; font-size:14px; color:var(--text);">Previsão de Recuperação</span>
+          <span style="font-weight:500; font-size:13px; color:var(--text);">Previsão de Recuperação</span>
         </div>
         <div class="muted small" style="margin-bottom:16px;">próximos 30 dias</div>
-        <div style="font-size:28px; font-weight:800; color:#16a34a;">{{ previsao_recuperacao }}</div>
+        <div style="font-size:22px; font-weight:500; color:#16a34a;">{{ previsao_recuperacao }}</div>
         <div class="muted small" style="margin-top:6px;">Taxa histórica de cumprimento: <strong>{{ taxa_cumprimento_pct }}%</strong></div>
       </div>
       <a href="/promessas" style="display:block; margin-top:16px; text-align:center; padding:8px; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:6px; color:#6366f1; font-size:12px; font-weight:600; text-decoration:none;">
@@ -983,14 +1104,14 @@
   <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px; margin-bottom:24px;">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
       <span style="font-size:18px;">🎯</span>
-      <span style="font-weight:700; font-size:14px; color:var(--text);">Minha Meta de Hoje</span>
+      <span style="font-weight:500; font-size:13px; color:var(--text);">Minha Meta de Hoje</span>
       <span class="muted small" style="margin-left:auto;">{{ today }}</span>
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
       <div>
         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-          <span style="font-size:13px; font-weight:600;">Clientes Contatados</span>
-          <span style="font-size:13px; font-weight:700; color:{% if progresso_contatos >= 100 %}#16a34a{% else %}var(--text-2){% endif %};">
+          <span style="font-size:13px; font-weight:500;">Clientes Contatados</span>
+          <span style="font-size:13px; font-weight:500; color:{% if progresso_contatos >= 100 %}#16a34a{% else %}var(--text-2){% endif %};">
             {{ contatados_hoje_user }} / {{ meta_contatos }}
           </span>
         </div>
@@ -1001,8 +1122,8 @@
       </div>
       <div>
         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-          <span style="font-size:13px; font-weight:600;">Promessas Registradas</span>
-          <span style="font-size:13px; font-weight:700; color:{% if progresso_promessas >= 100 %}#16a34a{% else %}var(--text-2){% endif %};">
+          <span style="font-size:13px; font-weight:500;">Promessas Registradas</span>
+          <span style="font-size:13px; font-weight:500; color:{% if progresso_promessas >= 100 %}#16a34a{% else %}var(--text-2){% endif %};">
             {{ promessas_hoje_user }} / {{ meta_promessas }}
           </span>
         </div>
@@ -1079,222 +1200,7 @@
       </div>
     </div>
 
-    <script>
-      let filaCurrentPage = 1;
-      let filaTotalPages = 1;
-      window.filaFiltroRegua = '';
-
-      function filtrarFila(nivel) {
-        window.filaFiltroRegua = nivel === 'TODAS' ? '' : nivel;
-        // Atualiza estilo dos botões
-        ['TODAS','LEVE','MODERADA','INTENSA'].forEach(n => {
-          const btn = document.getElementById('filtro-' + n);
-          if (!btn) return;
-          if (n === nivel) {
-            btn.style.fontWeight = '600';
-            if (n === 'TODAS') { btn.style.background = 'rgba(99,102,241,0.12)'; btn.style.color = '#4f46e5'; btn.style.borderColor = '#4f46e5'; }
-            else if (n === 'LEVE') { btn.style.background = 'rgba(22,163,74,0.12)'; btn.style.color = '#15803d'; btn.style.borderColor = '#15803d'; }
-            else if (n === 'MODERADA') { btn.style.background = 'rgba(234,179,8,0.12)'; btn.style.color = '#a16207'; btn.style.borderColor = '#ca8a04'; }
-            else { btn.style.background = 'rgba(220,38,38,0.12)'; btn.style.color = '#b91c1c'; btn.style.borderColor = '#dc2626'; }
-          } else {
-            btn.style.background = ''; btn.style.color = 'var(--text-3)'; btn.style.borderColor = ''; btn.style.fontWeight = '';
-          }
-        });
-        loadPriorityQueue(1);
-      }
-
-      async function loadPriorityQueue(page = 1) {
-        // Garantir que page seja um número (evita erros se um evento for passado)
-        if (typeof page !== 'number') page = 1;
-
-        console.log(`[Dashboard] Carregando fila página: ${page}`);
-        filaCurrentPage = page;
-        const body = document.getElementById('queue-body');
-        const paginDiv = document.getElementById('fila-pagination');
-
-        try {
-          const _regua = window.filaFiltroRegua || '';
-          const reguaParam = _regua ? `&regua=${_regua}` : '';
-          const _url = `/api/fila/prioridade?page=${page}&limit=30${reguaParam}`;
-          const resp = await fetch(_url);
-          if (!resp.ok) {
-            const errTxt = await resp.text();
-            throw new Error(`Servidor retornou erro ${resp.status}: ${errTxt}`);
-          }
-
-          const data = await resp.json();
-          console.log('[Dashboard] Dados recebidos:', data);
-
-          const isArray = Array.isArray(data);
-          const items = isArray ? data : (data.items || []);
-          filaTotalPages = isArray ? 1 : (data.total_pages || 1);
-
-          // Barra de stats da carteira
-          if (!isArray && data.stats) {
-            const s = data.stats;
-            let statsBar = document.getElementById('fila-stats-bar');
-            if (!statsBar) {
-              statsBar = document.createElement('div');
-              statsBar.id = 'fila-stats-bar';
-              statsBar.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;padding:8px 12px;background:var(--bg-2,#f8fafc);border-radius:8px;margin-bottom:12px;font-size:13px;color:var(--text-2,#555);border:1px solid var(--border,#e2e8f0);';
-              const tableWrapper = body.closest('table') || body.parentElement;
-              tableWrapper.parentElement.insertBefore(statsBar, tableWrapper);
-            }
-            const semContato = s.sem_contato_hoje || 0;
-            const promessas = s.promessas_abertas || 0;
-            const _filtroLabel = window.filaFiltroRegua ? ` — Régua: <strong>${window.filaFiltroRegua}</strong>` : '';
-            statsBar.innerHTML = `
-              <span>📋 <strong>${s.total_carteira}</strong> clientes na fila${_filtroLabel}</span>
-              <span style="color:${semContato > 0 ? '#dc2626' : '#16a34a'}">📵 <strong>${semContato}</strong> sem contato hoje</span>
-              <span style="color:#2563eb">🤝 <strong>${promessas}</strong> promessas abertas</span>`;
-          }
-
-          if (items.length === 0) {
-            body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">Sem clientes em atraso.</td></tr>';
-            paginDiv.style.display = 'none';
-            return;
-          }
-
-          // Show/Update Pagination
-          const showPaging = !isArray && data.total_pages > 1;
-          paginDiv.style.display = showPaging ? 'flex' : 'none';
-
-          if (showPaging) {
-            document.getElementById('fila-page-info').textContent = `Página ${data.current_page} de ${data.total_pages} (${data.total_items} clientes)`;
-            document.getElementById('btn-fila-prev').disabled = data.current_page <= 1;
-            document.getElementById('btn-fila-next').disabled = data.current_page >= data.total_pages;
-          }
-
-          body.innerHTML = '';
-          items.forEach(item => {
-            try {
-              const badgeClass = item.max_atraso >= 90 ? 'critical' : (item.max_atraso >= 30 ? 'moderate' : 'warning');
-
-              // Escape de nomes para evitar quebra de template literal e JS
-              const escNome = (item.nome_cliente || 'Cliente Sem Nome')
-                .replace(/\\/g, '\\\\')
-                .replace(/'/g, "\\'")
-                .replace(/"/g, '&quot;')
-                .replace(/`/g, '\\`');
-
-              let whatsappHtml = `<button class="q-action-btn" title="Sem telefone" onclick="alert('Sem telefone cadastrado.')"><i data-lucide="message-circle-off"></i></button>`;
-              if (item.phone) {
-                const waUrl = `https://wa.me/55${item.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${item.nome_cliente}! Aqui é da Portal Móveis. Identificamos que você tem parcelas em aberto no valor de R$ ${Number(item.valor_em_aberto).toFixed(2)}. Podemos conversar sobre isso?`)}`;
-                whatsappHtml = `<a class="q-action-btn whatsapp" href="${waUrl}" target="_blank" title="Abrir Chat WhatsApp"><i data-lucide="message-circle"></i></a>`;
-              }
-
-              // Ícone de perfil do devedor
-              const perfilIcons = { BOM_PAGADOR: '💚', RECORRENTE: '🔄', DIFICIL: '🔴' };
-              const perfilIcon = perfilIcons[item.perfil_devedor] ? ` ${perfilIcons[item.perfil_devedor]}` : '';
-
-              // Outcome do último contato
-              let outcomeTag = '';
-              if (item.ultimo_outcome === 'PROMESSA_NAO_CUMPRIDA') {
-                outcomeTag = ' <span style="color:#dc2626;font-weight:600;">⚠️ Promessa não cumprida</span>';
-              } else if (item.ultimo_outcome === 'PROMESSA' || item.ultimo_outcome === 'PROMESSA_PAGAMENTO') {
-                outcomeTag = ' · <span style="color:#2563eb;">🤝 Promessa</span>';
-              } else if (item.ultimo_outcome) {
-                const outcomeFmt = item.ultimo_outcome.replace(/_/g, ' ').toLowerCase();
-                outcomeTag = ` · ${outcomeFmt}`;
-              }
-
-              const tr = document.createElement('tr');
-              tr.innerHTML = `
-                  <td data-label="Cliente">
-                    <div class="q-client-name">${item.nome_cliente}${perfilIcon}</div>
-                    <div class="q-client-meta">${item.qtd_parcelas || 1} parcelas · ${item.ultimo_contato_str || 'Sem contato'}${outcomeTag}</div>
-                  </td>
-                  <td data-label="Régua" style="text-align: center;">
-                    <div class="regua-dot dot-${item.regua_nivel || 'LEVE'}" title="Régua: ${item.regua_nivel || 'LEVE'}"></div>
-                  </td>
-                  <td data-label="Em Aberto"><span class="q-amount">R$ ${Number(item.valor_em_aberto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
-                  <td data-label="Status">
-                    <span class="q-badge ${badgeClass}">${item.status_label || ''}</span>
-                    ${(() => {
-                      const sc = item.score_propensao;
-                      if (sc == null) return '';
-                      const col = sc >= 71 ? '#16a34a' : sc >= 31 ? '#d97706' : '#dc2626';
-                      const ico = sc >= 71 ? '🟢' : sc >= 31 ? '🟡' : '🔴';
-                      return `<span title="Score de propensão: ${sc}/100" style="margin-left:4px;font-size:11px;color:${col};font-weight:600;">${ico}${sc}</span>`;
-                    })()}
-                  </td>
-                  <td data-label="Ações">
-                    <div class="q-actions">
-                      <button class="q-action-btn edit" onclick="openEditModal(${item.cliente_id}, '${escNome}')" title="Editar Cadastro">
-                        <i data-lucide="user-pen"></i>
-                      </button>
-                      
-                      <button class="q-action-btn whatsapp-manual" onclick="enviarWhatsappManual(${item.cliente_id}, '${escNome}')" title="Disparar Cobrança (Z-API)" style="background:rgba(37,211,102,0.1);color:#25d366;border-color:rgba(37,211,102,0.2);">
-                        <i data-lucide="send"></i>
-                      </button>
-
-                      ${whatsappHtml}
-
-                      <button class="q-action-btn register" onclick="openContactModal(${item.cliente_id}, '${escNome}')" title="Registrar Contato">
-                        <i data-lucide="clipboard-check"></i>
-                      </button>
-                    </div>
-                  </td>`;
-              body.appendChild(tr);
-            } catch (errLoop) {
-              console.error("Erro ao renderizar item:", item, errLoop);
-            }
-          });
-
-          if (typeof lucide !== 'undefined') lucide.createIcons();
-        } catch (e) {
-          console.error(e);
-          body.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-3);">
-            Erro ao carregar fila.<br><small style="opacity:0.6">${e.message}</small>
-          </td></tr>`;
-        }
-      }
-
-      async function enviarWhatsappManual(clienteId, nome) {
-        console.log(`[WhatsApp] Iniciando envio manual para ID: ${clienteId}, Nome: ${nome}`);
-        if (!confirm(`Confirma o envio de mensagem de cobrança para ${nome}?`)) return;
-
-        try {
-          const res = await fetch(`/api/whatsapp/enviar-manual/${clienteId}`, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json'
-            }
-          });
-
-          console.log(`[WhatsApp] Status da resposta: ${res.status}`);
-
-          if (res.status === 401) {
-            alert('Sessão expirada. Por favor, faça login novamente.');
-            window.location.href = '/login';
-            return;
-          }
-
-          const data = await res.json();
-          console.log('[WhatsApp] Dados recebidos:', data);
-
-          if (data.success) {
-            alert(`Mensagem enviada com sucesso! (${data.modo})`);
-          } else {
-            alert(`Erro ao enviar: ${data.erro || 'Erro desconhecido'}`);
-          }
-        } catch (e) {
-          console.error('[WhatsApp] Erro na requisição:', e);
-          alert('Erro de conexão ao enviar mensagem. Verifique se o servidor está rodando.');
-        }
-      }
-      function changeFilaPage(delta) {
-        const next = filaCurrentPage + delta;
-        if (next >= 1 && next <= filaTotalPages) {
-          loadPriorityQueue(next);
-        }
-      }
-
-      window.changeFilaPage = changeFilaPage;
-      window.enviarWhatsappManual = enviarWhatsappManual;
-      window.filtrarFila = filtrarFila;
-      document.addEventListener('DOMContentLoaded', () => loadPriorityQueue(1));
-    </script>
+    <script src="/static/js/dashboard.js"></script>
 
 
 
@@ -1306,7 +1212,7 @@
           <div class="section-ttl-icon"
             style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; font-size: 16px;">
             🎯</div>
-          <span style="color: var(--text-2); font-weight: 800; font-size: 15px; letter-spacing: -0.2px;">METAS DE
+          <span style="color: var(--text-2); font-weight: 500; font-size: 13px; letter-spacing: 0.3px;">METAS DE
             COBRANÇA</span>
         </div>
       </div>
@@ -1317,31 +1223,31 @@
           <thead style="background: #f8fafc; border-bottom: 1px solid var(--border);">
             <tr>
               <th
-                style="padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: left; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: left; border-right: 1px solid var(--border);">
                 MÊS</th>
               <th
-                style="padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: center; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: center; border-right: 1px solid var(--border);">
                 CARTEIRA</th>
               <th
-                style="padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: right; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: right; border-right: 1px solid var(--border);">
                 TOTAL A RECEBER</th>
               <th
-                style="padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: right; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: right; border-right: 1px solid var(--border);">
                 META REC. (70%)</th>
               <th
-                style="display: none; padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: right; border-right: 1px solid var(--border);">
+                style="display: none; padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: right; border-right: 1px solid var(--border);">
                 MAX Ñ REC</th>
               <th
-                style="padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: right; background: #e0f2fe; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: right; background: #e0f2fe; border-right: 1px solid var(--border);">
                 VALOR ATUAL</th>
               <th
-                style="padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: center; background: #e0f2fe; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: center; background: #e0f2fe; border-right: 1px solid var(--border);">
                 %META</th>
               <th
-                style="padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: center; background: #dcfce7; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: center; background: #dcfce7; border-right: 1px solid var(--border);">
                 %ATINGIDO</th>
               <th
-                style="padding: 12px 15px; color: var(--text-2); font-weight: 700; text-align: right; background: var(--bg);">
+                style="padding: 12px 15px; color: var(--text-2); font-weight: 500; text-align: right; background: var(--bg);">
                 FALTANDO</th>
             </tr>
           </thead>
@@ -1349,34 +1255,34 @@
             {% for g in recovery_goals %}
             <tr style="border-bottom: 1px solid var(--border); {% if g.is_current %}background: #fdfdfd;{% endif %}">
               <td
-                style="padding: 12px 15px; font-weight: 700; color: var(--text-2); background: #f8fafc; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; font-weight: 500; color: var(--text-2); background: #f8fafc; border-right: 1px solid var(--border);">
                 {{ g.month_name }}</td>
               <td
-                style="padding: 12px 15px; text-align: center; font-weight: 700; color: var(--text-2); background: #fafafa; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; text-align: center; font-weight: 500; color: var(--text-2); background: #fafafa; border-right: 1px solid var(--border);">
                 {{ g.carteira }}</td>
               <td
-                style="padding: 12px 15px; text-align: right; font-weight: 700; color: var(--text-2); border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; text-align: right; font-weight: 500; color: var(--text-2); border-right: 1px solid var(--border);">
                 {{ g.total_rec_fmt }}</td>
               <td
-                style="padding: 12px 15px; text-align: right; font-weight: 700; color: var(--text-2); border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; text-align: right; font-weight: 500; color: var(--text-2); border-right: 1px solid var(--border);">
                 {{ g.meta_rec_fmt }}</td>
               <td
-                style="display: none; padding: 12px 15px; text-align: right; font-weight: 700; color: var(--text-2); border-right: 1px solid var(--border);">
+                style="display: none; padding: 12px 15px; text-align: right; font-weight: 500; color: var(--text-2); border-right: 1px solid var(--border);">
                 {{ g.max_no_rec_fmt }}</td>
               <td
-                style="padding: 12px 15px; text-align: right; font-weight: 700; color: var(--text-2); background: #f0f9ff; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; text-align: right; font-weight: 500; color: var(--text-2); background: #f0f9ff; border-right: 1px solid var(--border);">
                 {{ g.valor_atual_fmt }}</td>
               <td
-                style="padding: 12px 15px; text-align: center; font-weight: 700; color: var(--text-2); background: #f0f9ff; border-right: 1px solid var(--border);">
+                style="padding: 12px 15px; text-align: center; font-weight: 500; color: var(--text-2); background: #f0f9ff; border-right: 1px solid var(--border);">
                 {{ g.pct_meta }}</td>
               <td
                 style="padding: 12px 15px; text-align: center; background: #f0fdf4; border-right: 1px solid var(--border);">
-                <div style="font-weight: 700; color: var(--text-2);">
+                <div style="font-weight: 500; color: var(--text-2);">
                   {{ g.pct_atingido_fmt }}
                 </div>
               </td>
               <td
-                style="padding: 12px 15px; text-align: right; font-weight: 700; background: {% if g.is_reached %}var(--success-bg){% else %}#fff5f5{% endif %}; color: #ff0000;">
+                style="padding: 12px 15px; text-align: right; font-weight: 500; background: {% if g.is_reached %}var(--success-bg){% else %}#fff5f5{% endif %}; color: #ff0000;">
                 {{ g.missing_fmt }}</td>
             </tr>
             {% endfor %}
@@ -1535,219 +1441,6 @@
       </div>
     </div>
 
-    <script>
-      // Funções para Modal de Edição
-      function openEditModal(customerId, customerName) {
-        fetch(`/api/customers/${customerId}`, {
-          credentials: 'same-origin'
-        })
-          .then(r => r.json())
-          .then(data => {
-            document.getElementById('edit_customer_id').value = customerId;
-            document.getElementById('edit_customer_name').value = customerName;
-            document.getElementById('edit_phone').value = data.whatsapp || '';
-            document.getElementById('edit_address').value = data.address || '';
-            document.getElementById('edit_email').value = data.email || '';
-            document.getElementById('edit_email').value = data.email || '';
-            document.getElementById('edit_notes').value = data.notes || '';
-            document.getElementById('edit_profile').value = data.profile_cobranca || 'AUTOMATICO';
-            document.getElementById('editModal').classList.add('active');
-            if (window.lucide) lucide.createIcons();
-          })
-          .catch(err => {
-            console.error('Erro ao carregar dados:', err);
-            alert('Erro ao carregar dados do cliente.');
-          });
-      }
-
-      function closeEditModal() {
-        document.getElementById('editModal').classList.remove('active');
-        document.getElementById('editForm').reset();
-      }
-
-      document.getElementById('editModal').addEventListener('click', (e) => {
-        if (e.target.id === 'editModal') closeEditModal();
-      });
-
-      document.getElementById('editForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const customerId = document.getElementById('edit_customer_id').value;
-        const data = {
-          whatsapp: document.getElementById('edit_phone').value,
-          address: document.getElementById('edit_address').value,
-          email: document.getElementById('edit_email').value,
-          email: document.getElementById('edit_email').value,
-          notes: document.getElementById('edit_notes').value,
-          profile_cobranca: document.getElementById('edit_profile').value
-        };
-
-        try {
-          const resp = await fetch(`/api/customers/${customerId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-            credentials: 'same-origin'
-          });
-
-          if (resp.ok) {
-            closeEditModal();
-            await loadPriorityQueue(); // Recarrega a fila
-            alert('✅ Cadastro atualizado com sucesso!');
-          } else {
-            alert('❌ Erro ao atualizar cadastro.');
-          }
-        } catch (err) {
-          console.error('Erro:', err);
-          alert('❌ Erro ao atualizar cadastro.');
-        }
-      });
-
-      // Funções para Modal de Registro de Contato
-      function togglePromessaFields() {
-        const outcome = document.getElementById('contact_outcome').value;
-        const isPromessa = outcome === 'PROMESSA';
-        document.getElementById('promessa-fields').style.display = isPromessa ? '' : 'none';
-        document.getElementById('next-contact-field').style.display = isPromessa ? 'none' : '';
-        // Tornar valor obrigatório apenas para promessa
-        document.getElementById('contact_promised_amount').required = isPromessa;
-      }
-
-      function openContactModal(customerId, customerName) {
-        document.getElementById('contact_customer_id').value = customerId;
-        document.getElementById('contact_customer_name').value = customerName;
-        document.getElementById('contact_display_name').textContent = customerName;
-        // Pré-definir data da promessa: hoje + 3 dias
-        const d = new Date(); d.setDate(d.getDate() + 3);
-        const iso = d.toISOString().split('T')[0];
-        document.getElementById('contact_next_date').value = iso;
-        document.getElementById('contactModal').classList.add('active');
-        // Inicializa campos conforme seleção padrão
-        togglePromessaFields();
-        if (window.lucide) lucide.createIcons();
-      }
-
-      function closeContactModal() {
-        document.getElementById('contactModal').classList.remove('active');
-        document.getElementById('contactForm').reset();
-        // Reseta visibilidade dos campos
-        togglePromessaFields();
-      }
-
-      document.getElementById('contactModal').addEventListener('click', (e) => {
-        if (e.target.id === 'contactModal') closeContactModal();
-      });
-
-      document.getElementById('contactForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const outcome = document.getElementById('contact_outcome').value;
-        const isPromessa = outcome === 'PROMESSA';
-
-        // Pega a data correta conforme o tipo de resultado
-        const dateValue = isPromessa
-          ? document.getElementById('contact_next_date').value
-          : document.getElementById('contact_next_date_other').value;
-
-        // Monta o payload
-        const payload = {
-          customer_id: parseInt(document.getElementById('contact_customer_id').value),
-          user_id: 0, // Preenchido pelo backend via sessão
-          action_type: document.getElementById('contact_type').value,
-          outcome: outcome,
-          promised_date: dateValue || null,
-          notes: document.getElementById('contact_notes').value || null
-        };
-
-        // Adiciona valor prometido apenas para PROMESSA
-        if (isPromessa) {
-          const amtRaw = document.getElementById('contact_promised_amount').value;
-          if (!amtRaw || parseFloat(amtRaw) <= 0) {
-            alert('⚠️ Informe o valor prometido para registrar uma Promessa de Pagamento.');
-            return;
-          }
-          payload.promised_amount = parseFloat(amtRaw);
-        }
-
-        try {
-          const resp = await fetch('/api/collection-actions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            credentials: 'same-origin'
-          });
-
-          if (resp.ok) {
-            closeContactModal();
-            await loadPriorityQueue();
-            alert('✅ Contato registrado com sucesso!');
-          } else {
-            // Exibe a mensagem real do servidor
-            let errMsg = 'Erro desconhecido';
-            try {
-              const errData = await resp.json();
-              errMsg = errData.detail || JSON.stringify(errData);
-            } catch (_) { }
-            alert('❌ Erro ao registrar contato:\n' + errMsg);
-          }
-        } catch (err) {
-          console.error('Erro:', err);
-          alert('❌ Erro de conexão ao registrar contato.');
-        }
-      });
-
-      // Função para Sincronizar Clientes ERP
-      async function syncCustomers() {
-        const btn = document.getElementById('sync-btn');
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="spin" data-lucide="loader-2"></i> Sincronizando...';
-        if (window.lucide) lucide.createIcons();
-
-        try {
-          const resp = await fetch('/api/sync/customers', {
-            method: 'POST',
-            credentials: 'same-origin'
-          });
-          const data = await resp.json();
-          if (resp.ok) {
-            alert(`✅ Sincronização concluída!\n\nTotal processado: ${data.total}\nClientes novos: ${data.created}\nDados atualizados: ${data.updated}`);
-            loadPriorityQueue();
-          } else {
-            alert('❌ Erro na sincronização: ' + (data.detail || 'Erro desconhecido'));
-          }
-        } catch (err) {
-          console.error('Erro:', err);
-          alert('❌ Erro de conexão ao sincronizar.');
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = originalText;
-          if (window.lucide) lucide.createIcons();
-        }
-      }
-
-      // Funções para Modal da Agenda
-      function openAgendaModal() {
-        document.getElementById('agendaModal').classList.add('active');
-        if (window.lucide) lucide.createIcons();
-      }
-      function closeAgendaModal() {
-        document.getElementById('agendaModal').classList.remove('active');
-      }
-      document.getElementById('agendaModal').addEventListener('click', (e) => {
-        if (e.target.id === 'agendaModal') closeAgendaModal();
-      });
-
-      // Funções para Modal de Reconcliação
-      function openReconModal() {
-        document.getElementById('reconModal').classList.add('active');
-        if (window.lucide) lucide.createIcons();
-      }
-      function closeReconModal() {
-        document.getElementById('reconModal').classList.remove('active');
-      }
-      document.getElementById('reconModal').addEventListener('click', (e) => {
-        if (e.target.id === 'reconModal') closeReconModal();
-      });
-    </script>
 
     <!-- Modal de Detalhes da Reconcliação (Cancelados) -->
     <div id="reconModal" class="modal">

@@ -1,20 +1,16 @@
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from typing import Optional, List
 
 from app.core.database import get_db
 from app.models import User
-from app.core.web import render, require_login
-from app.api.routers.rules import router as rules_router # Temporary until rehash
+from app.core.web import render, require_admin, get_or_404
 
 router = APIRouter()
 
 @router.get("/users", response_class=HTMLResponse)
 def users_page(request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    user = require_admin(request, db)
     users = db.query(User).order_by(User.name.asc()).all()
     return render("users.html", request=request, user=user, title="Usuários", users=users, msg=request.query_params.get("msg"))
 
@@ -28,10 +24,8 @@ def users_create(
     store: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    admin = require_login(request, db)
-    if admin.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
-    
+    require_admin(request, db)
+
     from app.core.security import hash_password
     db.add(User(
         name=name.strip(),
@@ -46,12 +40,8 @@ def users_create(
 
 @router.post("/users/{user_id}/toggle")
 def users_toggle(request: Request, user_id: int, db: Session = Depends(get_db)):
-    admin = require_login(request, db)
-    if admin.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas ADMIN")
-    u = db.get(User, user_id)
-    if not u:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    admin = require_admin(request, db)
+    u = get_or_404(db, User, user_id, "Usuário não encontrado")
     if u.id == admin.id:
         raise HTTPException(status_code=400, detail="Não pode desativar a si mesmo")
     u.active = not u.active

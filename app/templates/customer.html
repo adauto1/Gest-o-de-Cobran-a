@@ -9,173 +9,396 @@
     align-items: start;
   }
 
-  .editable-info {
+  /* ── Hero ── */
+  .cust-hero {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 15px;
-    margin-bottom: 20px;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 22px 22px 18px;
   }
 
-  .info-row {
+  .cust-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #D8F279, #86efac);
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 14px;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #2d4a00;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(163,230,53,0.4);
   }
 
-  .info-label {
+  .cust-hero-body { flex: 1; min-width: 0; }
+
+  .cust-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 10px;
+    line-height: 1.2;
+  }
+
+  .cust-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .cust-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .cust-chip.store  { background: var(--bg); color: var(--text-3); border: 1px solid var(--border); }
+  .cust-chip.regua  { background: var(--bg); color: var(--text-2); border: 1px solid var(--border); }
+  .cust-chip.danger { background: #fee2e2; color: #dc2626; }
+  .cust-chip.warn   { background: #fef3c7; color: #b45309; }
+  .cust-chip.ok     { background: #dcfce7; color: #16a34a; }
+  .cust-chip.value  { background: #eff6ff; color: #1d4ed8; }
+
+  /* ── Fields ── */
+  .cust-fields {
+    padding: 0 22px 18px;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border);
+    padding-top: 4px;
+    margin-top: 4px;
+  }
+
+  .cust-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .cust-field:last-child { border-bottom: none; }
+
+  .cust-fl {
     color: var(--text-3);
-    min-width: 90px;
+    min-width: 82px;
+    flex-shrink: 0;
+    font-size: 12px;
   }
 
+  .cust-fv { flex: 1; display: flex; align-items: center; }
+
+  /* ── Controls ── */
+  .cust-select {
+    padding: 5px 10px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font-main);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .cust-select:focus { border-color: var(--primary); }
+
+  .cust-toggle {
+    padding: 3px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+    background: none;
+  }
+  .cust-toggle.on  { border-color: #16a34a; background: #dcfce7; color: #16a34a; }
+  .cust-toggle.off { border-color: #dc2626; background: #fee2e2; color: #dc2626; }
+
+  /* ── Inline edit ── */
   .edit-container {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 10px;
+    padding: 4px 8px;
     border-radius: 6px;
     transition: background 0.2s, border-color 0.2s;
     cursor: pointer;
     border: 1px solid transparent;
     flex: 1;
   }
+  .edit-container:hover { background: rgba(0,0,0,0.03); border-color: #eee; }
 
-  .edit-container:hover {
-    background: rgba(0, 0, 0, 0.03);
-    border-color: #eee;
-  }
+  .info-val { font-weight: 500; color: var(--text-1); word-break: break-word; font-size: 13px; }
 
-  .info-val {
-    font-weight: 600;
-    color: var(--text-1);
-    word-break: break-word;
-  }
-
-  .edit-icon {
-    color: var(--primary);
-    opacity: 0.3;
-    transition: opacity 0.2s;
-    width: 14px;
-    height: 14px;
-  }
-
-  .edit-container:hover .edit-icon {
-    opacity: 1;
-  }
+  .edit-icon { color: var(--primary); opacity: 0.3; transition: opacity 0.2s; width: 13px; height: 13px; }
+  .edit-container:hover .edit-icon { opacity: 1; }
 
   .inline-input {
-    border: 1px solid var(--primary);
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: 600;
-    outline: none;
-    width: 100%;
-    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    border: 1px solid var(--primary); border-radius: 4px; padding: 4px 8px;
+    font-family: inherit; font-size: inherit; font-weight: 600; outline: none;
+    width: 100%; box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
   }
 
+  /* ── Action buttons ── */
+  .cust-actions {
+    display: flex;
+    gap: 8px;
+    padding: 14px 22px 20px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .cust-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-decoration: none;
+    font-family: var(--font-main);
+  }
+  .cust-btn svg { width: 15px; height: 15px; }
+
+  .cust-btn.green {
+    background: #25d366;
+    color: #fff;
+  }
+  .cust-btn.green:hover { background: #1db954; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,211,102,0.35); }
+
+  .cust-btn.primary {
+    background: var(--primary);
+    color: #1a2e05;
+  }
+  .cust-btn.primary:hover { background: #cbef6a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(216,242,121,0.5); }
+
+  /* ── Contact Modal ── */
+  .c-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .c-modal.active { display: flex; }
+
+  .c-modal-box {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 480px;
+    width: 92%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: cmIn .18s ease-out;
+  }
+  @keyframes cmIn { from { opacity:0; transform: scale(.96) translateY(-12px); } to { opacity:1; transform: none; } }
+
+  .c-modal-box h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .c-modal-box label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    margin: 14px 0 5px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+
+  .c-modal-box select,
+  .c-modal-box input,
+  .c-modal-box textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-main);
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+    box-sizing: border-box;
+  }
+  .c-modal-box select:focus,
+  .c-modal-box input:focus,
+  .c-modal-box textarea:focus { border-color: var(--primary); }
+
+  .c-modal-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  .c-modal-footer button {
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    font-family: var(--font-main);
+    transition: all .15s;
+  }
+  .c-modal-footer .btn-cancel { background: var(--bg); color: var(--text-2); }
+  .c-modal-footer .btn-cancel:hover { background: var(--border); }
+  .c-modal-footer .btn-save { background: var(--primary); color: #1a2e05; border-color: var(--primary); }
+  .c-modal-footer .btn-save:hover { background: #cbef6a; }
+
   @media (max-width: 992px) {
-    .customer-grid {
-      grid-template-columns: 1fr;
-    }
+    .customer-grid { grid-template-columns: 1fr; }
   }
 </style>
 
 <div class="customer-grid">
   <!-- COLUNA DA ESQUERDA: DADOS E KPIS -->
-  <div class="card">
-    <h1>
-      <div class="regua-dot dot-{{ regua_nivel }}" title="Régua: {{ regua_nivel }}" style="margin-right: 8px;"></div>
-      {{ customer.name }}
-    </h1>
+  <div class="card" style="padding:0; overflow:hidden;">
 
-    <div class="editable-info">
-      <div class="info-row">
-        <span class="info-label">Régua:</span>
-        <form method="post" action="/customers/{{ customer.id }}/change-profile"
-          style="display:inline-flex; align-items:center; gap:5px; vertical-align: middle; margin-left: -15px;">
-          {% set prof = customer.profile_cobranca or "AUTOMATICO" %}
-          <span class="badge"
-            style="background: var(--{{ 'success' if prof=='LEVE' else ('warning' if prof=='MODERADA' else ('danger' if prof=='INTENSA' else 'secondary')) }}); color: #fff; font-size: 0.8em; padding: 2px 6px; border-radius: 4px;">
-            {{ prof }}
+    <!-- Hero: avatar + nome + chips -->
+    <div class="cust-hero">
+      <div class="cust-avatar">{{ customer.name[0] | upper }}</div>
+      <div class="cust-hero-body">
+        <h2 class="cust-name">{{ customer.name }}</h2>
+        <div class="cust-chips">
+          {% if customer.store %}
+          <span class="cust-chip store">{{ customer.store }}</span>
+          {% endif %}
+          <span class="cust-chip regua" title="Régua: {{ regua_nivel }}">
+            <div class="regua-dot dot-{{ regua_nivel }}" style="width:8px;height:8px;display:inline-block;margin:0;flex-shrink:0;"></div>
+            {{ regua_nivel }}
           </span>
-          <select name="profile" onchange="this.form.submit()"
-            style="padding: 4px; font-size: 0.9em; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; font-weight: 600;">
-            <option value="AUTOMATICO" {% if prof=='AUTOMATICO' %}selected{% endif %}>Auto</option>
-            <option value="LEVE" {% if prof=='LEVE' %}selected{% endif %}>Leve</option>
-            <option value="MODERADA" {% if prof=='MODERADA' %}selected{% endif %}>Moderada</option>
-            <option value="INTENSA" {% if prof=='INTENSA' %}selected{% endif %}>Intensa</option>
-          </select>
-        </form>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Perfil:</span>
-        {% set pd = customer.perfil_devedor if customer.perfil_devedor else 'NORMAL' %}
-        <select onchange="salvarPerfilDevedor({{ customer.id }}, this.value)"
-          style="padding: 4px; font-size: 0.9em; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; font-weight: 600;">
-          <option value="NORMAL" {% if pd=='NORMAL' %}selected{% endif %}>Normal</option>
-          <option value="BOM_PAGADOR" {% if pd=='BOM_PAGADOR' %}selected{% endif %}>💚 Bom Pagador</option>
-          <option value="RECORRENTE" {% if pd=='RECORRENTE' %}selected{% endif %}>🔄 Recorrente</option>
-          <option value="DIFICIL" {% if pd=='DIFICIL' %}selected{% endif %}>🔴 Difícil</option>
-        </select>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Mensagens:</span>
-        {% set msgs_on = customer.msgs_ativo | default(true) %}
-        <button id="btnToggleMsgs"
-          onclick="toggleMsgs({{ customer.id }}, {{ 'true' if msgs_on else 'false' }})"
-          style="padding: 3px 12px; font-size: 12px; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid {{ '#16a34a' if msgs_on else '#dc2626' }}; background: {{ '#dcfce7' if msgs_on else '#fee2e2' }}; color: {{ '#16a34a' if msgs_on else '#dc2626' }};">
-          {{ 'Ativo' if msgs_on else 'Bloqueado' }}
-        </button>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Loja:</span>
-        <span class="info-val">{{ customer.store or "-" }}</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">WhatsApp:</span>
-        <div class="edit-container" data-field="whatsapp" data-val="{{ customer.whatsapp or '' }}"
-          onclick="startEdit(this)">
-          <span class="info-val display-span">{{ customer.whatsapp or "Clique para adicionar" }}</span>
-          <i data-lucide="pencil" class="edit-icon"></i>
-        </div>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Endereço:</span>
-        <div class="edit-container" data-field="address" data-val="{{ customer.address or '' }}"
-          onclick="startEdit(this)">
-          <span class="info-val display-span">{{ customer.address or "Clique para adicionar" }}</span>
-          <i data-lucide="pencil" class="edit-icon"></i>
+          {% if max_overdue > 30 %}
+          <span class="cust-chip danger">⚠ {{ max_overdue }} dias</span>
+          {% elif max_overdue > 0 %}
+          <span class="cust-chip warn">{{ max_overdue }} dias atraso</span>
+          {% else %}
+          <span class="cust-chip ok">Em dia</span>
+          {% endif %}
+          <span class="cust-chip value">{{ total_open }}</span>
         </div>
       </div>
     </div>
 
-    <div class="kpis-row" style="margin-top: 20px;">
-      <div class="kpi-box">
-        <div class="kpi-label">Total em Aberto</div>
-        <div class="kpi">{{ total_open }}</div>
+    <!-- Botões de ação -->
+    <div class="cust-actions">
+      <button onclick="abrirModalContato()" class="cust-btn primary">
+        <i data-lucide="clipboard-check"></i> Registrar Contato
+      </button>
+      {% if customer.whatsapp %}
+      <a href="{{ wa_link }}" target="_blank" class="cust-btn green">
+        <i data-lucide="message-circle"></i> WhatsApp
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Campos -->
+    <div class="cust-fields">
+      <div class="cust-field">
+        <span class="cust-fl">Régua</span>
+        <div class="cust-fv">
+          <form method="post" action="/customers/{{ customer.id }}/change-profile" style="display:inline-flex;">
+            {% set prof = customer.profile_cobranca or "AUTOMATICO" %}
+            <select name="profile" onchange="this.form.submit()" class="cust-select">
+              <option value="AUTOMATICO" {% if prof=='AUTOMATICO' %}selected{% endif %}>Automático</option>
+              <option value="LEVE"       {% if prof=='LEVE'       %}selected{% endif %}>Leve</option>
+              <option value="MODERADA"   {% if prof=='MODERADA'   %}selected{% endif %}>Moderada</option>
+              <option value="INTENSA"    {% if prof=='INTENSA'    %}selected{% endif %}>Intensa</option>
+            </select>
+          </form>
+        </div>
       </div>
-      <div class="kpi-box">
-        <div class="kpi-label">Maior Atraso</div>
-        <div class="kpi">{{ max_overdue }} dias</div>
+
+      <div class="cust-field">
+        <span class="cust-fl">Perfil</span>
+        <div class="cust-fv">
+          {% set pd = customer.perfil_devedor if customer.perfil_devedor else 'NORMAL' %}
+          <select onchange="salvarPerfilDevedor({{ customer.id }}, this.value)" class="cust-select">
+            <option value="NORMAL"      {% if pd=='NORMAL'      %}selected{% endif %}>Normal</option>
+            <option value="BOM_PAGADOR" {% if pd=='BOM_PAGADOR' %}selected{% endif %}>💚 Bom Pagador</option>
+            <option value="RECORRENTE"  {% if pd=='RECORRENTE'  %}selected{% endif %}>🔄 Recorrente</option>
+            <option value="DIFICIL"     {% if pd=='DIFICIL'     %}selected{% endif %}>🔴 Difícil</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cust-field">
+        <span class="cust-fl">Mensagens</span>
+        <div class="cust-fv">
+          {% set msgs_on = customer.msgs_ativo | default(true) %}
+          <button id="btnToggleMsgs"
+            onclick="toggleMsgs({{ customer.id }}, {{ 'true' if msgs_on else 'false' }})"
+            class="cust-toggle {{ 'on' if msgs_on else 'off' }}">
+            {{ 'Ativo' if msgs_on else 'Bloqueado' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="cust-field">
+        <span class="cust-fl">Loja</span>
+        <div class="cust-fv">
+          <span class="info-val">{{ customer.store or "—" }}</span>
+        </div>
+      </div>
+
+      <div class="cust-field">
+        <span class="cust-fl">WhatsApp</span>
+        <div class="cust-fv">
+          <div class="edit-container" data-field="whatsapp" data-val="{{ customer.whatsapp or '' }}" onclick="startEdit(this)">
+            <span class="info-val display-span">{{ customer.whatsapp or "Clique para adicionar" }}</span>
+            <i data-lucide="pencil" class="edit-icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="cust-field">
+        <span class="cust-fl">Endereço</span>
+        <div class="cust-fv">
+          <div class="edit-container" data-field="address" data-val="{{ customer.address or '' }}" onclick="startEdit(this)">
+            <span class="info-val display-span">{{ customer.address or "Clique para adicionar" }}</span>
+            <i data-lucide="pencil" class="edit-icon"></i>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- COLUNA DA DIREITA: HISTÓRICO -->
-  <!-- Timeline Visual de Contatos -->
   <div class="card">
-    <div class="card-h" style="padding: 0; margin-bottom: 15px; border: none;">
-      <div class="card-title" style="font-size: 1.1em;">
-        <i data-lucide="history" style="color: var(--primary)"></i>
+    <div class="card-h" style="padding: 0; margin-bottom: 16px; border: none;">
+      <div class="card-title" style="font-size: 14px; font-weight: 500; color: var(--text); display:flex; align-items:center; gap:8px;">
+        <span style="width:28px;height:28px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i data-lucide="history" style="width:14px;height:14px;color:var(--primary-text);"></i>
+        </span>
         Histórico de Contatos
+        {% if actions %}
+        <span style="margin-left:auto;font-size:11px;font-weight:500;background:var(--bg);color:var(--text-3);padding:2px 8px;border-radius:20px;border:1px solid var(--border);">{{ actions|length }}</span>
+        {% endif %}
       </div>
     </div>
 
@@ -317,8 +540,56 @@
     </div>
   </div>
 
+  <!-- Modal Registrar Contato -->
+  <div id="contatoModal" class="c-modal">
+    <div class="c-modal-box">
+      <h3><i data-lucide="clipboard-check" style="width:18px;height:18px;color:var(--primary-text);"></i> Registrar Contato</h3>
+      <form id="contatoForm">
+        <input type="hidden" id="ct_customer_id" value="{{ customer.id }}">
+
+        <label>Tipo de Contato</label>
+        <select id="ct_type">
+          <option value="LIGACAO">📞 Ligação Telefônica</option>
+          <option value="WHATSAPP">💬 WhatsApp</option>
+          <option value="VISITA">🏠 Visita Presencial</option>
+          <option value="EMAIL">📧 Email</option>
+        </select>
+
+        <label>Resultado</label>
+        <select id="ct_outcome" onchange="toggleCtFields()">
+          <option value="PROMESSA">✅ Promessa de Pagamento</option>
+          <option value="NAO_ATENDEU">📵 Não Atendeu</option>
+          <option value="NUMERO_ERRADO">❌ Número Errado</option>
+          <option value="NEGOCIACAO">🤝 Em Negociação</option>
+          <option value="RECUSA">⛔ Recusa de Pagamento</option>
+          <option value="PAGOU">💰 Confirmou Pagamento</option>
+        </select>
+
+        <div id="ct_promessa_fields">
+          <label>Valor Prometido (R$) <span style="color:var(--danger);">*</span></label>
+          <input type="number" id="ct_amount" step="0.01" min="0" placeholder="0,00">
+          <label>Data da Promessa</label>
+          <input type="date" id="ct_date">
+        </div>
+
+        <div id="ct_next_fields" style="display:none;">
+          <label>Data do Próximo Contato</label>
+          <input type="date" id="ct_next_date">
+        </div>
+
+        <label>Observações</label>
+        <textarea id="ct_notes" rows="3" placeholder="Detalhes da conversa..."></textarea>
+
+        <div class="c-modal-footer">
+          <button type="button" class="btn-cancel" onclick="fecharModalContato()">Cancelar</button>
+          <button type="submit" class="btn-save">Salvar Registro</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TABELA DE PARCELAS (LARGURA TOTAL) -->
-  <div class="card" style="grid-column: 1 / -1; width: 100%;">
+  <div id="parcelas" class="card" style="grid-column: 1 / -1; width: 100%;">
     <div class="card-h">
       <div class="card-title">
         <i data-lucide="file-text" style="color: var(--primary-text)"></i>
@@ -403,200 +674,7 @@
   </div>
 </div>
 
-<script>
-  async function toggleMsgs(customerId, atualAtivo) {
-    const btn = document.getElementById('btnToggleMsgs');
-    btn.disabled = true;
-    try {
-      const res = await fetch(`/customers/${customerId}/toggle-msgs`, { method: 'POST' });
-      if (res.ok) window.location.reload();
-      else btn.disabled = false;
-    } catch (e) {
-      btn.disabled = false;
-    }
-  }
-
-  async function startEdit(container) {
-    const field = container.dataset.field;
-    let currentVal = container.dataset.val;
-    const span = container.querySelector('.display-span');
-    const icon = container.querySelector('.edit-icon');
-
-    if (container.querySelector('input')) return;
-
-    // Salva o onclick original para restaurar se cancelar
-    const originalOnClick = container.onclick;
-    container.onclick = null;
-    icon.style.opacity = '0';
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = currentVal;
-    input.className = 'inline-input';
-
-    span.style.display = 'none';
-    container.appendChild(input);
-    input.focus();
-
-    const finish = async (save) => {
-      const newVal = input.value.trim();
-      input.remove();
-      span.style.display = 'inline';
-      icon.style.opacity = '';
-
-      if (save && newVal !== currentVal) {
-        const oldText = span.innerText;
-        span.innerText = "Salvando...";
-        try {
-          const res = await fetch(`/api/customers/{{ customer.id }}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [field]: newVal })
-          });
-          const data = await res.json();
-          if (data.success) {
-            span.innerText = newVal || "Clique para adicionar";
-            container.dataset.val = newVal;
-            currentVal = newVal;
-          } else {
-            alert("Erro ao salvar: " + data.message);
-            span.innerText = oldText;
-          }
-        } catch (err) {
-          alert("Erro de conexão");
-          span.innerText = oldText;
-        }
-      } else {
-        span.innerText = currentVal || "Clique para adicionar";
-      }
-
-      // Restaura o evento após um pequeno delay para evitar trigger imediato
-      setTimeout(() => {
-        container.onclick = originalOnClick;
-      }, 100);
-    };
-
-    input.onblur = () => finish(true);
-    input.onkeydown = (e) => {
-      if (e.key === 'Enter') finish(true);
-      if (e.key === 'Escape') finish(false);
-    };
-  }
-
-  async function salvarPerfilDevedor(customerId, valor) {
-    try {
-      const res = await fetch(`/api/customers/${customerId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ perfil_devedor: valor })
-      });
-      const data = await res.json();
-      if (!data.success) alert('Erro ao salvar perfil: ' + data.message);
-    } catch (err) {
-      alert('Erro de conexão ao salvar perfil');
-    }
-  }
-
-  // === Acordos ===
-  const CUSTOMER_ID = {{ customer.id }};
-
-  async function loadAcordos() {
-    const el = document.getElementById('acordos-list-customer');
-    try {
-      const res = await fetch(`/api/acordos?customer_id=${CUSTOMER_ID}`);
-      const data = await res.json();
-      if (!data.length) {
-        el.innerHTML = '<div class="muted small">Nenhum acordo registrado.</div>';
-        return;
-      }
-      const statusColors = { ATIVO:'#d97706', CUMPRIDO:'#16a34a', QUEBRADO:'#dc2626' };
-      const statusEmoji = { ATIVO:'🟡', CUMPRIDO:'✅', QUEBRADO:'❌' };
-      el.innerHTML = '';
-      data.forEach(a => {
-        const cor = statusColors[a.status] || '#6b7280';
-        const emoji = statusEmoji[a.status] || '•';
-        const fmtBrl = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-        const div = document.createElement('div');
-        div.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:flex-start;';
-        div.innerHTML = `
-          <div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-              <span style="font-weight:700;">${fmtBrl(a.valor_acordado)}</span>
-              <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; background:${cor}20; color:${cor};">${emoji} ${a.status}</span>
-            </div>
-            <div class="muted small">Original: ${fmtBrl(a.valor_original)} ${a.desconto_pct ? `· ${a.desconto_pct}% desconto` : ''} · ${a.forma_pagamento}</div>
-            <div class="muted small">Prazo: ${a.novo_prazo} · Acordo: ${a.data_acordo}</div>
-            ${a.notas ? `<div class="muted small" style="font-style:italic; margin-top:4px;">"${a.notas}"</div>` : ''}
-          </div>
-          <div style="display:flex; flex-direction:column; gap:4px; margin-left:10px;">
-            ${a.status === 'ATIVO' ? `
-              <button onclick="updateAcordo(${a.id},'CUMPRIDO')" class="btn small primary" style="font-size:11px; padding:4px 8px;">✅ Cumpriu</button>
-              <button onclick="updateAcordo(${a.id},'QUEBRADO')" class="btn small danger" style="font-size:11px; padding:4px 8px;">❌ Quebrou</button>
-            ` : ''}
-          </div>`;
-        el.appendChild(div);
-      });
-    } catch(e) {
-      el.innerHTML = '<div style="color:var(--danger); font-size:13px;">Erro ao carregar acordos.</div>';
-    }
-  }
-
-  async function updateAcordo(id, status) {
-    try {
-      const res = await fetch(`/api/acordos/${id}/status`, {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({status})
-      });
-      if (res.ok) loadAcordos();
-      else alert('Erro ao atualizar acordo.');
-    } catch { alert('Erro de conexão.'); }
-  }
-
-  function calcAcordo() {
-    const orig = parseFloat(document.getElementById('ac_valor_original').value) || 0;
-    const desc = parseFloat(document.getElementById('ac_desconto').value) || 0;
-    const acordado = orig * (1 - desc/100);
-    document.getElementById('ac_valor_acordado').value = acordado.toFixed(2);
-  }
-
-  function openAcordoModal() {
-    // Pré-preencher valor original com total em aberto
-    const today = new Date().toISOString().split('T')[0];
-    const next30 = new Date(Date.now()+30*86400000).toISOString().split('T')[0];
-    document.getElementById('ac_data').value = today;
-    document.getElementById('ac_prazo').value = next30;
-    document.getElementById('modalAcordo').style.display = 'flex';
-  }
-  function closeAcordoModal() {
-    document.getElementById('modalAcordo').style.display = 'none';
-    document.getElementById('formAcordo').reset();
-  }
-  document.getElementById('modalAcordo').addEventListener('click', e => {
-    if (e.target.id === 'modalAcordo') closeAcordoModal();
-  });
-
-  async function saveAcordo(e) {
-    e.preventDefault();
-    const payload = {
-      customer_id: CUSTOMER_ID,
-      valor_original: parseFloat(document.getElementById('ac_valor_original').value),
-      desconto_pct: parseFloat(document.getElementById('ac_desconto').value) || null,
-      valor_acordado: parseFloat(document.getElementById('ac_valor_acordado').value),
-      data_acordo: document.getElementById('ac_data').value,
-      novo_prazo: document.getElementById('ac_prazo').value,
-      forma_pagamento: document.getElementById('ac_forma').value,
-      notas: document.getElementById('ac_notas').value || null
-    };
-    try {
-      const res = await fetch('/api/acordos', {
-        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
-      });
-      if (res.ok) { closeAcordoModal(); loadAcordos(); alert('✅ Acordo registrado!'); }
-      else { const d = await res.json(); alert('Erro: ' + (d.detail||'Falha ao salvar')); }
-    } catch { alert('Erro de conexão.'); }
-  }
-
-  document.addEventListener('DOMContentLoaded', loadAcordos);
-</script>
+<script>window.CUSTOMER_ID = {{ customer.id }};</script>
+<script src="/static/js/customer.js"></script>
 
 {% endblock %}

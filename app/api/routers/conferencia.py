@@ -10,7 +10,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.web import render, require_login
+from app.core.web import render, require_login, require_admin
 from app.models import ConferenciaTitulos, ReportSnapshot
 from app.services.conferencia_inteligente_service import process_smart_reconciliation
 
@@ -19,9 +19,7 @@ router = APIRouter()
 
 @router.get("/conferencia", response_class=HTMLResponse)
 def conferencia_page(request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas administradores podem acessar esta página.")
+    user = require_admin(request, db)
 
     last_process = db.query(ConferenciaTitulos).order_by(ConferenciaTitulos.data_processamento.desc()).first()
     detalhes = []
@@ -50,9 +48,7 @@ async def processar_conferencia(
     file_recebido: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas administradores.")
+    require_admin(request, db)
     content_recebido = await file_recebido.read() if file_recebido else None
     results = process_smart_reconciliation(db, content_recebido)
     
@@ -149,9 +145,7 @@ def exportar_excel(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/api/conferencia/zerar")
 async def zerar_conferencia(request: Request, db: Session = Depends(get_db)):
-    user = require_login(request, db)
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Apenas administradores podem zerar o relatório.")
+    require_admin(request, db)
     db.query(ConferenciaTitulos).delete()
     db.query(ReportSnapshot).delete()
     db.commit()

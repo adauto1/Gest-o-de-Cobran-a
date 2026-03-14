@@ -54,6 +54,7 @@ sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN pix_chave T
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN pix_tipo TEXT DEFAULT 'CNPJ';" 2>/dev/null || true
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN meta_contatos_diarios INTEGER DEFAULT 20;" 2>/dev/null || true
 sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE configuracoes ADD COLUMN meta_promessas_diarios INTEGER DEFAULT 5;" 2>/dev/null || true
+sqlite3 "$APP_DIR/data/app.db" "ALTER TABLE customers ADD COLUMN pausado_ate DATE;" 2>/dev/null || true
 
 # Indices de performance
 sqlite3 "$APP_DIR/data/app.db" "CREATE INDEX IF NOT EXISTS ix_inst_status_customer ON installments (status, customer_id);" 2>/dev/null || true

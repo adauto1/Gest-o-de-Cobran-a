@@ -47,3 +47,17 @@ def require_login(request: Request, db: Session) -> User:
     if not user or not user.active:
         raise HTTPException(status_code=401, detail="Invalid user")
     return user
+
+def require_admin(request: Request, db: Session) -> User:
+    """Exige usuário logado com role ADMIN. Levanta 403 caso contrário."""
+    user = require_login(request, db)
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Apenas ADMIN")
+    return user
+
+def get_or_404(db: Session, model, id_: int, detail: str = "Não encontrado"):
+    """Busca entidade por ID ou levanta HTTPException 404."""
+    obj = db.get(model, id_)
+    if not obj:
+        raise HTTPException(status_code=404, detail=detail)
+    return obj

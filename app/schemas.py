@@ -107,7 +107,8 @@ class PriorityQueueItem(BaseModel):
     status_label: str
     regua_nivel: str
     perfil_devedor: Optional[str] = None
-    score_propensao: Optional[int] = None  # 0-100: probabilidade de pagamento
+    score_propensao: Optional[int] = None
+    pausado_ate: Optional[str] = None  # 'YYYY-MM-DD' quando cobrança pausada
 
 class QueueStats(BaseModel):
     total_carteira: int
