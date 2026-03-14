@@ -943,6 +943,58 @@
       transform: rotate(360deg);
     }
   }
+
+  /* ── Funil de Cobrança ── */
+  .funil-container { display:flex; align-items:stretch; gap:6px; }
+
+  .funil-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px 8px 16px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+  .funil-step.no-link { cursor: default; }
+
+  .funil-ico  { font-size:22px; margin-bottom:8px; display:block; }
+  .funil-num  { font-size:30px; font-weight:700; line-height:1; display:block; }
+  .funil-lbl  { font-size:10px; margin-top:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-2); display:block; }
+  .funil-sub  { font-size:10px; color:var(--text-3); margin-top:3px; display:block; }
+
+  .funil-progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    width: 0;
+    transition: width 1.3s cubic-bezier(0.4,0,0.2,1);
+    border-radius: 0 2px 0 0;
+  }
+
+  .funil-sep {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .funil-conv {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .funil-chevron { color:var(--text-3); font-size:20px; line-height:1; }
 </style>
 
 <div class="dash-wrap">
@@ -1052,33 +1104,49 @@
 
     <!-- Funil de Cobrança -->
     <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px;">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
         <span style="font-size:18px;">🔀</span>
-        <span style="font-weight:500; font-size:13px; color:var(--text);">Funil de Cobrança</span>
+        <span style="font-weight:600; font-size:14px; color:var(--text);">Funil de Cobrança</span>
         <span class="muted small" style="margin-left:auto;">últimos 30 dias</span>
       </div>
-      <div style="display:flex; align-items:stretch; gap:6px;">
-        {% set funnel_steps = [
-          ('Total', funil.total, '#6366f1', '👥'),
-          ('Contatados', funil.contatados, '#3b82f6', '📞'),
-          ('Prometidos', funil.com_promessa, '#f59e0b', '🤝'),
-          ('Pagos', funil.pagos, '#10b981', '💰')
-        ] %}
-        {% for lbl, val, cor, ico in funnel_steps %}
-        <div style="flex:1; text-align:center; padding:12px 6px; border-radius:8px; background:{{ cor }}15; border:1px solid {{ cor }}30;">
-          <div style="font-size:18px;">{{ ico }}</div>
-          <div style="font-size:20px; font-weight:500; color:{{ cor }};">{{ val }}</div>
-          <div style="font-size:11px; color:var(--text-3); margin-top:2px; font-weight:400;">{{ lbl }}</div>
+      <div class="funil-container">
+
+        <!-- Total (estático, não clicável) -->
+        <div class="funil-step no-link" data-color="#6366f1">
+          <span class="funil-ico">👥</span>
+          <span class="funil-num" style="color:#6366f1;" data-count="{{ funil.total }}">0</span>
+          <span class="funil-lbl">Total</span>
+          <span class="funil-sub">em cobrança</span>
+          <div class="funil-progress" style="background:#6366f1;" data-pct="100"></div>
         </div>
-        {% if not loop.last %}
-        <div style="display:flex; align-items:center; color:var(--text-3); font-size:16px;">→</div>
-        {% endif %}
-        {% endfor %}
-      </div>
-      <div style="display:flex; gap:16px; margin-top:12px; font-size:12px; color:var(--text-2);">
-        <span>Contato: <strong>{{ funil.taxa_contato }}%</strong></span>
-        <span>Promessa: <strong>{{ funil.taxa_promessa }}%</strong></span>
-        <span>Pagamento: <strong>{{ funil.taxa_pagamento }}%</strong></span>
+
+        <!-- Contatados → filtra clientes contatados nos últimos 30 dias -->
+        <a href="/customers?filtro=contatados" class="funil-step" data-color="#3b82f6">
+          <span class="funil-ico">📞</span>
+          <span class="funil-num" style="color:#3b82f6;" data-count="{{ funil.contatados }}">0</span>
+          <span class="funil-lbl">Contatados</span>
+          <span class="funil-sub">com ação registrada</span>
+          <div class="funil-progress" style="background:#3b82f6;" data-pct="{{ funil.taxa_contato }}"></div>
+        </a>
+
+        <!-- Prometidos → página de promessas -->
+        <a href="/promessas" class="funil-step" data-color="#f59e0b">
+          <span class="funil-ico">🤝</span>
+          <span class="funil-num" style="color:#f59e0b;" data-count="{{ funil.com_promessa }}">0</span>
+          <span class="funil-lbl">Prometidos</span>
+          <span class="funil-sub">prometeram pagar</span>
+          <div class="funil-progress" style="background:#f59e0b;" data-base="{{ funil.total }}" data-val="{{ funil.com_promessa }}"></div>
+        </a>
+
+        <!-- Pagos → filtra clientes que pagaram nos últimos 30 dias -->
+        <a href="/customers?filtro=pagos" class="funil-step" data-color="#10b981">
+          <span class="funil-ico">💰</span>
+          <span class="funil-num" style="color:#10b981;" data-count="{{ funil.pagos }}">0</span>
+          <span class="funil-lbl">Pagos</span>
+          <span class="funil-sub">quitaram no período</span>
+          <div class="funil-progress" style="background:#10b981;" data-base="{{ funil.total }}" data-val="{{ funil.pagos }}"></div>
+        </a>
+
       </div>
     </div>
 

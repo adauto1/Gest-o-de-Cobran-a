@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from app.core.database import get_db
-from app.models import Customer, CollectionAction, User, days_overdue
+from app.models import Customer, Installment, CollectionAction, User, days_overdue
 from app.core.web import render, require_login
 from app.core.helpers import get_regua_nivel, bucket_priority, wa_link, stores_list, get_status_label, rule_for_overdue, format_money, get_last_contacts_map
 from app.schemas import CustomerUpdate
@@ -20,17 +20,30 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.get("/customers", response_class=HTMLResponse)
-def customers_page(request: Request, q: str = "", store: str = "", db: Session = Depends(get_db)):
+def customers_page(request: Request, q: str = "", store: str = "", filtro: str = "", db: Session = Depends(get_db)):
     user = require_login(request, db)
     query = db.query(Customer)
     if user.role == "COBRANCA" and user.store:
         query = query.filter(Customer.store == user.store)
     if store:
         query = query.filter(Customer.store == store)
-
     if q.strip():
-        s = f"%{q.strip()}%"
-        query = query.filter(Customer.name.ilike(s))
+        query = query.filter(Customer.name.ilike(f"%{q.strip()}%"))
+
+    # Filtros do funil de cobrança
+    if filtro == "contatados":
+        periodo = datetime.utcnow() - timedelta(days=30)
+        ids = db.query(CollectionAction.customer_id).filter(
+            CollectionAction.created_at >= periodo
+        ).distinct()
+        query = query.filter(Customer.id.in_(ids))
+    elif filtro == "pagos":
+        periodo = datetime.utcnow() - timedelta(days=30)
+        ids = db.query(Installment.customer_id).filter(
+            Installment.status == "PAGA",
+            Installment.paid_at >= periodo
+        ).distinct()
+        query = query.filter(Customer.id.in_(ids))
 
     query = query.options(
         subqueryload(Customer.installments),
@@ -42,8 +55,7 @@ def customers_page(request: Request, q: str = "", store: str = "", db: Session =
     rows = []
     for c in customers:
         insts = [i for i in c.installments if i.status == "ABERTA" and Decimal(i.open_amount) > 0]
-        # Quando há busca por nome, inclui o cliente mesmo sem dívida ativa
-        if not insts and not q.strip():
+        if not insts and not q.strip() and not filtro:
             continue
         if insts:
             max_over = max(days_overdue(i.due_date) for i in insts)
@@ -65,7 +77,7 @@ def customers_page(request: Request, q: str = "", store: str = "", db: Session =
 
     users = db.query(User).filter(User.active == True).order_by(User.name.asc()).all() if user.role == "ADMIN" else []
     return render("customers.html", request=request, user=user, title="Clientes",
-                  rows=rows, q=q, store=store, stores=stores_list(db), users=users)
+                  rows=rows, q=q, store=store, filtro=filtro, stores=stores_list(db), users=users)
 
 @router.get("/customers/{customer_id}", response_class=HTMLResponse)
 def customer_detail_page(request: Request, customer_id: int, db: Session = Depends(get_db)):

@@ -1,5 +1,58 @@
 // dashboard.js — Lógica da fila de prioridade e modais do dashboard
 
+// === Funil de Cobrança ===
+function initFunil() {
+  const steps = document.querySelectorAll('.funil-step');
+  if (!steps.length) return;
+
+  // Hover interativo por cor
+  steps.forEach(step => {
+    const c = step.dataset.color;
+    if (!c) return;
+    step.style.background    = c + '0e';
+    step.style.border        = '1.5px solid ' + c + '28';
+    if (step.classList.contains('no-link')) return;
+    step.addEventListener('mouseenter', () => {
+      step.style.transform   = 'translateY(-4px)';
+      step.style.boxShadow   = '0 12px 28px ' + c + '22';
+      step.style.background  = c + '1c';
+      step.style.borderColor = c + '50';
+    });
+    step.addEventListener('mouseleave', () => {
+      step.style.transform   = '';
+      step.style.boxShadow   = '';
+      step.style.background  = c + '0e';
+      step.style.borderColor = c + '28';
+    });
+  });
+
+  // Count-up animado
+  document.querySelectorAll('.funil-num[data-count]').forEach(el => {
+    const target = parseInt(el.dataset.count) || 0;
+    if (target === 0) { el.textContent = '0'; return; }
+    const dur = 900, start = performance.now();
+    (function tick(now) {
+      const p = Math.min((now - start) / dur, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(e * target);
+      if (p < 1) requestAnimationFrame(tick);
+    })(start);
+  });
+
+  // Barra de progresso animada
+  document.querySelectorAll('.funil-progress').forEach(bar => {
+    let pct;
+    if (bar.dataset.pct !== undefined) {
+      pct = Math.min(parseFloat(bar.dataset.pct) || 0, 100);
+    } else if (bar.dataset.base !== undefined) {
+      const base = parseFloat(bar.dataset.base) || 1;
+      pct = Math.min((parseFloat(bar.dataset.val) || 0) / base * 100, 100);
+    } else return;
+    requestAnimationFrame(() => setTimeout(() => { bar.style.width = pct + '%'; }, 80));
+  });
+}
+
+
 let filaCurrentPage = 1;
 let filaTotalPages = 1;
 window.filaFiltroRegua = '';
@@ -422,6 +475,7 @@ function closeReconModal() {
 
 // === Inicialização ===
 document.addEventListener('DOMContentLoaded', () => {
+  initFunil();
   loadPriorityQueue(1);
 
   document.getElementById('editModal').addEventListener('click', e => {
